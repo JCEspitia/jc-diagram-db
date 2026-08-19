@@ -28,4 +28,14 @@ describe('executeDiagramOperation', () => {
     expect(result.tables).toBe(layout.tables);
     expect(result.viewport).toEqual({ x: 30, y: 40, zoom: 1.5 });
   });
+
+  it('stores relationship routing separately from schema and tables', () => {
+    const result = executeDiagramOperation(layout, {
+      type: 'CHANGE_RELATIONSHIP_ROUTE',
+      relationshipId: 'rel_1',
+      to: { routeX: 320 },
+    });
+    expect(result.relationships?.['rel_1']).toEqual({ routeX: 320 });
+    expect(result.tables).toBe(layout.tables);
+  });
 });

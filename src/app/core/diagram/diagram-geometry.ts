@@ -12,7 +12,7 @@ export interface TableMetrics {
 }
 
 export const DEFAULT_TABLE_METRICS: TableMetrics = {
-  width: 264,
+  width: 300,
   headerHeight: 45,
   rowHeight: 38,
 };
@@ -64,6 +64,14 @@ export function relationshipPath(source: Point, target: Point): string {
   const direction = target.x >= source.x ? 1 : -1;
   const controlDistance = Math.max(70, Math.abs(target.x - source.x) * 0.45);
   return `M ${source.x} ${source.y} C ${source.x + controlDistance * direction} ${source.y}, ${target.x - controlDistance * direction} ${target.y}, ${target.x} ${target.y}`;
+}
+
+export function orthogonalRelationshipPath(
+  source: Point,
+  target: Point,
+  routeX = (source.x + target.x) / 2,
+): string {
+  return `M ${source.x} ${source.y} H ${routeX} V ${target.y} H ${target.x}`;
 }
 
 export function tableLayout(layout: DiagramLayout, tableId: string): TableLayout {

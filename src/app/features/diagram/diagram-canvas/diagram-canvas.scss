@@ -44,9 +44,45 @@
   stroke-width: 2;
   pointer-events: none;
 }
+.relationships marker path {
+  fill: none;
+  stroke: #7c6ff2;
+  stroke-width: 1.5;
+}
+.edge.dimmed,
+.edge-shadow.dimmed {
+  opacity: 0.12;
+}
 .edge.selected {
   stroke: #c1b9ff;
   stroke-width: 3;
+}
+.edge-flow {
+  fill: none;
+  stroke: #c7c0ff;
+  stroke-width: 2;
+  stroke-dasharray: 2 10;
+  stroke-linecap: round;
+  pointer-events: none;
+  animation: relationship-flow 1s linear infinite;
+}
+.edge-flow.reverse {
+  animation-direction: reverse;
+}
+.route-handle {
+  fill: #0d1320;
+  stroke: #c7c0ff;
+  stroke-width: 2;
+  cursor: ew-resize;
+  pointer-events: all;
+}
+.route-handle:hover {
+  fill: #7767e7;
+}
+@keyframes relationship-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
 }
 .temporary-edge {
   fill: none;

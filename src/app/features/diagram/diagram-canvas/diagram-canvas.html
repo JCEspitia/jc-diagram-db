@@ -9,9 +9,33 @@
   (wheel)="zoom($event)"
 >
   <div class="world" [style.transform]="transform()">
-    <svg class="relationships" width="1600" height="1000" aria-hidden="true">
+    <svg class="relationships" width="1600" height="1000">
+      <defs>
+        <marker
+          id="cardinality-one"
+          viewBox="-1 -5 10 10"
+          refX="0"
+          refY="0"
+          markerWidth="9"
+          markerHeight="9"
+          orient="auto-start-reverse"
+        >
+          <path d="M 1 -4 V 4" />
+        </marker>
+        <marker
+          id="cardinality-many"
+          viewBox="-1 -5 10 10"
+          refX="0"
+          refY="0"
+          markerWidth="9"
+          markerHeight="9"
+          orient="auto-start-reverse"
+        >
+          <path d="M 8 -4 L 1 0 L 8 4 M 1 -4 V 4" />
+        </marker>
+      </defs>
       @for (edge of edges(); track edge.relationship.id) {
-        <path class="edge-shadow" [attr.d]="edge.path" />
+        <path class="edge-shadow" [class.dimmed]="!edge.connected" [attr.d]="edge.path" />
         <path
           class="edge-hit-area"
           [attr.d]="edge.path"
@@ -20,8 +44,27 @@
         <path
           class="edge"
           [class.selected]="selectedRelationshipId() === edge.relationship.id"
+          [class.dimmed]="!edge.connected"
           [attr.d]="edge.path"
+          [attr.marker-start]="
+            edge.sourceCardinality === 'many' ? 'url(#cardinality-many)' : 'url(#cardinality-one)'
+          "
+          [attr.marker-end]="
+            edge.targetCardinality === 'many' ? 'url(#cardinality-many)' : 'url(#cardinality-one)'
+          "
         />
+        @if (edge.flow) {
+          <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
+        }
+        @if (selectedRelationshipId() === edge.relationship.id) {
+          <circle
+            class="route-handle"
+            [attr.cx]="edge.routeX"
+            [attr.cy]="edge.handleY"
+            r="6"
+            (pointerdown)="startRouteDrag($event, edge.relationship.id)"
+          />
+        }
       }
       @if (temporaryPath(); as path) {
         <path class="temporary-edge" [attr.d]="path" />

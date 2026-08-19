@@ -1,7 +1,7 @@
 :host {
   display: block;
   position: absolute;
-  width: 264px;
+  width: 300px;
   z-index: 2;
 }
 
@@ -27,7 +27,7 @@ header {
   gap: 10px;
   padding: 0 12px;
   border-bottom: 1px solid #29344b;
-  background: #1a2336;
+  background: #326f9d;
   color: #f2f5fb;
   font-size: 14px;
   cursor: grab;
@@ -59,7 +59,7 @@ header button {
 .column-row {
   height: 37px;
   display: grid;
-  grid-template-columns: 18px minmax(70px, 1fr) auto 10px;
+  grid-template-columns: 30px minmax(70px, 1fr) auto auto 10px;
   align-items: center;
   gap: 7px;
   padding: 0 12px;
@@ -79,12 +79,57 @@ header button {
   outline: 1px solid #44c99b;
   outline-offset: -1px;
 }
-.constraint {
-  color: #72809a;
-  font-size: 9px;
+.constraints {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
 }
-.constraint.primary-key {
-  color: #f2bd58;
+.constraints i {
+  position: relative;
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  color: #aab5c8;
+}
+.key-icon::before {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border: 1.5px solid #e5b95e;
+  border-radius: 50%;
+  left: 0;
+  top: 0;
+}
+.key-icon::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 1.5px;
+  background: #e5b95e;
+  transform: rotate(-45deg);
+  left: 4px;
+  top: 7px;
+  box-shadow: 2px 2px 0 #e5b95e;
+}
+.link-icon::before,
+.link-icon::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 3px;
+  border: 1.3px solid #8ca0bd;
+  border-radius: 4px;
+  transform: rotate(-42deg);
+}
+.link-icon::before {
+  left: 0;
+  top: 2px;
+}
+.link-icon::after {
+  left: 3px;
+  top: 6px;
 }
 .column-name {
   overflow: hidden;
@@ -94,6 +139,19 @@ header button {
   color: #7988a4;
   font-family: monospace;
   font-size: 11px;
+}
+.badges {
+  display: flex;
+  gap: 3px;
+}
+.badges b {
+  padding: 1px 3px;
+  border-radius: 2px;
+  background: #283248;
+  color: #9eabc0;
+  font:
+    8px/12px ui-monospace,
+    monospace;
 }
 .handle {
   width: 6px;

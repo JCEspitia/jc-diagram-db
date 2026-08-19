@@ -39,6 +39,8 @@ visuales son representaciones independientes.
 - Inspector de relaciones con cardinalidad y acciones `ON DELETE` / `ON UPDATE`.
 - Panel DBML redimensionable y Monaco con temas claro/oscuro.
 - Actualizaciones externas de Monaco conservando su pila de undo.
+- Rutas ortogonales editables con punto de desvío y puertos laterales configurables.
+- Cardinalidades visibles, badges `PK/FK/NN/UQ/AI` y flujo animado al seleccionar tablas.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

@@ -123,6 +123,26 @@
             <option value="one-to-many">One to many</option>
             <option value="one-to-one">One to one</option>
           </select>
+          <label for="relationship-source-side">SOURCE PORT</label>
+          <select
+            id="relationship-source-side"
+            [value]="store.layout().relationships?.[relationship.id]?.sourceSide ?? ''"
+            (change)="updateRelationshipSide(relationship.id, 'sourceSide', $event)"
+          >
+            <option value="">Automatic</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+          <label for="relationship-target-side">TARGET PORT</label>
+          <select
+            id="relationship-target-side"
+            [value]="store.layout().relationships?.[relationship.id]?.targetSide ?? ''"
+            (change)="updateRelationshipSide(relationship.id, 'targetSide', $event)"
+          >
+            <option value="">Automatic</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
           <label for="relationship-delete">ON DELETE</label>
           <select
             id="relationship-delete"

@@ -106,6 +106,17 @@ export class App {
     } as { onDelete?: ReferentialAction; onUpdate?: ReferentialAction });
   }
 
+  protected updateRelationshipSide(
+    relationshipId: string,
+    property: 'sourceSide' | 'targetSide',
+    event: Event,
+  ): void {
+    const value = inputValue(event);
+    this.store.updateRelationshipRoute(relationshipId, {
+      [property]: value || undefined,
+    });
+  }
+
   @HostListener('document:keydown', ['$event'])
   protected handleShortcut(event: KeyboardEvent): void {
     const target = event.target as Element | null;

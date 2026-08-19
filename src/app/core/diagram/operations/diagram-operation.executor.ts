@@ -14,5 +14,13 @@ export function executeDiagramOperation(
       };
     case 'CHANGE_VIEWPORT':
       return { ...layout, viewport: operation.to };
+    case 'CHANGE_RELATIONSHIP_ROUTE':
+      return {
+        ...layout,
+        relationships: {
+          ...layout.relationships,
+          [operation.relationshipId]: operation.to,
+        },
+      };
   }
 }

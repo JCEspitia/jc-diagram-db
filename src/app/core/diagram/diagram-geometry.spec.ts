@@ -3,6 +3,7 @@ import {
   columnAnchor,
   fitToScreen,
   relationshipPath,
+  orthogonalRelationshipPath,
   screenToWorld,
   worldToScreen,
   zoomAtPoint,
@@ -16,12 +17,18 @@ describe('diagram geometry', () => {
   });
 
   it('locates a column anchor from table layout and row index', () => {
-    expect(columnAnchor({ x: 100, y: 80 }, 1, 'right')).toEqual({ x: 364, y: 182 });
+    expect(columnAnchor({ x: 100, y: 80 }, 1, 'right')).toEqual({ x: 400, y: 182 });
   });
 
   it('generates a cubic bezier path', () => {
     expect(relationshipPath({ x: 10, y: 20 }, { x: 200, y: 80 })).toBe(
       'M 10 20 C 95.5 20, 114.5 80, 200 80',
+    );
+  });
+
+  it('generates an editable orthogonal route', () => {
+    expect(orthogonalRelationshipPath({ x: 10, y: 20 }, { x: 200, y: 80 }, 120)).toBe(
+      'M 10 20 H 120 V 80 H 200',
     );
   });
 

@@ -143,4 +143,27 @@ describe('DiagramStore DBML synchronization', () => {
     });
     expect(store.dbml()).toContain('users.id - posts.id [delete: cascade]');
   });
+
+  it('edits cable routing without modifying DBML and removes orphan routes', () => {
+    const store = new DiagramStore();
+    const relationship = store.schema().relationships[0]!;
+    const dbml = store.dbml();
+    store.updateRelationshipRoute(relationship.id, {
+      routeX: 520,
+      sourceSide: 'right',
+      targetSide: 'left',
+    });
+
+    expect(store.layout().relationships?.[relationship.id]).toEqual({
+      routeX: 520,
+      sourceSide: 'right',
+      targetSide: 'left',
+    });
+    expect(store.dbml()).toBe(dbml);
+    store.applySchemaOperation({
+      type: 'DELETE_RELATIONSHIP',
+      relationshipId: relationship.id,
+    });
+    expect(store.layout().relationships?.[relationship.id]).toBeUndefined();
+  });
 });

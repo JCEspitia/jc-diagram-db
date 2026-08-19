@@ -14,6 +14,7 @@ import {
   DiagramSelection,
   executeSchemaOperation,
   SchemaOperation,
+  RelationshipLayout,
   validateSchema,
   ViewportState,
 } from '../core/schema';
@@ -223,6 +224,16 @@ export class DiagramStore {
     });
   }
 
+  updateRelationshipRoute(relationshipId: string, changes: RelationshipLayout): void {
+    const from = this.layout().relationships?.[relationshipId];
+    this.applyDiagramOperation({
+      type: 'CHANGE_RELATIONSHIP_ROUTE',
+      relationshipId,
+      from,
+      to: { ...from, ...changes },
+    });
+  }
+
   selectTable(tableId: string): void {
     this.selection.set({ tableId });
   }
@@ -348,7 +359,13 @@ function synchronizeLayout(layout: DiagramLayout, schema: DatabaseSchema): Diagr
       y: 90 + Math.floor(index / 3) * 260,
     };
   }
-  return { ...layout, tables };
+  const relationshipIds = new Set(schema.relationships.map(({ id }) => id));
+  const relationships = Object.fromEntries(
+    Object.entries(layout.relationships ?? {}).filter(([relationshipId]) =>
+      relationshipIds.has(relationshipId),
+    ),
+  );
+  return { ...layout, tables, relationships };
 }
 
 function createExampleProject(): DiagramProject {

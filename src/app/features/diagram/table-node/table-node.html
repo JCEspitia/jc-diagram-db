@@ -15,15 +15,27 @@
         [attr.data-column-id]="column.id"
         (pointerdown)="selectColumn($event, column.id)"
       >
-        <span class="constraint" [class.primary-key]="column.primaryKey">
+        <span class="constraints">
           @if (column.primaryKey) {
-            ◆
-          } @else if (foreignKeyColumnIds().has(column.id)) {
-            ↗
+            <i class="key-icon" title="Primary key" aria-label="Primary key"></i>
+          }
+          @if (foreignKeyColumnIds().has(column.id)) {
+            <i class="link-icon" title="Foreign key" aria-label="Foreign key"></i>
           }
         </span>
         <span class="column-name">{{ column.name }}</span>
         <span class="column-type">{{ column.type }}</span>
+        <span class="badges">
+          @if (!column.nullable) {
+            <b title="Not null">NN</b>
+          }
+          @if (column.unique) {
+            <b title="Unique">UQ</b>
+          }
+          @if (column.increment) {
+            <b title="Auto increment">AI</b>
+          }
+        </span>
         <button
           class="handle"
           type="button"

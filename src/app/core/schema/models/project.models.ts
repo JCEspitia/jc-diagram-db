@@ -2,7 +2,14 @@ import { DatabaseSchema, EntityId } from './schema.models';
 
 export interface DiagramLayout {
   tables: Record<EntityId, TableLayout>;
+  relationships?: Record<EntityId, RelationshipLayout>;
   viewport: ViewportState;
+}
+
+export interface RelationshipLayout {
+  routeX?: number;
+  sourceSide?: 'left' | 'right';
+  targetSide?: 'left' | 'right';
 }
 
 export interface TableLayout {

@@ -11,7 +11,7 @@ import {
 import {
   columnAnchor,
   fitToScreen,
-  relationshipPath,
+  orthogonalRelationshipPath,
   screenToWorld,
   tableLayout,
   zoomAtPoint,
@@ -20,6 +20,7 @@ import { DiagramOperation } from '../../../core/diagram/operations/diagram.opera
 import {
   DatabaseSchema,
   DiagramLayout,
+  RelationshipLayout,
   RelationshipSchema,
   TableLayout,
   ViewportState,
@@ -29,6 +30,12 @@ import { TableNode } from '../table-node/table-node';
 interface RenderedRelationship {
   relationship: RelationshipSchema;
   path: string;
+  routeX: number;
+  handleY: number;
+  sourceCardinality: 'one' | 'many';
+  targetCardinality: 'one' | 'many';
+  connected: boolean;
+  flow: 'forward' | 'reverse' | null;
 }
 
 interface RelationshipEndpoint {
@@ -77,6 +84,12 @@ export class DiagramCanvas {
         pointerId: number;
         source: RelationshipEndpoint;
       }
+    | {
+        kind: 'route';
+        pointerId: number;
+        relationshipId: string;
+        from?: RelationshipLayout;
+      }
     | undefined;
   private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
   private readonly viewportPreview = signal<ViewportState | null>(null);
@@ -85,6 +98,7 @@ export class DiagramCanvas {
     source: { x: number; y: number };
     cursor: { x: number; y: number };
   } | null>(null);
+  private readonly routePreview = signal<{ relationshipId: string; routeX: number } | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
   protected readonly transform = computed(() => {
@@ -111,13 +125,42 @@ export class DiagramCanvas {
           ? preview.layout
           : tableLayout(this.layout(), targetTable.id);
       const sourceOnLeft = sourceLayout.x > targetLayout.x;
+      const routeLayout = this.layout().relationships?.[relationship.id];
+      const source = columnAnchor(
+        sourceLayout,
+        sourceIndex,
+        routeLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right'),
+      );
+      const target = columnAnchor(
+        targetLayout,
+        targetIndex,
+        routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left'),
+      );
+      const routePreview = this.routePreview();
+      const routeX =
+        routePreview?.relationshipId === relationship.id
+          ? routePreview.routeX
+          : (routeLayout?.routeX ?? (source.x + target.x) / 2);
+      const selectedTableId = this.selectedTableId();
       return [
         {
           relationship,
-          path: relationshipPath(
-            columnAnchor(sourceLayout, sourceIndex, sourceOnLeft ? 'left' : 'right'),
-            columnAnchor(targetLayout, targetIndex, sourceOnLeft ? 'right' : 'left'),
-          ),
+          path: orthogonalRelationshipPath(source, target, routeX),
+          routeX,
+          handleY: (source.y + target.y) / 2,
+          sourceCardinality: relationship.type === 'many-to-one' ? 'many' : 'one',
+          targetCardinality: relationship.type === 'one-to-many' ? 'many' : 'one',
+          connected:
+            !selectedTableId ||
+            relationship.sourceTableId === selectedTableId ||
+            relationship.targetTableId === selectedTableId,
+          flow: !selectedTableId
+            ? null
+            : relationship.sourceTableId === selectedTableId
+              ? 'forward'
+              : relationship.targetTableId === selectedTableId
+                ? 'reverse'
+                : null,
         },
       ];
     }),
@@ -125,7 +168,7 @@ export class DiagramCanvas {
 
   protected readonly temporaryPath = computed(() => {
     const temporary = this.temporaryRelationship();
-    return temporary ? relationshipPath(temporary.source, temporary.cursor) : null;
+    return temporary ? orthogonalRelationshipPath(temporary.source, temporary.cursor) : null;
   });
 
   protected tablePosition(tableId: string) {
@@ -206,7 +249,7 @@ export class DiagramCanvas {
         x: interaction.from.x + deltaX,
         y: interaction.from.y + deltaY,
       });
-    } else {
+    } else if (interaction.kind === 'relationship') {
       const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
       const cursor = screenToWorld(
         { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
@@ -217,6 +260,13 @@ export class DiagramCanvas {
       this.relationshipTarget.set(
         this.endpointAt(event.clientX, event.clientY, interaction.source),
       );
+    } else {
+      const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
+      const cursor = screenToWorld(
+        { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
+        this.layout().viewport,
+      );
+      this.routePreview.set({ relationshipId: interaction.relationshipId, routeX: cursor.x });
     }
   }
 
@@ -242,7 +292,7 @@ export class DiagramCanvas {
           to: preview,
         });
       this.viewportPreview.set(null);
-    } else {
+    } else if (interaction.kind === 'relationship') {
       const target = this.relationshipTarget();
       if (target) {
         this.relationshipCreated.emit({
@@ -253,6 +303,17 @@ export class DiagramCanvas {
         });
       }
       this.clearTemporaryRelationship();
+    } else {
+      const preview = this.routePreview();
+      if (preview) {
+        this.diagramOperation.emit({
+          type: 'CHANGE_RELATIONSHIP_ROUTE',
+          relationshipId: interaction.relationshipId,
+          from: interaction.from,
+          to: { ...interaction.from, routeX: preview.routeX },
+        });
+      }
+      this.routePreview.set(null);
     }
     this.interaction = undefined;
   }
@@ -261,6 +322,7 @@ export class DiagramCanvas {
     if (this.interaction?.pointerId !== event.pointerId) return;
     this.tablePreview.set(null);
     this.viewportPreview.set(null);
+    this.routePreview.set(null);
     this.clearTemporaryRelationship();
     this.interaction = undefined;
   }
@@ -282,6 +344,20 @@ export class DiagramCanvas {
   protected selectRelationship(event: PointerEvent, relationshipId: string): void {
     event.stopPropagation();
     this.relationshipSelected.emit(relationshipId);
+  }
+
+  protected startRouteDrag(event: PointerEvent, relationshipId: string): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.relationshipSelected.emit(relationshipId);
+    this.interaction = {
+      kind: 'route',
+      pointerId: event.pointerId,
+      relationshipId,
+      from: this.layout().relationships?.[relationshipId],
+    };
+    (event.target as Element).setPointerCapture(event.pointerId);
   }
 
   fitDiagram(): void {
