@@ -23,6 +23,9 @@ export class App {
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
   protected readonly relationshipMode = signal(false);
+  protected readonly editorTheme = signal<'dark' | 'light'>('dark');
+  protected readonly dbmlPanelWidth = signal(340);
+  private panelResize?: { startX: number; startWidth: number };
 
   constructor() {
     this.store.selectTable(this.store.schema().tables[0]!.id);
@@ -57,6 +60,12 @@ export class App {
 
   protected fitDiagram(): void {
     this.canvas()?.fitDiagram();
+  }
+
+  protected startPanelResize(event: PointerEvent): void {
+    event.preventDefault();
+    this.panelResize = { startX: event.clientX, startWidth: this.dbmlPanelWidth() };
+    (event.currentTarget as Element).setPointerCapture(event.pointerId);
   }
 
   protected endpointLabel(relationship: RelationshipSchema, side: 'source' | 'target'): string {
@@ -113,6 +122,18 @@ export class App {
     } else if (!editing && event.key === 'Escape') {
       this.store.clearSelection();
     }
+  }
+
+  @HostListener('document:pointermove', ['$event'])
+  protected resizePanel(event: PointerEvent): void {
+    if (!this.panelResize) return;
+    const width = this.panelResize.startWidth + event.clientX - this.panelResize.startX;
+    this.dbmlPanelWidth.set(Math.min(600, Math.max(260, width)));
+  }
+
+  @HostListener('document:pointerup')
+  protected stopPanelResize(): void {
+    this.panelResize = undefined;
   }
 }
 

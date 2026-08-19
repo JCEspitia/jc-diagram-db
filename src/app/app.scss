@@ -104,13 +104,32 @@ button {
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: 340px minmax(320px, 1fr) 270px;
+  grid-template-columns: var(--dbml-width, 340px) 5px minmax(320px, 1fr) 270px;
 }
 .workspace.dbml-collapsed {
   grid-template-columns: minmax(320px, 1fr) 270px;
 }
 .workspace.dbml-collapsed .dbml-panel {
   display: none;
+}
+.workspace.dbml-collapsed .dbml-resizer {
+  display: none;
+}
+.dbml-resizer {
+  position: relative;
+  z-index: 5;
+  cursor: col-resize;
+  background: #111827;
+  touch-action: none;
+}
+.dbml-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: #29344a;
+}
+.dbml-resizer:hover::after {
+  background: #7767e7;
 }
 .dbml-panel,
 .inspector {
@@ -410,7 +429,7 @@ app-diagram-canvas {
 }
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: 300px minmax(320px, 1fr);
+    grid-template-columns: 300px 5px minmax(320px, 1fr);
   }
   .inspector {
     display: none;
@@ -421,6 +440,9 @@ app-diagram-canvas {
     grid-template-columns: 1fr;
   }
   .dbml-panel {
+    display: none;
+  }
+  .dbml-resizer {
     display: none;
   }
   .saved {

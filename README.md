@@ -37,6 +37,8 @@ visuales son representaciones independientes.
 - Auto layout en cuadrícula, panel DBML colapsable e IDs de índices/enums reconciliados.
 - Creación visual de relaciones con handles, curva temporal y destino resaltado.
 - Inspector de relaciones con cardinalidad y acciones `ON DELETE` / `ON UPDATE`.
+- Panel DBML redimensionable y Monaco con temas claro/oscuro.
+- Actualizaciones externas de Monaco conservando su pila de undo.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

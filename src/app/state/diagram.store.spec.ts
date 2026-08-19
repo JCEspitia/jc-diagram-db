@@ -36,6 +36,20 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.dbmlErrors()).toEqual([]);
   });
 
+  it('adds and removes layout entries as DBML changes table membership', () => {
+    const store = new DiagramStore();
+    const users = store.schema().tables.find(({ name }) => name === 'users')!;
+    store.setDbml(`${store.dbml()}\n\nTable audit_log {\n  id uuid [pk]\n}`);
+    vi.advanceTimersByTime(350);
+    const auditLog = store.schema().tables.find(({ name }) => name === 'audit_log')!;
+    expect(store.layout().tables[auditLog.id]).toBeDefined();
+
+    store.setDbml('Table posts {\n  id uuid [pk]\n}');
+    vi.advanceTimersByTime(350);
+    expect(store.layout().tables[users.id]).toBeUndefined();
+    expect(Object.keys(store.layout().tables)).toHaveLength(1);
+  });
+
   it('regenerates DBML after a visual schema operation', () => {
     const store = new DiagramStore();
     const users = store.schema().tables.find(({ name }) => name === 'users')!;

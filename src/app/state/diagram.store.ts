@@ -90,6 +90,7 @@ export class DiagramStore {
       this.project.update((project) => ({
         ...project,
         schema: reconciled,
+        layout: synchronizeLayout(project.layout, reconciled),
         updatedAt: new Date().toISOString(),
       }));
       this.clearInvalidSelection();

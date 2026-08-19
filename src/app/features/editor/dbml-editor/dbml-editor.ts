@@ -31,6 +31,7 @@ type MonacoEditor = import('monaco-editor').editor.IStandaloneCodeEditor;
 export class DbmlEditor implements AfterViewInit, OnDestroy {
   readonly value = input.required<string>();
   readonly errors = input<DbmlParseError[]>([]);
+  readonly theme = input<'dark' | 'light'>('dark');
   readonly valueChange = output<string>();
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   private monaco?: MonacoApi;
@@ -42,6 +43,7 @@ export class DbmlEditor implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => this.syncValue(this.value()));
     effect(() => this.syncMarkers(this.errors()));
+    effect(() => this.syncTheme(this.theme()));
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -55,7 +57,7 @@ export class DbmlEditor implements AfterViewInit, OnDestroy {
     const editor = monaco.editor.create(this.host().nativeElement, {
       value: this.value(),
       language: 'dbml',
-      theme: 'diagramdb-dark',
+      theme: this.theme() === 'dark' ? 'diagramdb-dark' : 'diagramdb-light',
       automaticLayout: false,
       fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
       fontSize: 12.5,
@@ -112,8 +114,21 @@ export class DbmlEditor implements AfterViewInit, OnDestroy {
   private syncValue(value: string): void {
     if (this.editor && this.editor.getValue() !== value) {
       this.applyingExternalValue = true;
-      this.editor.setValue(value);
+      const model = this.editor.getModel();
+      if (model) {
+        this.editor.pushUndoStop();
+        this.editor.executeEdits('diagramdb-sync', [
+          { range: model.getFullModelRange(), text: value, forceMoveMarkers: true },
+        ]);
+        this.editor.pushUndoStop();
+      }
       this.applyingExternalValue = false;
+    }
+  }
+
+  private syncTheme(theme: 'dark' | 'light'): void {
+    if (this.monaco) {
+      this.monaco.editor.setTheme(theme === 'dark' ? 'diagramdb-dark' : 'diagramdb-light');
     }
   }
 
@@ -277,6 +292,29 @@ function registerDiagramDbTheme(monaco: MonacoApi): void {
       'scrollbarSlider.background': '#47546D55',
       'scrollbarSlider.hoverBackground': '#59678088',
       'scrollbarSlider.activeBackground': '#71809AAA',
+    },
+  });
+  monaco.editor.defineTheme('diagramdb-light', {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '7A8495', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '6455C9', fontStyle: 'bold' },
+      { token: 'attribute.name', foreground: '9A681A' },
+      { token: 'string', foreground: '287A5D' },
+      { token: 'number', foreground: 'B34F58' },
+      { token: 'operator', foreground: '596579' },
+    ],
+    colors: {
+      'editor.background': '#F7F8FB',
+      'editor.foreground': '#253047',
+      'editorCursor.foreground': '#6455C9',
+      'editorLineNumber.foreground': '#A0A9B8',
+      'editorLineNumber.activeForeground': '#536078',
+      'editor.lineHighlightBackground': '#EEF0F6',
+      'editor.selectionBackground': '#CFC9F2AA',
+      'editorIndentGuide.background1': '#DDE1E9',
+      'editorError.foreground': '#C84452',
     },
   });
 }

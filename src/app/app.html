@@ -7,6 +7,13 @@
     <span class="project-name">Ecommerce</span>
     <span class="saved">Browser session</span>
     <nav aria-label="Project actions">
+      <button
+        type="button"
+        aria-label="Toggle editor theme"
+        (click)="editorTheme.update((theme) => (theme === 'dark' ? 'light' : 'dark'))"
+      >
+        {{ editorTheme() === 'dark' ? '☀' : '☾' }}
+      </button>
       <button type="button" aria-label="Undo" [disabled]="!store.canUndo()" (click)="store.undo()">
         ↶</button
       ><button type="button" aria-label="Redo" [disabled]="!store.canRedo()" (click)="store.redo()">
@@ -17,7 +24,11 @@
       </button>
     </nav>
   </header>
-  <div class="workspace" [class.dbml-collapsed]="dbmlCollapsed()">
+  <div
+    class="workspace"
+    [class.dbml-collapsed]="dbmlCollapsed()"
+    [style.--dbml-width.px]="dbmlPanelWidth()"
+  >
     <aside class="dbml-panel">
       <div class="panel-heading">
         <span>DBML</span
@@ -28,6 +39,7 @@
       <app-dbml-editor
         [value]="store.dbml()"
         [errors]="store.dbmlErrors()"
+        [theme]="editorTheme()"
         (valueChange)="store.setDbml($event)"
       />
       <footer [class.invalid]="store.dbmlErrors().length > 0">
@@ -40,6 +52,13 @@
         <span>Debounce 350ms</span>
       </footer>
     </aside>
+    <div
+      class="dbml-resizer"
+      role="separator"
+      aria-label="Resize DBML panel"
+      aria-orientation="vertical"
+      (pointerdown)="startPanelResize($event)"
+    ></div>
     <main>
       <div class="toolbar">
         @if (dbmlCollapsed()) {
