@@ -4,6 +4,7 @@ export type SchemaValidationCode =
   | 'DUPLICATE_ID'
   | 'DUPLICATE_TABLE_NAME'
   | 'DUPLICATE_COLUMN_NAME'
+  | 'DUPLICATE_ENUM_NAME'
   | 'INVALID_INDEX_COLUMN'
   | 'INVALID_RELATIONSHIP_ENDPOINT';
 
@@ -18,7 +19,18 @@ export function validateSchema(schema: DatabaseSchema): SchemaValidationError[] 
   const ids = new Set<EntityId>();
 
   registerId(schema.id, 'schema', ids, errors);
-  for (const enumSchema of schema.enums) registerId(enumSchema.id, 'enum', ids, errors);
+  const enumNames = new Set<string>();
+  for (const enumSchema of schema.enums) {
+    registerId(enumSchema.id, 'enum', ids, errors);
+    if (enumNames.has(enumSchema.name)) {
+      errors.push({
+        code: 'DUPLICATE_ENUM_NAME',
+        message: `Duplicate enum name: ${enumSchema.name}`,
+        entityId: enumSchema.id,
+      });
+    }
+    enumNames.add(enumSchema.name);
+  }
 
   const tableNames = new Set<string>();
   for (const table of schema.tables) {

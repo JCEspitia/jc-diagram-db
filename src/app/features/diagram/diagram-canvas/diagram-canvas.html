@@ -1,4 +1,5 @@
 <section
+  #viewport
   class="viewport"
   aria-label="Database diagram"
   (pointerdown)="startPan($event)"
@@ -11,7 +12,16 @@
     <svg class="relationships" width="1600" height="1000" aria-hidden="true">
       @for (edge of edges(); track edge.relationship.id) {
         <path class="edge-shadow" [attr.d]="edge.path" />
-        <path class="edge" [attr.d]="edge.path" />
+        <path
+          class="edge-hit-area"
+          [attr.d]="edge.path"
+          (pointerdown)="selectRelationship($event, edge.relationship.id)"
+        />
+        <path
+          class="edge"
+          [class.selected]="selectedRelationshipId() === edge.relationship.id"
+          [attr.d]="edge.path"
+        />
       }
     </svg>
 
@@ -21,7 +31,9 @@
         [layout]="tablePosition(table.id)"
         [relationships]="schema().relationships"
         [selected]="selectedTableId() === table.id"
+        [selectedColumnId]="selectedColumnId()"
         (tableSelected)="tableSelected.emit($event)"
+        (columnSelected)="columnSelected.emit($event)"
         (dragStarted)="startTableDrag($event)"
       />
     }

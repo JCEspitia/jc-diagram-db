@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   columnAnchor,
+  fitToScreen,
   relationshipPath,
   screenToWorld,
   worldToScreen,
@@ -29,5 +30,26 @@ describe('diagram geometry', () => {
     const before = { x: 40, y: 20, zoom: 1 };
     const after = zoomAtPoint(before, cursor, 1.5);
     expect(worldToScreen(screenToWorld(cursor, before), after)).toEqual(cursor);
+  });
+
+  it('fits all tables inside the viewport', () => {
+    const schema = {
+      id: 'schema',
+      name: 'test',
+      relationships: [],
+      enums: [],
+      tables: [
+        { id: 'a', name: 'a', columns: [], indexes: [] },
+        { id: 'b', name: 'b', columns: [], indexes: [] },
+      ],
+    };
+    const layout = {
+      tables: { a: { x: 0, y: 0 }, b: { x: 600, y: 300 } },
+      viewport: { x: 0, y: 0, zoom: 1 },
+    };
+    const viewport = fitToScreen(schema, layout, { width: 1000, height: 600 });
+    expect(viewport.zoom).toBeLessThanOrEqual(1.25);
+    expect(viewport.x).toBeGreaterThanOrEqual(0);
+    expect(viewport.y).toBeGreaterThanOrEqual(0);
   });
 });

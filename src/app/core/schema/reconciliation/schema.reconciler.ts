@@ -24,6 +24,14 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
       const columns = reconcileColumns(existing, parsedTable, columnIdMap);
       const indexes = parsedTable.indexes.map((index) => ({
         ...index,
+        id:
+          existing.indexes.find((candidate) =>
+            sameIndex(
+              candidate,
+              index.columns.map((columnId) => columnIdMap.get(columnId) ?? columnId),
+              index,
+            ),
+          )?.id ?? index.id,
         columns: index.columns.map((columnId) => columnIdMap.get(columnId) ?? columnId),
       }));
       return { ...parsedTable, id: existing.id, columns, indexes };
@@ -44,11 +52,27 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
       tables,
       relationships,
       enums: parsed.enums.map((parsedEnum) => {
-        const existing = current.enums.find(({ name }) => name === parsedEnum.name);
+        const existing = current.enums.find(
+          ({ name, values }) =>
+            name === parsedEnum.name || values.join('|') === parsedEnum.values.join('|'),
+        );
         return existing ? { ...parsedEnum, id: existing.id } : parsedEnum;
       }),
     };
   }
+}
+
+function sameIndex(
+  existing: TableSchema['indexes'][number],
+  remappedColumns: string[],
+  parsed: TableSchema['indexes'][number],
+): boolean {
+  return (
+    existing.columns.join('|') === remappedColumns.join('|') &&
+    Boolean(existing.unique) === Boolean(parsed.unique) &&
+    Boolean(existing.primaryKey) === Boolean(parsed.primaryKey) &&
+    existing.name === parsed.name
+  );
 }
 
 function findTableMatch(

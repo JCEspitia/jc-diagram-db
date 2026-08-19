@@ -80,4 +80,31 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.dbml()).not.toContain('user_id uuid');
     expect(store.dbml()).not.toContain('Ref:');
   });
+
+  it('undoes and redoes one complete table movement without changing DBML', () => {
+    const store = new DiagramStore();
+    const table = store.schema().tables[0]!;
+    const from = store.layout().tables[table.id]!;
+    const dbml = store.dbml();
+    store.applyDiagramOperation({
+      type: 'MOVE_TABLE',
+      tableId: table.id,
+      from,
+      to: { ...from, x: from.x + 100 },
+    });
+
+    expect(store.canUndo()).toBe(true);
+    expect(store.dbml()).toBe(dbml);
+    store.undo();
+    expect(store.layout().tables[table.id]).toEqual(from);
+    store.redo();
+    expect(store.layout().tables[table.id]?.x).toBe(from.x + 100);
+  });
+
+  it('rejects duplicate names from visual edits', () => {
+    const store = new DiagramStore();
+    const posts = store.schema().tables.find(({ name }) => name === 'posts')!;
+    store.renameTable(posts.id, 'users');
+    expect(store.schema().tables.find(({ id }) => id === posts.id)?.name).toBe('posts');
+  });
 });

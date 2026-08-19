@@ -17,7 +17,9 @@ export class TableNode {
   readonly layout = input.required<TableLayout>();
   readonly relationships = input<RelationshipSchema[]>([]);
   readonly selected = input(false);
+  readonly selectedColumnId = input<string>();
   readonly tableSelected = output<string>();
+  readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly dragStarted = output<{ tableId: string; event: PointerEvent }>();
 
   protected readonly foreignKeyColumnIds = computed(() => {
@@ -38,5 +40,10 @@ export class TableNode {
     event.preventDefault();
     event.stopPropagation();
     this.dragStarted.emit({ tableId: this.table().id, event });
+  }
+
+  protected selectColumn(event: PointerEvent, columnId: string): void {
+    event.stopPropagation();
+    this.columnSelected.emit({ tableId: this.table().id, columnId });
   }
 }

@@ -71,6 +71,9 @@ header button {
 .column-row:last-child {
   border-bottom: 0;
 }
+.column-row.selected {
+  background: rgb(124 111 242 / 14%);
+}
 .constraint {
   color: #72809a;
   font-size: 9px;

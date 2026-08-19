@@ -99,6 +99,21 @@ describe('Schema reconciliation', () => {
     expect(customers.columns[0]?.id).toBe(previousUsers.columns[0]?.id);
     expect(reconciled.relationships[0]?.id).toBe(current.relationships[0]?.id);
   });
+
+  it('preserves composite index IDs during reconciliation', () => {
+    const parser = new SimpleDbmlParser();
+    const source = `Table events {
+  id uuid [pk]
+  code varchar
+  indexes {
+    (id, code) [unique]
+  }
+}`;
+    const current = parser.parse(source).schema!;
+    const parsed = parser.parse(source.replace('code varchar', 'code varchar [not null]')).schema!;
+    const reconciled = new DefaultSchemaReconciler().reconcile(current, parsed);
+    expect(reconciled.tables[0]?.indexes[0]?.id).toBe(current.tables[0]?.indexes[0]?.id);
+  });
 });
 
 function normalize(schema: ReturnType<SimpleDbmlParser['parse']>['schema']): unknown {

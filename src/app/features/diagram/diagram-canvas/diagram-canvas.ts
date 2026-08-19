@@ -1,6 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import {
   columnAnchor,
+  fitToScreen,
   relationshipPath,
   tableLayout,
   zoomAtPoint,
@@ -31,8 +41,12 @@ export class DiagramCanvas {
   readonly schema = input.required<DatabaseSchema>();
   readonly layout = input.required<DiagramLayout>();
   readonly selectedTableId = input<string>();
+  readonly selectedColumnId = input<string>();
+  readonly selectedRelationshipId = input<string>();
   readonly diagramOperation = output<DiagramOperation>();
   readonly tableSelected = output<string>();
+  readonly columnSelected = output<{ tableId: string; columnId: string }>();
+  readonly relationshipSelected = output<string>();
   readonly selectionCleared = output<void>();
 
   private interaction:
@@ -48,6 +62,7 @@ export class DiagramCanvas {
     | undefined;
   private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
   private readonly viewportPreview = signal<ViewportState | null>(null);
+  private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
   protected readonly transform = computed(() => {
     const viewport = this.viewportPreview() ?? this.layout().viewport;
@@ -180,5 +195,20 @@ export class DiagramCanvas {
       viewport.zoom * factor,
     );
     this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from: viewport, to });
+  }
+
+  protected selectRelationship(event: PointerEvent, relationshipId: string): void {
+    event.stopPropagation();
+    this.relationshipSelected.emit(relationshipId);
+  }
+
+  fitDiagram(): void {
+    const element = this.viewportElement().nativeElement;
+    const from = this.layout().viewport;
+    const to = fitToScreen(this.schema(), this.layout(), {
+      width: element.clientWidth,
+      height: element.clientHeight,
+    });
+    this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from, to });
   }
 }

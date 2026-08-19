@@ -32,6 +32,9 @@ visuales son representaciones independientes.
 - Referencias inline (`ref: > table.column`) e índices compuestos `indexes { ... }`.
 - Creación y eliminación visual de tablas y columnas desde toolbar e inspector.
 - Edición visual de nombres, tipos, PK, nulabilidad y unicidad con regeneración DBML.
+- Undo/redo de operaciones significativas, shortcuts y fit-to-screen real.
+- Selección y eliminación contextual de tablas, columnas y relaciones.
+- Auto layout en cuadrícula, panel DBML colapsable e IDs de índices/enums reconciliados.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

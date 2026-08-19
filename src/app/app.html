@@ -4,19 +4,26 @@
       ><span class="brand-mark">D</span><span>Diagram<span>DB</span></span></a
     >
     <span class="divider"></span>
-    <button class="project-name" type="button">Ecommerce <span>⌄</span></button>
-    <span class="saved"><i></i> Saved locally</span>
+    <span class="project-name">Ecommerce</span>
+    <span class="saved">Browser session</span>
     <nav aria-label="Project actions">
-      <button type="button" aria-label="Undo">↶</button
-      ><button type="button" aria-label="Redo" disabled>↷</button>
-      <button class="export" type="button">Export <span>⌄</span></button
-      ><button type="button" aria-label="More options">•••</button>
+      <button type="button" aria-label="Undo" [disabled]="!store.canUndo()" (click)="store.undo()">
+        ↶</button
+      ><button type="button" aria-label="Redo" [disabled]="!store.canRedo()" (click)="store.redo()">
+        ↷
+      </button>
+      <button class="export" type="button" disabled title="Available with import/export">
+        Export
+      </button>
     </nav>
   </header>
-  <div class="workspace">
+  <div class="workspace" [class.dbml-collapsed]="dbmlCollapsed()">
     <aside class="dbml-panel">
       <div class="panel-heading">
-        <span>DBML</span><button type="button" aria-label="Collapse DBML panel">‹</button>
+        <span>DBML</span
+        ><button type="button" aria-label="Collapse DBML panel" (click)="dbmlCollapsed.set(true)">
+          ‹
+        </button>
       </div>
       <app-dbml-editor
         [value]="store.dbml()"
@@ -35,30 +42,56 @@
     </aside>
     <main>
       <div class="toolbar">
+        @if (dbmlCollapsed()) {
+          <button type="button" (click)="dbmlCollapsed.set(false)">DBML ›</button>
+        }
         <button class="primary" type="button" (click)="store.createTable()"><b>＋</b> Table</button
-        ><span></span><button type="button">⌘ Auto layout</button
-        ><button type="button">⌗ Relation</button>
+        ><span></span
+        ><button type="button" (click)="store.autoLayout(); fitDiagram()">⌘ Auto layout</button
+        ><button type="button" disabled title="Visual relationship creation is the next stage">
+          ⌗ Relation
+        </button>
       </div>
       <app-diagram-canvas
         [schema]="store.schema()"
         [layout]="store.layout()"
         [selectedTableId]="store.selection()?.tableId"
+        [selectedColumnId]="store.selection()?.columnId"
+        [selectedRelationshipId]="store.selection()?.relationshipId"
         (diagramOperation)="store.applyDiagramOperation($event)"
         (tableSelected)="store.selectTable($event)"
+        (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
+        (relationshipSelected)="store.selectRelationship($event)"
         (selectionCleared)="store.clearSelection()"
       />
       <div class="zoom-controls">
         <button type="button" aria-label="Zoom out" (click)="store.zoomBy(0.8)">−</button
         ><span>{{ store.zoomPercent() }}%</span
         ><button type="button" aria-label="Zoom in" (click)="store.zoomBy(1.25)">＋</button
-        ><button type="button" aria-label="Reset viewport" (click)="store.resetViewport()">
-          ⌗
-        </button>
+        ><button type="button" aria-label="Fit diagram" (click)="fitDiagram()">⌗</button>
       </div>
     </main>
     <aside class="inspector">
-      <div class="panel-heading"><span>Inspector</span><button type="button">×</button></div>
-      @if (store.selectedTable(); as selectedTable) {
+      <div class="panel-heading">
+        <span>Inspector</span><button type="button" (click)="store.clearSelection()">×</button>
+      </div>
+      @if (store.selectedRelationship(); as relationship) {
+        <section class="relationship-inspector">
+          <label>RELATIONSHIP</label>
+          <div>
+            <span>From</span><strong>{{ endpointLabel(relationship, 'source') }}</strong>
+          </div>
+          <div>
+            <span>To</span><strong>{{ endpointLabel(relationship, 'target') }}</strong>
+          </div>
+          <div>
+            <span>Type</span><strong>{{ relationship.type }}</strong>
+          </div>
+        </section>
+        <button class="delete" type="button" (click)="store.deleteSelection()">
+          Delete relationship
+        </button>
+      } @else if (store.selectedTable(); as selectedTable) {
         <section>
           <label>TABLE NAME</label
           ><input
@@ -126,7 +159,7 @@
           Delete table
         </button>
       } @else {
-        <p class="empty-inspector">Select a table to inspect its columns.</p>
+        <p class="empty-inspector">Select a table, column, or relationship to inspect it.</p>
       }
     </aside>
   </div>

@@ -91,6 +91,10 @@ button {
 .topbar nav button:hover {
   background: #202a3e;
 }
+.topbar nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 .topbar nav .export {
   padding: 0 13px;
   border: 1px solid #38445d;
@@ -101,6 +105,12 @@ button {
   min-height: 0;
   display: grid;
   grid-template-columns: 340px minmax(320px, 1fr) 270px;
+}
+.workspace.dbml-collapsed {
+  grid-template-columns: minmax(320px, 1fr) 270px;
+}
+.workspace.dbml-collapsed .dbml-panel {
+  display: none;
 }
 .dbml-panel,
 .inspector {
@@ -220,6 +230,10 @@ main {
 .toolbar button:hover {
   border-color: #35425b;
   background: #1b2538;
+}
+.toolbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 .toolbar .primary {
   background: #7566e5;
@@ -359,6 +373,19 @@ app-diagram-canvas {
   color: #68768e;
   font-size: 11px;
   line-height: 1.5;
+}
+.relationship-inspector div {
+  display: grid;
+  gap: 4px;
+  margin-top: 15px;
+}
+.relationship-inspector div span {
+  color: #68768e;
+  font-size: 9px;
+}
+.relationship-inspector div strong {
+  color: #cbd4e3;
+  font: 11px monospace;
 }
 .statusbar {
   display: flex;

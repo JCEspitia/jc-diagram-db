@@ -30,7 +30,8 @@
   z-index: 1;
 }
 .edge,
-.edge-shadow {
+.edge-shadow,
+.edge-hit-area {
   fill: none;
   stroke-linecap: round;
 }
@@ -41,4 +42,15 @@
 .edge {
   stroke: #7c6ff2;
   stroke-width: 2;
+  pointer-events: none;
+}
+.edge.selected {
+  stroke: #c1b9ff;
+  stroke-width: 3;
+}
+.edge-hit-area {
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: pointer;
 }

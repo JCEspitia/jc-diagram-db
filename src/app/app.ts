@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { RelationshipSchema } from './core/schema';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore } from './state/diagram.store';
@@ -12,6 +20,8 @@ import { DiagramStore } from './state/diagram.store';
 })
 export class App {
   protected readonly store = inject(DiagramStore);
+  private readonly canvas = viewChild(DiagramCanvas);
+  protected readonly dbmlCollapsed = signal(false);
 
   constructor() {
     this.store.selectTable(this.store.schema().tables[0]!.id);
@@ -42,6 +52,35 @@ export class App {
 
   protected updateNotNull(tableId: string, columnId: string, event: Event): void {
     this.store.updateColumn(tableId, columnId, { nullable: !checkboxValue(event) });
+  }
+
+  protected fitDiagram(): void {
+    this.canvas()?.fitDiagram();
+  }
+
+  protected endpointLabel(relationship: RelationshipSchema, side: 'source' | 'target'): string {
+    const tableId = side === 'source' ? relationship.sourceTableId : relationship.targetTableId;
+    const columnId = side === 'source' ? relationship.sourceColumnId : relationship.targetColumnId;
+    const table = this.store.schema().tables.find(({ id }) => id === tableId);
+    return `${table?.name ?? 'Unknown'}.${table?.columns.find(({ id }) => id === columnId)?.name ?? 'unknown'}`;
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  protected handleShortcut(event: KeyboardEvent): void {
+    const target = event.target as Element | null;
+    const editing = Boolean(target?.closest('input, textarea, select, .monaco-editor'));
+    const modifier = event.ctrlKey || event.metaKey;
+    if (modifier && event.key === '0') {
+      event.preventDefault();
+      this.fitDiagram();
+    } else if (!editing && modifier && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      event.shiftKey ? this.store.redo() : this.store.undo();
+    } else if (!editing && event.key === 'Delete') {
+      this.store.deleteSelection();
+    } else if (!editing && event.key === 'Escape') {
+      this.store.clearSelection();
+    }
   }
 }
 

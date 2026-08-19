@@ -7,7 +7,11 @@
 
   <div class="columns">
     @for (column of table().columns; track column.id) {
-      <div class="column-row">
+      <div
+        class="column-row"
+        [class.selected]="selectedColumnId() === column.id"
+        (pointerdown)="selectColumn($event, column.id)"
+      >
         <span class="constraint" [class.primary-key]="column.primaryKey">
           @if (column.primaryKey) {
             ◆

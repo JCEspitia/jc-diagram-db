@@ -13,6 +13,7 @@ import {
   DiagramSelection,
   executeSchemaOperation,
   SchemaOperation,
+  validateSchema,
   ViewportState,
 } from '../core/schema';
 
@@ -35,6 +36,8 @@ export class DiagramStore {
   private readonly generator = new SimpleDbmlGenerator();
   private readonly reconciler = new DefaultSchemaReconciler();
   private parseTimer?: ReturnType<typeof setTimeout>;
+  private readonly undoStack = signal<DiagramProject[]>([]);
+  private readonly redoStack = signal<DiagramProject[]>([]);
   readonly project = signal<DiagramProject>(createExampleProject());
   readonly selection = signal<DiagramSelection | null>(null);
   readonly dbmlErrors = signal<DbmlParseError[]>([]);
@@ -43,18 +46,26 @@ export class DiagramStore {
   readonly layout = computed(() => this.project().layout);
   readonly dbml = computed(() => this.project().dbml);
   readonly zoomPercent = computed(() => Math.round(this.layout().viewport.zoom * 100));
+  readonly canUndo = computed(() => this.undoStack().length > 0);
+  readonly canRedo = computed(() => this.redoStack().length > 0);
   readonly selectedTable = computed(() => {
     const tableId = this.selection()?.tableId;
     return this.schema().tables.find(({ id }) => id === tableId) ?? null;
   });
+  readonly selectedRelationship = computed(() => {
+    const relationshipId = this.selection()?.relationshipId;
+    return this.schema().relationships.find(({ id }) => id === relationshipId) ?? null;
+  });
 
   applyDiagramOperation(operation: DiagramOperation): void {
     this.changeOrigin.set('canvas');
-    this.project.update((project) => ({
+    const project = this.project();
+    const next = {
       ...project,
       layout: executeDiagramOperation(project.layout, operation),
       updatedAt: new Date().toISOString(),
-    }));
+    };
+    this.commit(next, operation.type !== 'CHANGE_VIEWPORT');
   }
 
   setDbml(source: string): void {
@@ -69,9 +80,15 @@ export class DiagramStore {
       const result = this.parser.parse(source);
       this.dbmlErrors.set(result.errors);
       if (!result.schema) return;
+      const reconciled = this.reconciler.reconcile(this.project().schema, result.schema);
+      const validationErrors = validateSchema(reconciled);
+      if (validationErrors.length) {
+        this.dbmlErrors.set(validationErrors.map(({ message }) => ({ message })));
+        return;
+      }
       this.project.update((project) => ({
         ...project,
-        schema: this.reconciler.reconcile(project.schema, result.schema!),
+        schema: reconciled,
         updatedAt: new Date().toISOString(),
       }));
       this.clearInvalidSelection();
@@ -81,16 +98,20 @@ export class DiagramStore {
   applySchemaOperation(operation: SchemaOperation): void {
     clearTimeout(this.parseTimer);
     this.changeOrigin.set('canvas');
-    this.project.update((project) => {
-      const schema = executeSchemaOperation(project.schema, operation);
-      return {
+    const project = this.project();
+    const schema = executeSchemaOperation(project.schema, operation);
+    const errors = validateSchema(schema);
+    if (errors.length) throw new Error(errors.map(({ message }) => message).join('\n'));
+    this.commit(
+      {
         ...project,
         schema,
         layout: synchronizeLayout(project.layout, schema),
         dbml: this.generator.generate(schema),
         updatedAt: new Date().toISOString(),
-      };
-    });
+      },
+      true,
+    );
     this.dbmlErrors.set([]);
     this.clearInvalidSelection();
   }
@@ -117,6 +138,8 @@ export class DiagramStore {
   renameTable(tableId: string, name: string): void {
     const normalized = name.trim();
     if (!normalized) return;
+    if (this.schema().tables.some((table) => table.id !== tableId && table.name === normalized))
+      return;
     this.applySchemaOperation({ type: 'UPDATE_TABLE', tableId, changes: { name: normalized } });
   }
 
@@ -144,6 +167,13 @@ export class DiagramStore {
     columnId: string,
     changes: Extract<SchemaOperation, { type: 'UPDATE_COLUMN' }>['changes'],
   ): void {
+    if (
+      changes.name &&
+      this.schema()
+        .tables.find(({ id }) => id === tableId)
+        ?.columns.some(({ id, name }) => id !== columnId && name === changes.name)
+    )
+      return;
     this.applySchemaOperation({ type: 'UPDATE_COLUMN', tableId, columnId, changes });
   }
 
@@ -153,6 +183,14 @@ export class DiagramStore {
 
   selectTable(tableId: string): void {
     this.selection.set({ tableId });
+  }
+
+  selectColumn(tableId: string, columnId: string): void {
+    this.selection.set({ tableId, columnId });
+  }
+
+  selectRelationship(relationshipId: string): void {
+    this.selection.set({ relationshipId });
   }
 
   clearSelection(): void {
@@ -173,11 +211,79 @@ export class DiagramStore {
     this.setViewport({ x: 35, y: 20, zoom: 1 });
   }
 
+  autoLayout(): void {
+    const project = this.project();
+    const tables = Object.fromEntries(
+      project.schema.tables.map((table, index) => [
+        table.id,
+        {
+          ...project.layout.tables[table.id],
+          x: 80 + (index % 3) * 340,
+          y: 80 + Math.floor(index / 3) * 280,
+        },
+      ]),
+    );
+    this.commit(
+      {
+        ...project,
+        layout: { ...project.layout, tables },
+        updatedAt: new Date().toISOString(),
+      },
+      true,
+    );
+  }
+
+  deleteSelection(): void {
+    const selection = this.selection();
+    if (selection?.relationshipId) {
+      this.applySchemaOperation({
+        type: 'DELETE_RELATIONSHIP',
+        relationshipId: selection.relationshipId,
+      });
+    } else if (selection?.columnId && selection.tableId) {
+      this.deleteColumn(selection.tableId, selection.columnId);
+    } else if (selection?.tableId) {
+      this.deleteTable(selection.tableId);
+    }
+  }
+
+  undo(): void {
+    const previous = this.undoStack().at(-1);
+    if (!previous) return;
+    this.undoStack.update((stack) => stack.slice(0, -1));
+    this.redoStack.update((stack) => [...stack, this.project()]);
+    this.project.set(previous);
+    this.clearInvalidSelection();
+  }
+
+  redo(): void {
+    const next = this.redoStack().at(-1);
+    if (!next) return;
+    this.redoStack.update((stack) => stack.slice(0, -1));
+    this.undoStack.update((stack) => [...stack, this.project()]);
+    this.project.set(next);
+    this.clearInvalidSelection();
+  }
+
   private clearInvalidSelection(): void {
     const selection = this.selection();
-    if (selection?.tableId && !this.schema().tables.some(({ id }) => id === selection.tableId)) {
+    const table = this.schema().tables.find(({ id }) => id === selection?.tableId);
+    const invalid =
+      (selection?.tableId && !table) ||
+      (selection?.columnId && !table?.columns.some(({ id }) => id === selection.columnId)) ||
+      (selection?.relationshipId &&
+        !this.schema().relationships.some(({ id }) => id === selection.relationshipId));
+    if (invalid) {
       this.clearSelection();
     }
+  }
+
+  private commit(project: DiagramProject, recordHistory: boolean): void {
+    if (recordHistory) {
+      this.undoStack.update((stack) => [...stack.slice(-99), this.project()]);
+      this.redoStack.set([]);
+    }
+    this.project.set(project);
   }
 }
 

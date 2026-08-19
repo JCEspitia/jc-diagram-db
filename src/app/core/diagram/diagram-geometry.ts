@@ -1,4 +1,4 @@
-import { DiagramLayout, TableLayout, ViewportState } from '../schema';
+import { DatabaseSchema, DiagramLayout, TableLayout, ViewportState } from '../schema';
 
 export interface Point {
   x: number;
@@ -68,4 +68,48 @@ export function relationshipPath(source: Point, target: Point): string {
 
 export function tableLayout(layout: DiagramLayout, tableId: string): TableLayout {
   return layout.tables[tableId] ?? { x: 0, y: 0 };
+}
+
+export function fitToScreen(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  size: { width: number; height: number },
+  padding = 60,
+): ViewportState {
+  if (!schema.tables.length || size.width <= 0 || size.height <= 0) {
+    return { x: 0, y: 0, zoom: 1 };
+  }
+  const bounds = schema.tables.map((table) => {
+    const position = tableLayout(layout, table.id);
+    return {
+      left: position.x,
+      top: position.y,
+      right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
+      bottom:
+        position.y +
+        DEFAULT_TABLE_METRICS.headerHeight +
+        table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+    };
+  });
+  const left = Math.min(...bounds.map((bound) => bound.left));
+  const top = Math.min(...bounds.map((bound) => bound.top));
+  const right = Math.max(...bounds.map((bound) => bound.right));
+  const bottom = Math.max(...bounds.map((bound) => bound.bottom));
+  const contentWidth = Math.max(1, right - left);
+  const contentHeight = Math.max(1, bottom - top);
+  const zoom = Math.min(
+    2,
+    Math.max(
+      0.25,
+      Math.min(
+        (size.width - padding * 2) / contentWidth,
+        (size.height - padding * 2) / contentHeight,
+      ),
+    ),
+  );
+  return {
+    x: (size.width - contentWidth * zoom) / 2 - left * zoom,
+    y: (size.height - contentHeight * zoom) / 2 - top * zoom,
+    zoom,
+  };
 }
