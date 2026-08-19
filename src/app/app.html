@@ -18,15 +18,20 @@
       <div class="panel-heading">
         <span>DBML</span><button type="button" aria-label="Collapse DBML panel">‹</button>
       </div>
-      <div class="code" aria-label="DBML source">
-        @for (line of store.dbml().split('\n'); track $index) {
-          <div>
-            <span>{{ $index + 1 }}</span
-            ><code>{{ line || ' ' }}</code>
-          </div>
+      <app-dbml-editor
+        [value]="store.dbml()"
+        [errors]="store.dbmlErrors()"
+        (valueChange)="store.setDbml($event)"
+      />
+      <footer [class.invalid]="store.dbmlErrors().length > 0">
+        <i></i>
+        @if (store.dbmlErrors().length) {
+          {{ store.dbmlErrors().length }} DBML error(s)
+        } @else {
+          Valid DBML
         }
-      </div>
-      <footer><i></i> Valid DBML <span>Ln 12, Col 31</span></footer>
+        <span>Debounce 350ms</span>
+      </footer>
     </aside>
     <main>
       <div class="toolbar">

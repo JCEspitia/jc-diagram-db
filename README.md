@@ -24,6 +24,12 @@ visuales son representaciones independientes.
 - Geometría y transformaciones de coordenadas independientes de los componentes.
 - Store principal con Angular Signals y operaciones de layout inmutables.
 - Selección, drag de tablas, pan y zoom centrado en el cursor.
+- Monaco Editor local con resaltado DBML, diagnostics y parseo con debounce.
+- Tema Monaco propio, compacto y alineado visualmente con DiagramDB.
+- CSS base de Monaco cargado globalmente para posicionar correctamente su área de entrada.
+- Autocompletado DBML, snippets, autoindent y cierre automático de pares.
+- Sincronización DBML hacia el modelo conservando el último esquema válido ante errores.
+- Referencias inline (`ref: > table.column`) e índices compuestos `indexes { ... }`.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

@@ -1,9 +1,16 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { SimpleDbmlParser } from '../core/dbml';
+import { DbmlParseError, SimpleDbmlGenerator, SimpleDbmlParser } from '../core/dbml';
 import { zoomAtPoint } from '../core/diagram/diagram-geometry';
 import { executeDiagramOperation } from '../core/diagram/operations/diagram-operation.executor';
 import { DiagramOperation } from '../core/diagram/operations/diagram.operations';
-import { DiagramProject, DiagramSelection, ViewportState } from '../core/schema';
+import {
+  DefaultSchemaReconciler,
+  DiagramProject,
+  DiagramSelection,
+  executeSchemaOperation,
+  SchemaOperation,
+  ViewportState,
+} from '../core/schema';
 
 export const EXAMPLE_DBML = `Table users {
   id uuid [pk]
@@ -20,8 +27,14 @@ Ref: posts.user_id > users.id`;
 
 @Injectable({ providedIn: 'root' })
 export class DiagramStore {
+  private readonly parser = new SimpleDbmlParser();
+  private readonly generator = new SimpleDbmlGenerator();
+  private readonly reconciler = new DefaultSchemaReconciler();
+  private parseTimer?: ReturnType<typeof setTimeout>;
   readonly project = signal<DiagramProject>(createExampleProject());
   readonly selection = signal<DiagramSelection | null>(null);
+  readonly dbmlErrors = signal<DbmlParseError[]>([]);
+  readonly changeOrigin = signal<'editor' | 'canvas' | 'import' | 'system'>('system');
   readonly schema = computed(() => this.project().schema);
   readonly layout = computed(() => this.project().layout);
   readonly dbml = computed(() => this.project().dbml);
@@ -32,11 +45,49 @@ export class DiagramStore {
   });
 
   applyDiagramOperation(operation: DiagramOperation): void {
+    this.changeOrigin.set('canvas');
     this.project.update((project) => ({
       ...project,
       layout: executeDiagramOperation(project.layout, operation),
       updatedAt: new Date().toISOString(),
     }));
+  }
+
+  setDbml(source: string): void {
+    this.changeOrigin.set('editor');
+    this.project.update((project) => ({
+      ...project,
+      dbml: source,
+      updatedAt: new Date().toISOString(),
+    }));
+    clearTimeout(this.parseTimer);
+    this.parseTimer = setTimeout(() => {
+      const result = this.parser.parse(source);
+      this.dbmlErrors.set(result.errors);
+      if (!result.schema) return;
+      this.project.update((project) => ({
+        ...project,
+        schema: this.reconciler.reconcile(project.schema, result.schema!),
+        updatedAt: new Date().toISOString(),
+      }));
+      this.clearInvalidSelection();
+    }, 350);
+  }
+
+  applySchemaOperation(operation: SchemaOperation): void {
+    clearTimeout(this.parseTimer);
+    this.changeOrigin.set('canvas');
+    this.project.update((project) => {
+      const schema = executeSchemaOperation(project.schema, operation);
+      return {
+        ...project,
+        schema,
+        dbml: this.generator.generate(schema),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    this.dbmlErrors.set([]);
+    this.clearInvalidSelection();
   }
 
   selectTable(tableId: string): void {
@@ -59,6 +110,13 @@ export class DiagramStore {
 
   resetViewport(): void {
     this.setViewport({ x: 35, y: 20, zoom: 1 });
+  }
+
+  private clearInvalidSelection(): void {
+    const selection = this.selection();
+    if (selection?.tableId && !this.schema().tables.some(({ id }) => id === selection.tableId)) {
+      this.clearSelection();
+    }
   }
 }
 

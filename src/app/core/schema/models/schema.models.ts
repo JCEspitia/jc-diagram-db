@@ -52,5 +52,6 @@ export interface IndexSchema {
   id: EntityId;
   columns: EntityId[];
   unique?: boolean;
+  primaryKey?: boolean;
   name?: string;
 }

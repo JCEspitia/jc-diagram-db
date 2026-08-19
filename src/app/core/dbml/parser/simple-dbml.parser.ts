@@ -9,7 +9,9 @@ import {
 } from '../../schema';
 import { DbmlParseError, DbmlParseResult, DbmlParser } from '../dbml.models';
 
-type Block = { kind: 'table'; value: TableSchema } | { kind: 'enum'; value: EnumSchema };
+type Block =
+  | { kind: 'table'; value: TableSchema; parsingIndexes: boolean }
+  | { kind: 'enum'; value: EnumSchema };
 
 export class SimpleDbmlParser implements DbmlParser {
   parse(source: string): DbmlParseResult {
@@ -25,6 +27,10 @@ export class SimpleDbmlParser implements DbmlParser {
 
       if (block) {
         if (line === '}') {
+          if (block.kind === 'table' && block.parsingIndexes) {
+            block.parsingIndexes = false;
+            continue;
+          }
           if (block.kind === 'table') schema.tables.push(block.value);
           else schema.enums.push(block.value);
           block = undefined;
@@ -32,8 +38,25 @@ export class SimpleDbmlParser implements DbmlParser {
         }
 
         if (block.kind === 'table') {
-          const column = parseColumn(line, lineNumber, errors);
-          if (column) block.value.columns.push(column);
+          if (/^indexes\s*\{$/i.test(line)) {
+            block.parsingIndexes = true;
+            continue;
+          }
+          if (block.parsingIndexes) {
+            const indexSchema = parseIndex(line, lineNumber, block.value, errors);
+            if (indexSchema) block.value.indexes.push(indexSchema);
+            continue;
+          }
+          const parsedColumn = parseColumn(line, lineNumber, errors);
+          if (parsedColumn) {
+            block.value.columns.push(parsedColumn.column);
+            if (parsedColumn.inlineReference) {
+              references.push({
+                expression: `${qualifiedTableName(block.value)}.${quoteIfNeeded(parsedColumn.column.name)} ${parsedColumn.inlineReference}`,
+                line: lineNumber,
+              });
+            }
+          }
         } else {
           const enumValue = unquote(line.replace(/,$/, '').trim());
           if (enumValue) block.value.values.push(enumValue);
@@ -55,6 +78,7 @@ export class SimpleDbmlParser implements DbmlParser {
             columns: [],
             indexes: [],
           },
+          parsingIndexes: false,
         };
         continue;
       }
@@ -93,7 +117,7 @@ function parseColumn(
   line: string,
   lineNumber: number,
   errors: DbmlParseError[],
-): ColumnSchema | undefined {
+): { column: ColumnSchema; inlineReference?: string } | undefined {
   const match = line.match(/^("[^"]+"|[\w-]+)\s+([^\s\[]+)(?:\s*\[(.*)\])?\s*$/);
   if (!match?.[1] || !match[2]) {
     errors.push({ message: `Invalid column definition: ${line}`, line: lineNumber, column: 1 });
@@ -111,15 +135,53 @@ function parseColumn(
   const primaryKey = has('pk') || has('primary key');
 
   return {
-    id: createEntityId('col'),
-    name: unquote(match[1]),
-    type: match[2],
-    primaryKey,
-    nullable: !primaryKey && !has('not null'),
-    unique: has('unique'),
-    increment: has('increment'),
-    ...(valueOf('default') ? { defaultValue: valueOf('default') } : {}),
-    ...(valueOf('note') ? { note: unquote(valueOf('note')!) } : {}),
+    column: {
+      id: createEntityId('col'),
+      name: unquote(match[1]),
+      type: match[2],
+      primaryKey,
+      nullable: !primaryKey && !has('not null'),
+      unique: has('unique'),
+      increment: has('increment'),
+      ...(valueOf('default') ? { defaultValue: valueOf('default') } : {}),
+      ...(valueOf('note') ? { note: unquote(valueOf('note')!) } : {}),
+    },
+    ...(valueOf('ref') ? { inlineReference: valueOf('ref') } : {}),
+  };
+}
+
+function parseIndex(
+  line: string,
+  lineNumber: number,
+  table: TableSchema,
+  errors: DbmlParseError[],
+): TableSchema['indexes'][number] | undefined {
+  const match = line.match(/^\(([^)]+)\)(?:\s*\[(.*)\])?\s*$/);
+  if (!match?.[1]) {
+    errors.push({ message: `Invalid index definition: ${line}`, line: lineNumber, column: 1 });
+    return undefined;
+  }
+  const columnNames = match[1].split(',').map((name) => unquote(name.trim()));
+  const columns = columnNames.map((name) => table.columns.find((column) => column.name === name));
+  const missingIndex = columns.findIndex((column) => !column);
+  if (missingIndex >= 0) {
+    errors.push({
+      message: `Index references unknown column ${columnNames[missingIndex]} in table ${table.name}`,
+      line: lineNumber,
+      column: 1,
+    });
+    return undefined;
+  }
+  const settings = splitSettings(match[2] ?? '').map((setting) => setting.toLowerCase());
+  const nameSetting = splitSettings(match[2] ?? '').find((setting) =>
+    setting.toLowerCase().startsWith('name:'),
+  );
+  return {
+    id: createEntityId('idx'),
+    columns: columns.map((column) => column!.id),
+    ...(settings.includes('unique') ? { unique: true } : {}),
+    ...(settings.includes('pk') || settings.includes('primary key') ? { primaryKey: true } : {}),
+    ...(nameSetting ? { name: unquote(nameSetting.slice(5).trim()) } : {}),
   };
 }
 
@@ -187,6 +249,16 @@ function resolveEndpoint(
 function splitQualifiedName(value: string): { schema?: string; name: string } {
   const parts = value.match(/"[^"]+"|[^.]+/g)?.map(unquote) ?? [value];
   return parts.length > 1 ? { schema: parts[0], name: parts[1]! } : { name: parts[0]! };
+}
+
+function qualifiedTableName(table: TableSchema): string {
+  return table.schema
+    ? `${quoteIfNeeded(table.schema)}.${quoteIfNeeded(table.name)}`
+    : quoteIfNeeded(table.name);
+}
+
+function quoteIfNeeded(value: string): string {
+  return /^[A-Za-z_][\w-]*$/.test(value) ? value : `"${value.replaceAll('"', '\\"')}"`;
 }
 
 function splitSettings(value: string): string[] {

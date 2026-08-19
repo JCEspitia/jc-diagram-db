@@ -52,6 +52,34 @@ describe('DBML adapters', () => {
       expect.objectContaining({ line: 3, message: expect.stringContaining('Unclosed table') }),
     ]);
   });
+
+  it('parses inline references and composite indexes', () => {
+    const result = parser.parse(`Table sites {
+  id uuid [pk]
+}
+
+Table service_units {
+  id uuid [pk]
+  site_id uuid [not null, ref: > sites.id]
+  external_id varchar [not null]
+
+  indexes {
+    (site_id, external_id) [unique]
+    (id, site_id) [pk]
+  }
+}`);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.relationships).toHaveLength(1);
+    expect(result.schema?.relationships[0]).toMatchObject({ type: 'many-to-one' });
+    expect(result.schema?.tables[1]?.indexes).toHaveLength(2);
+    expect(result.schema?.tables[1]?.indexes[0]).toMatchObject({ unique: true });
+    expect(result.schema?.tables[1]?.indexes[1]).toMatchObject({ primaryKey: true });
+
+    const generated = generator.generate(result.schema!);
+    expect(generated).toContain('(site_id, external_id) [unique]');
+    expect(parser.parse(generated).errors).toEqual([]);
+  });
 });
 
 describe('Schema reconciliation', () => {

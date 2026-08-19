@@ -16,7 +16,24 @@ function generateTable(table: TableSchema): string {
   const name = table.schema
     ? `${escapeIdentifier(table.schema)}.${escapeIdentifier(table.name)}`
     : escapeIdentifier(table.name);
-  return `Table ${name} {\n${table.columns.map((column) => `  ${generateColumn(column)}`).join('\n')}\n}`;
+  const columns = table.columns.map((column) => `  ${generateColumn(column)}`).join('\n');
+  const indexes = table.indexes.length
+    ? `\n\n  indexes {\n${table.indexes.map((index) => `    ${generateIndex(table, index)}`).join('\n')}\n  }`
+    : '';
+  return `Table ${name} {\n${columns}${indexes}\n}`;
+}
+
+function generateIndex(table: TableSchema, index: TableSchema['indexes'][number]): string {
+  const columns = index.columns.map((columnId) => {
+    const column = table.columns.find(({ id }) => id === columnId);
+    if (!column) throw new Error(`Cannot generate index ${index.id}: missing column ${columnId}`);
+    return escapeIdentifier(column.name);
+  });
+  const settings: string[] = [];
+  if (index.primaryKey) settings.push('pk');
+  if (index.unique) settings.push('unique');
+  if (index.name) settings.push(`name: '${index.name.replaceAll("'", "\\'")}'`);
+  return `(${columns.join(', ')})${settings.length ? ` [${settings.join(', ')}]` : ''}`;
 }
 
 function generateColumn(column: ColumnSchema): string {

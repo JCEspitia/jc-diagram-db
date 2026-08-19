@@ -22,7 +22,11 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
       usedTableIds.add(existing.id);
       tableIdMap.set(parsedTable.id, existing.id);
       const columns = reconcileColumns(existing, parsedTable, columnIdMap);
-      return { ...parsedTable, id: existing.id, columns };
+      const indexes = parsedTable.indexes.map((index) => ({
+        ...index,
+        columns: index.columns.map((columnId) => columnIdMap.get(columnId) ?? columnId),
+      }));
+      return { ...parsedTable, id: existing.id, columns, indexes };
     });
 
     const relationships = parsed.relationships.map((relationship) => {

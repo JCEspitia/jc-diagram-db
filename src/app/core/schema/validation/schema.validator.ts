@@ -4,6 +4,7 @@ export type SchemaValidationCode =
   | 'DUPLICATE_ID'
   | 'DUPLICATE_TABLE_NAME'
   | 'DUPLICATE_COLUMN_NAME'
+  | 'INVALID_INDEX_COLUMN'
   | 'INVALID_RELATIONSHIP_ENDPOINT';
 
 export interface SchemaValidationError {
@@ -44,7 +45,16 @@ export function validateSchema(schema: DatabaseSchema): SchemaValidationError[] 
       }
       columnNames.add(column.name);
     }
-    for (const index of table.indexes) registerId(index.id, 'index', ids, errors);
+    for (const index of table.indexes) {
+      registerId(index.id, 'index', ids, errors);
+      if (index.columns.some((columnId) => !table.columns.some(({ id }) => id === columnId))) {
+        errors.push({
+          code: 'INVALID_INDEX_COLUMN',
+          message: `Index ${index.id} references a missing column in table ${table.name}`,
+          entityId: index.id,
+        });
+      }
+    }
   }
 
   for (const relationship of schema.relationships) {
