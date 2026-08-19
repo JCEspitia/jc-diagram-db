@@ -19,7 +19,7 @@
         <span>DBML</span><button type="button" aria-label="Collapse DBML panel">‹</button>
       </div>
       <div class="code" aria-label="DBML source">
-        @for (line of dbml.split('\n'); track $index) {
+        @for (line of store.dbml().split('\n'); track $index) {
           <div>
             <span>{{ $index + 1 }}</span
             ><code>{{ line || ' ' }}</code>
@@ -33,40 +33,58 @@
         <button class="primary" type="button"><b>＋</b> Table</button><span></span
         ><button type="button">⌘ Auto layout</button><button type="button">⌗ Relation</button>
       </div>
-      <app-diagram-canvas [schema]="schema" [layout]="layout" />
+      <app-diagram-canvas
+        [schema]="store.schema()"
+        [layout]="store.layout()"
+        [selectedTableId]="store.selection()?.tableId"
+        (diagramOperation)="store.applyDiagramOperation($event)"
+        (tableSelected)="store.selectTable($event)"
+        (selectionCleared)="store.clearSelection()"
+      />
       <div class="zoom-controls">
-        <button type="button" aria-label="Zoom out">−</button><span>100%</span
-        ><button type="button" aria-label="Zoom in">＋</button
-        ><button type="button" aria-label="Fit diagram">⌗</button>
+        <button type="button" aria-label="Zoom out" (click)="store.zoomBy(0.8)">−</button
+        ><span>{{ store.zoomPercent() }}%</span
+        ><button type="button" aria-label="Zoom in" (click)="store.zoomBy(1.25)">＋</button
+        ><button type="button" aria-label="Reset viewport" (click)="store.resetViewport()">
+          ⌗
+        </button>
       </div>
     </main>
     <aside class="inspector">
       <div class="panel-heading"><span>Inspector</span><button type="button">×</button></div>
-      <section>
-        <label>TABLE NAME</label><input [value]="selectedTable.name" aria-label="Table name" />
-      </section>
-      <section>
-        <div class="section-title"><label>COLUMNS</label><button type="button">＋ Add</button></div>
-        @for (column of selectedTable.columns; track column.id) {
-          <article class="column-editor">
-            <div>
-              <strong>{{ column.name }}</strong
-              ><button type="button">•••</button>
-            </div>
-            <select aria-label="Column type">
-              <option>{{ column.type }}</option>
-            </select>
-            <label class="check"
-              ><input type="checkbox" [checked]="column.primaryKey" /> Primary key</label
-            >
-            <label class="check"
-              ><input type="checkbox" [checked]="!column.nullable" /> Not null</label
-            >
-            <label class="check"><input type="checkbox" [checked]="column.unique" /> Unique</label>
-          </article>
-        }
-      </section>
-      <button class="delete" type="button">Delete table</button>
+      @if (store.selectedTable(); as selectedTable) {
+        <section>
+          <label>TABLE NAME</label><input [value]="selectedTable.name" aria-label="Table name" />
+        </section>
+        <section>
+          <div class="section-title">
+            <label>COLUMNS</label><button type="button">＋ Add</button>
+          </div>
+          @for (column of selectedTable.columns; track column.id) {
+            <article class="column-editor">
+              <div>
+                <strong>{{ column.name }}</strong
+                ><button type="button">•••</button>
+              </div>
+              <select aria-label="Column type">
+                <option>{{ column.type }}</option>
+              </select>
+              <label class="check"
+                ><input type="checkbox" [checked]="column.primaryKey" /> Primary key</label
+              >
+              <label class="check"
+                ><input type="checkbox" [checked]="!column.nullable" /> Not null</label
+              >
+              <label class="check"
+                ><input type="checkbox" [checked]="column.unique" /> Unique</label
+              >
+            </article>
+          }
+        </section>
+        <button class="delete" type="button">Delete table</button>
+      } @else {
+        <p class="empty-inspector">Select a table to inspect its columns.</p>
+      }
     </aside>
   </div>
   <footer class="statusbar">

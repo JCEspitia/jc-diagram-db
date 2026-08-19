@@ -5,6 +5,13 @@
   z-index: 2;
 }
 
+:host.selected .table-card {
+  border-color: #8476f4;
+  box-shadow:
+    0 0 0 2px rgb(124 111 242 / 20%),
+    0 14px 36px rgb(3 8 20 / 34%);
+}
+
 .table-card {
   overflow: hidden;
   border: 1px solid #28344c;
@@ -23,6 +30,12 @@ header {
   background: #1a2336;
   color: #f2f5fb;
   font-size: 14px;
+  cursor: grab;
+  touch-action: none;
+}
+
+header:active {
+  cursor: grabbing;
 }
 
 .table-icon {

@@ -1,4 +1,12 @@
-<section class="viewport" aria-label="Database diagram">
+<section
+  class="viewport"
+  aria-label="Database diagram"
+  (pointerdown)="startPan($event)"
+  (pointermove)="movePointer($event)"
+  (pointerup)="endPointer($event)"
+  (pointercancel)="endPointer($event)"
+  (wheel)="zoom($event)"
+>
   <div class="world" [style.transform]="transform()">
     <svg class="relationships" width="1600" height="1000" aria-hidden="true">
       @for (edge of edges(); track edge.relationship.id) {
@@ -12,6 +20,9 @@
         [table]="table"
         [layout]="tablePosition(table.id)"
         [relationships]="schema().relationships"
+        [selected]="selectedTableId() === table.id"
+        (tableSelected)="tableSelected.emit($event)"
+        (dragStarted)="startTableDrag($event)"
       />
     }
   </div>

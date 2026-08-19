@@ -1,5 +1,5 @@
-<article class="table-card">
-  <header>
+<article class="table-card" (pointerdown)="select()">
+  <header (pointerdown)="startDrag($event)">
     <span class="table-icon" aria-hidden="true"></span>
     <strong>{{ table().name }}</strong>
     <button type="button" aria-label="Table options">•••</button>

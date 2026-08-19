@@ -1,7 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { SimpleDbmlParser } from './core/dbml';
-import { DiagramLayout } from './core/schema';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
+import { DiagramStore } from './state/diagram.store';
 
 @Component({
   selector: 'app-root',
@@ -11,27 +10,9 @@ import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas'
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly dbml = `Table users {
-  id uuid [pk]
-  email varchar [unique]
-}
+  protected readonly store = inject(DiagramStore);
 
-Table posts {
-  id uuid [pk]
-  user_id uuid
-  title varchar
-}
-
-Ref: posts.user_id > users.id`;
-  protected readonly schema = new SimpleDbmlParser().parse(this.dbml).schema!;
-  protected readonly layout: DiagramLayout = {
-    tables: Object.fromEntries(
-      this.schema.tables.map((table) => [
-        table.id,
-        table.name === 'users' ? { x: 440, y: 150 } : { x: 70, y: 300 },
-      ]),
-    ),
-    viewport: { x: 35, y: 20, zoom: 1 },
-  };
-  protected readonly selectedTable = this.schema.tables[0]!;
+  constructor() {
+    this.store.selectTable(this.store.schema().tables[0]!.id);
+  }
 }

@@ -324,6 +324,12 @@ app-diagram-canvas {
   font-size: 10px;
   cursor: pointer;
 }
+.empty-inspector {
+  padding: 24px 16px;
+  color: #68768e;
+  font-size: 11px;
+  line-height: 1.5;
+}
 .statusbar {
   display: flex;
   align-items: center;

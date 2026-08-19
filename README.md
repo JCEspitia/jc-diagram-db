@@ -22,6 +22,8 @@ visuales son representaciones independientes.
 - Reconciliación de esquemas para conservar IDs internos tras editar DBML.
 - Canvas estático con tablas HTML y relaciones SVG Bézier.
 - Geometría y transformaciones de coordenadas independientes de los componentes.
+- Store principal con Angular Signals y operaciones de layout inmutables.
+- Selección, drag de tablas, pan y zoom centrado en el cursor.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

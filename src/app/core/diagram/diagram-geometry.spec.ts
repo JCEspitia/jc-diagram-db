@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { columnAnchor, relationshipPath, screenToWorld, worldToScreen } from './diagram-geometry';
+import {
+  columnAnchor,
+  relationshipPath,
+  screenToWorld,
+  worldToScreen,
+  zoomAtPoint,
+} from './diagram-geometry';
 
 describe('diagram geometry', () => {
   it('converts between world and screen coordinates', () => {
@@ -16,5 +22,12 @@ describe('diagram geometry', () => {
     expect(relationshipPath({ x: 10, y: 20 }, { x: 200, y: 80 })).toBe(
       'M 10 20 C 95.5 20, 114.5 80, 200 80',
     );
+  });
+
+  it('keeps the world point under the cursor fixed while zooming', () => {
+    const cursor = { x: 300, y: 200 };
+    const before = { x: 40, y: 20, zoom: 1 };
+    const after = zoomAtPoint(before, cursor, 1.5);
+    expect(worldToScreen(screenToWorld(cursor, before), after)).toEqual(cursor);
   });
 });

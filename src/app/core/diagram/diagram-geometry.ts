@@ -31,6 +31,22 @@ export function screenToWorld(point: Point, viewport: ViewportState): Point {
   };
 }
 
+export function zoomAtPoint(
+  viewport: ViewportState,
+  screenPoint: Point,
+  requestedZoom: number,
+  minZoom = 0.25,
+  maxZoom = 2,
+): ViewportState {
+  const zoom = Math.min(maxZoom, Math.max(minZoom, requestedZoom));
+  const worldPoint = screenToWorld(screenPoint, viewport);
+  return {
+    x: screenPoint.x - worldPoint.x * zoom,
+    y: screenPoint.y - worldPoint.y * zoom,
+    zoom,
+  };
+}
+
 export function columnAnchor(
   table: TableLayout,
   columnIndex: number,

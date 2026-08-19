@@ -11,6 +11,11 @@
   background-color: #0d1320;
   background-image: radial-gradient(circle, #283249 1px, transparent 1px);
   background-size: 22px 22px;
+  cursor: grab;
+  touch-action: none;
+}
+.viewport:active {
+  cursor: grabbing;
 }
 .world {
   position: absolute;
