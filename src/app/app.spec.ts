@@ -14,10 +14,12 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render the editor and parsed tables', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, diagramdb');
+    expect(compiled.querySelector('.brand')?.textContent).toContain('DiagramDB');
+    expect(compiled.querySelectorAll('app-table-node')).toHaveLength(2);
+    expect(compiled.querySelectorAll('.edge')).toHaveLength(1);
   });
 });

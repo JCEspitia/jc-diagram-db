@@ -1,0 +1,24 @@
+<article class="table-card">
+  <header>
+    <span class="table-icon" aria-hidden="true"></span>
+    <strong>{{ table().name }}</strong>
+    <button type="button" aria-label="Table options">•••</button>
+  </header>
+
+  <div class="columns">
+    @for (column of table().columns; track column.id) {
+      <div class="column-row">
+        <span class="constraint" [class.primary-key]="column.primaryKey">
+          @if (column.primaryKey) {
+            ◆
+          } @else if (foreignKeyColumnIds().has(column.id)) {
+            ↗
+          }
+        </span>
+        <span class="column-name">{{ column.name }}</span>
+        <span class="column-type">{{ column.type }}</span>
+        <span class="handle" aria-hidden="true"></span>
+      </div>
+    }
+  </div>
+</article>

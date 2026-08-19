@@ -20,6 +20,8 @@ visuales son representaciones independientes.
 - Validación de IDs, nombres y extremos de relaciones.
 - Parser y generador DBML desacoplados de Angular.
 - Reconciliación de esquemas para conservar IDs internos tras editar DBML.
+- Canvas estático con tablas HTML y relaciones SVG Bézier.
+- Geometría y transformaciones de coordenadas independientes de los componentes.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

@@ -1,0 +1,358 @@
+:host {
+  display: block;
+  height: 100dvh;
+  color: #cdd5e5;
+  background: #0d1320;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  color: inherit;
+}
+.shell {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 54px minmax(0, 1fr) 26px;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  border-bottom: 1px solid #29344a;
+  background: #121a29;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #f5f7fc;
+  text-decoration: none;
+  font-weight: 700;
+}
+.brand > span:last-child span {
+  color: #8b7cf6;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+  background: #7868e8;
+  color: white;
+}
+.divider {
+  width: 1px;
+  height: 25px;
+  background: #2b364c;
+}
+.project-name,
+.topbar nav button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.project-name {
+  font-weight: 600;
+}
+.project-name span {
+  margin-left: 5px;
+  color: #71809c;
+}
+.saved {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #75849e;
+  font-size: 11px;
+}
+.saved i,
+.dbml-panel footer i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #46c99b;
+}
+.topbar nav {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.topbar nav button {
+  min-width: 34px;
+  height: 32px;
+  border-radius: 6px;
+}
+.topbar nav button:hover {
+  background: #202a3e;
+}
+.topbar nav .export {
+  padding: 0 13px;
+  border: 1px solid #38445d;
+  background: #1c2639;
+  font-size: 12px;
+}
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 292px minmax(320px, 1fr) 250px;
+}
+.dbml-panel,
+.inspector {
+  min-height: 0;
+  background: #111827;
+}
+.dbml-panel {
+  display: grid;
+  grid-template-rows: 43px 1fr 29px;
+  border-right: 1px solid #29344a;
+}
+.panel-heading {
+  height: 42px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #283349;
+  color: #8997af;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.panel-heading button {
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  color: #71809a;
+  cursor: pointer;
+}
+.code {
+  overflow: auto;
+  padding: 12px 0;
+  background: #0f1624;
+  font:
+    12px/22px 'SFMono-Regular',
+    Consolas,
+    monospace;
+}
+.code div {
+  display: grid;
+  grid-template-columns: 37px 1fr;
+  min-height: 22px;
+}
+.code div:nth-child(1),
+.code div:nth-child(6),
+.code div:nth-child(12) {
+  background: rgb(123 106 232 / 7%);
+}
+.code span {
+  color: #46536b;
+  text-align: right;
+  padding-right: 11px;
+  user-select: none;
+}
+.code code {
+  color: #bac4d6;
+  white-space: pre;
+}
+.code div:nth-child(1) code,
+.code div:nth-child(6) code {
+  color: #8e81f4;
+}
+.dbml-panel footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border-top: 1px solid #29344a;
+  color: #66748e;
+  font-size: 10px;
+}
+.dbml-panel footer span {
+  margin-left: auto;
+}
+main {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 47px minmax(0, 1fr);
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border-bottom: 1px solid #29344a;
+  background: #121a29;
+}
+.toolbar button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #9eabc0;
+  font-size: 11px;
+  cursor: pointer;
+}
+.toolbar button:hover {
+  border-color: #35425b;
+  background: #1b2538;
+}
+.toolbar .primary {
+  background: #7566e5;
+  color: white;
+}
+.toolbar > span {
+  height: 20px;
+  width: 1px;
+  background: #2c374c;
+}
+app-diagram-canvas {
+  min-height: 0;
+}
+.zoom-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid #303b52;
+  border-radius: 7px;
+  background: #151e2e;
+  box-shadow: 0 8px 22px #05081266;
+}
+.zoom-controls button {
+  width: 28px;
+  height: 26px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.zoom-controls span {
+  min-width: 43px;
+  color: #8997ae;
+  text-align: center;
+  font-size: 10px;
+}
+.inspector {
+  border-left: 1px solid #29344a;
+  overflow: auto;
+}
+.inspector section {
+  padding: 15px 13px;
+  border-bottom: 1px solid #283349;
+}
+.inspector label {
+  display: block;
+  margin-bottom: 8px;
+  color: #697892;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.inspector input,
+.inspector select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 31px;
+  padding: 0 9px;
+  border: 1px solid #303c54;
+  border-radius: 5px;
+  background: #172032;
+  color: #d8deea;
+  font-size: 11px;
+}
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-title button,
+.column-editor button {
+  border: 0;
+  background: transparent;
+  color: #8375ed;
+  font-size: 10px;
+  cursor: pointer;
+}
+.column-editor {
+  margin-top: 9px;
+  padding: 10px;
+  border: 1px solid #29354c;
+  border-radius: 6px;
+  background: #141d2d;
+}
+.column-editor > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+.column-editor select {
+  margin-bottom: 9px;
+}
+.column-editor .check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  color: #8795ac;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.column-editor .check input {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: #7767e7;
+}
+.delete {
+  margin: 15px 13px;
+  border: 0;
+  background: transparent;
+  color: #d86b78;
+  font-size: 10px;
+  cursor: pointer;
+}
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 12px;
+  border-top: 1px solid #29344a;
+  background: #111827;
+  color: #5d6a82;
+  font-size: 9px;
+}
+.statusbar .spacer {
+  flex: 1;
+}
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 240px minmax(320px, 1fr);
+  }
+  .inspector {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .dbml-panel {
+    display: none;
+  }
+  .saved {
+    display: none;
+  }
+}
