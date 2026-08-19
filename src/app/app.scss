@@ -312,6 +312,21 @@ app-diagram-canvas {
   margin-bottom: 8px;
   font-size: 11px;
 }
+.column-editor .column-name-input {
+  height: 25px;
+  padding: 0 6px;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 600;
+}
+.column-editor .column-name-input:focus {
+  border-color: #4a5872;
+  background: #172032;
+}
+.column-editor .remove-column {
+  color: #a86572;
+  font-size: 15px;
+}
 .column-editor select {
   margin-bottom: 9px;
 }

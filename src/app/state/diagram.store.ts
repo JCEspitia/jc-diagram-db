@@ -5,6 +5,10 @@ import { executeDiagramOperation } from '../core/diagram/operations/diagram-oper
 import { DiagramOperation } from '../core/diagram/operations/diagram.operations';
 import {
   DefaultSchemaReconciler,
+  createColumn,
+  createTable,
+  DatabaseSchema,
+  DiagramLayout,
   DiagramProject,
   DiagramSelection,
   executeSchemaOperation,
@@ -82,12 +86,69 @@ export class DiagramStore {
       return {
         ...project,
         schema,
+        layout: synchronizeLayout(project.layout, schema),
         dbml: this.generator.generate(schema),
         updatedAt: new Date().toISOString(),
       };
     });
     this.dbmlErrors.set([]);
     this.clearInvalidSelection();
+  }
+
+  createTable(): void {
+    const table = createTable({
+      name: nextName(
+        'new_table',
+        this.schema().tables.map(({ name }) => name),
+      ),
+      columns: [
+        createColumn({
+          name: 'id',
+          type: 'integer',
+          primaryKey: true,
+          nullable: false,
+        }),
+      ],
+    });
+    this.applySchemaOperation({ type: 'ADD_TABLE', table });
+    this.selectTable(table.id);
+  }
+
+  renameTable(tableId: string, name: string): void {
+    const normalized = name.trim();
+    if (!normalized) return;
+    this.applySchemaOperation({ type: 'UPDATE_TABLE', tableId, changes: { name: normalized } });
+  }
+
+  deleteTable(tableId: string): void {
+    this.applySchemaOperation({ type: 'DELETE_TABLE', tableId });
+  }
+
+  addColumn(tableId: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    if (!table) return;
+    this.applySchemaOperation({
+      type: 'ADD_COLUMN',
+      tableId,
+      column: createColumn({
+        name: nextName(
+          'new_column',
+          table.columns.map(({ name }) => name),
+        ),
+      }),
+    });
+  }
+
+  updateColumn(
+    tableId: string,
+    columnId: string,
+    changes: Extract<SchemaOperation, { type: 'UPDATE_COLUMN' }>['changes'],
+  ): void {
+    this.applySchemaOperation({ type: 'UPDATE_COLUMN', tableId, columnId, changes });
+  }
+
+  deleteColumn(tableId: string, columnId: string): void {
+    this.applySchemaOperation({ type: 'DELETE_COLUMN', tableId, columnId });
   }
 
   selectTable(tableId: string): void {
@@ -118,6 +179,28 @@ export class DiagramStore {
       this.clearSelection();
     }
   }
+}
+
+function nextName(base: string, existingNames: string[]): string {
+  const names = new Set(existingNames);
+  if (!names.has(base)) return base;
+  let suffix = 2;
+  while (names.has(`${base}_${suffix}`)) suffix += 1;
+  return `${base}_${suffix}`;
+}
+
+function synchronizeLayout(layout: DiagramLayout, schema: DatabaseSchema): DiagramLayout {
+  const tableIds = new Set(schema.tables.map(({ id }) => id));
+  const tables = Object.fromEntries(
+    Object.entries(layout.tables).filter(([tableId]) => tableIds.has(tableId)),
+  );
+  for (const [index, table] of schema.tables.entries()) {
+    tables[table.id] ??= {
+      x: 80 + (index % 3) * 320,
+      y: 90 + Math.floor(index / 3) * 260,
+    };
+  }
+  return { ...layout, tables };
 }
 
 function createExampleProject(): DiagramProject {

@@ -16,4 +16,39 @@ export class App {
   constructor() {
     this.store.selectTable(this.store.schema().tables[0]!.id);
   }
+
+  protected renameTable(tableId: string, event: Event): void {
+    this.store.renameTable(tableId, inputValue(event));
+  }
+
+  protected updateColumnText(
+    tableId: string,
+    columnId: string,
+    property: 'name' | 'type',
+    event: Event,
+  ): void {
+    const value = inputValue(event).trim();
+    if (value) this.store.updateColumn(tableId, columnId, { [property]: value });
+  }
+
+  protected updateColumnFlag(
+    tableId: string,
+    columnId: string,
+    property: 'primaryKey' | 'unique' | 'increment',
+    event: Event,
+  ): void {
+    this.store.updateColumn(tableId, columnId, { [property]: checkboxValue(event) });
+  }
+
+  protected updateNotNull(tableId: string, columnId: string, event: Event): void {
+    this.store.updateColumn(tableId, columnId, { nullable: !checkboxValue(event) });
+  }
+}
+
+function inputValue(event: Event): string {
+  return (event.target as HTMLInputElement).value;
+}
+
+function checkboxValue(event: Event): boolean {
+  return (event.target as HTMLInputElement).checked;
 }

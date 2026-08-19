@@ -35,8 +35,9 @@
     </aside>
     <main>
       <div class="toolbar">
-        <button class="primary" type="button"><b>＋</b> Table</button><span></span
-        ><button type="button">⌘ Auto layout</button><button type="button">⌗ Relation</button>
+        <button class="primary" type="button" (click)="store.createTable()"><b>＋</b> Table</button
+        ><span></span><button type="button">⌘ Auto layout</button
+        ><button type="button">⌗ Relation</button>
       </div>
       <app-diagram-canvas
         [schema]="store.schema()"
@@ -59,41 +60,79 @@
       <div class="panel-heading"><span>Inspector</span><button type="button">×</button></div>
       @if (store.selectedTable(); as selectedTable) {
         <section>
-          <label>TABLE NAME</label><input [value]="selectedTable.name" aria-label="Table name" />
+          <label>TABLE NAME</label
+          ><input
+            [value]="selectedTable.name"
+            aria-label="Table name"
+            (change)="renameTable(selectedTable.id, $event)"
+          />
         </section>
         <section>
           <div class="section-title">
-            <label>COLUMNS</label><button type="button">＋ Add</button>
+            <label>COLUMNS</label
+            ><button type="button" (click)="store.addColumn(selectedTable.id)">＋ Add</button>
           </div>
           @for (column of selectedTable.columns; track column.id) {
             <article class="column-editor">
               <div>
-                <strong>{{ column.name }}</strong
-                ><button type="button">•••</button>
+                <input
+                  class="column-name-input"
+                  [value]="column.name"
+                  aria-label="Column name"
+                  (change)="updateColumnText(selectedTable.id, column.id, 'name', $event)"
+                />
+                <button
+                  class="remove-column"
+                  type="button"
+                  aria-label="Delete column"
+                  (click)="store.deleteColumn(selectedTable.id, column.id)"
+                >
+                  ×
+                </button>
               </div>
-              <select aria-label="Column type">
-                <option>{{ column.type }}</option>
-              </select>
+              <input
+                [value]="column.type"
+                aria-label="Column type"
+                (change)="updateColumnText(selectedTable.id, column.id, 'type', $event)"
+              />
               <label class="check"
-                ><input type="checkbox" [checked]="column.primaryKey" /> Primary key</label
+                ><input
+                  type="checkbox"
+                  [checked]="column.primaryKey"
+                  (change)="updateColumnFlag(selectedTable.id, column.id, 'primaryKey', $event)"
+                />
+                Primary key</label
               >
               <label class="check"
-                ><input type="checkbox" [checked]="!column.nullable" /> Not null</label
+                ><input
+                  type="checkbox"
+                  [checked]="!column.nullable"
+                  (change)="updateNotNull(selectedTable.id, column.id, $event)"
+                />
+                Not null</label
               >
               <label class="check"
-                ><input type="checkbox" [checked]="column.unique" /> Unique</label
+                ><input
+                  type="checkbox"
+                  [checked]="column.unique"
+                  (change)="updateColumnFlag(selectedTable.id, column.id, 'unique', $event)"
+                />
+                Unique</label
               >
             </article>
           }
         </section>
-        <button class="delete" type="button">Delete table</button>
+        <button class="delete" type="button" (click)="store.deleteTable(selectedTable.id)">
+          Delete table
+        </button>
       } @else {
         <p class="empty-inspector">Select a table to inspect its columns.</p>
       }
     </aside>
   </div>
   <footer class="statusbar">
-    <span>2 tables</span><span>5 columns</span><span>1 relationship</span
-    ><span class="spacer"></span><span>DiagramDB v0.1</span>
+    <span>{{ store.schema().tables.length }} tables</span
+    ><span>{{ store.schema().relationships.length }} relationships</span><span class="spacer"></span
+    ><span>DiagramDB v0.1</span>
   </footer>
 </div>

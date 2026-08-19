@@ -30,6 +30,8 @@ visuales son representaciones independientes.
 - Autocompletado DBML, snippets, autoindent y cierre automático de pares.
 - Sincronización DBML hacia el modelo conservando el último esquema válido ante errores.
 - Referencias inline (`ref: > table.column`) e índices compuestos `indexes { ... }`.
+- Creación y eliminación visual de tablas y columnas desde toolbar e inspector.
+- Edición visual de nombres, tipos, PK, nulabilidad y unicidad con regeneración DBML.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

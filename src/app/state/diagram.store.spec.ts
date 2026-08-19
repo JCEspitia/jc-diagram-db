@@ -48,4 +48,36 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.dbml()).toContain('name varchar');
     expect(store.changeOrigin()).toBe('canvas');
   });
+
+  it('creates a table with layout and removes both atomically on delete', () => {
+    const store = new DiagramStore();
+    store.createTable();
+    const created = store.schema().tables.find(({ name }) => name === 'new_table')!;
+
+    expect(created.columns[0]).toMatchObject({
+      name: 'id',
+      type: 'integer',
+      primaryKey: true,
+    });
+    expect(store.layout().tables[created.id]).toBeDefined();
+    expect(store.dbml()).toContain('Table new_table');
+
+    store.deleteTable(created.id);
+
+    expect(store.schema().tables.some(({ id }) => id === created.id)).toBe(false);
+    expect(store.layout().tables[created.id]).toBeUndefined();
+    expect(store.selection()).toBeNull();
+  });
+
+  it('deleting a column also removes its relationships and updates DBML', () => {
+    const store = new DiagramStore();
+    const posts = store.schema().tables.find(({ name }) => name === 'posts')!;
+    const userId = posts.columns.find(({ name }) => name === 'user_id')!;
+
+    store.deleteColumn(posts.id, userId.id);
+
+    expect(store.schema().relationships).toEqual([]);
+    expect(store.dbml()).not.toContain('user_id uuid');
+    expect(store.dbml()).not.toContain('Ref:');
+  });
 });
