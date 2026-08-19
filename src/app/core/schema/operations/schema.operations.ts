@@ -1,0 +1,32 @@
+import { ColumnSchema, EntityId, RelationshipSchema, TableSchema } from '../models/schema.models';
+
+export type SchemaOperation =
+  | { type: 'ADD_TABLE'; table: TableSchema }
+  | {
+      type: 'UPDATE_TABLE';
+      tableId: EntityId;
+      changes: Partial<Omit<TableSchema, 'id' | 'columns'>>;
+    }
+  | { type: 'DELETE_TABLE'; tableId: EntityId }
+  | { type: 'ADD_COLUMN'; tableId: EntityId; column: ColumnSchema }
+  | {
+      type: 'UPDATE_COLUMN';
+      tableId: EntityId;
+      columnId: EntityId;
+      changes: Partial<Omit<ColumnSchema, 'id'>>;
+    }
+  | { type: 'DELETE_COLUMN'; tableId: EntityId; columnId: EntityId }
+  | { type: 'ADD_RELATIONSHIP'; relationship: RelationshipSchema }
+  | {
+      type: 'UPDATE_RELATIONSHIP';
+      relationshipId: EntityId;
+      changes: Partial<Omit<RelationshipSchema, 'id'>>;
+    }
+  | { type: 'DELETE_RELATIONSHIP'; relationshipId: EntityId };
+
+export class SchemaOperationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SchemaOperationError';
+  }
+}
