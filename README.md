@@ -1,59 +1,52 @@
-# Diagramdb
+# DiagramDB
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.21.
+Aplicación web para diseñar esquemas de bases de datos relacionales mediante DBML y un
+canvas visual. Funciona como SPA local, sin backend.
 
-## Development server
+El núcleo sigue un flujo deliberadamente desacoplado:
 
-To start a local development server, run:
-
-```bash
-ng serve
+```text
+DBML ⇄ Canonical Schema Model ⇄ Canvas
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+El modelo canónico es la fuente de verdad. El texto DBML, el layout y los componentes
+visuales son representaciones independientes.
 
-## Code scaffolding
+## Estado actual
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- Workspace Angular 21 con TypeScript estricto y Vitest.
+- Modelo canónico, layout y formato serializable de proyecto.
+- Motor inmutable de operaciones sobre tablas, columnas y relaciones.
+- Validación de IDs, nombres y extremos de relaciones.
+- Parser y generador DBML desacoplados de Angular.
+- Reconciliación de esquemas para conservar IDs internos tras editar DBML.
 
-```bash
-ng generate component component-name
-```
+El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+## Desarrollo local
 
 ```bash
-ng build
+npm install
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+La aplicación estará disponible en `http://localhost:4200/`.
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Verificación
 
 ```bash
-ng test
+npm test -- --watch=false
+npm run build
 ```
 
-## Running end-to-end tests
+## Estructura del core
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
+```text
+src/app/core/
+├── dbml/                 Parser, generador y contratos DBML
+└── schema/
+    ├── models/           Modelo canónico y modelo de proyecto
+    ├── operations/       Operaciones inmutables
+    ├── reconciliation/   Conservación de identidades
+    └── validation/       Reglas de integridad del dominio
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
