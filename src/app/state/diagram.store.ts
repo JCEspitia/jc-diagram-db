@@ -6,6 +6,7 @@ import { DiagramOperation } from '../core/diagram/operations/diagram.operations'
 import {
   DefaultSchemaReconciler,
   createColumn,
+  createEntityId,
   createTable,
   DatabaseSchema,
   DiagramLayout,
@@ -179,6 +180,46 @@ export class DiagramStore {
 
   deleteColumn(tableId: string, columnId: string): void {
     this.applySchemaOperation({ type: 'DELETE_COLUMN', tableId, columnId });
+  }
+
+  createRelationship(
+    sourceTableId: string,
+    sourceColumnId: string,
+    targetTableId: string,
+    targetColumnId: string,
+  ): void {
+    const duplicate = this.schema().relationships.some(
+      (relationship) =>
+        relationship.sourceTableId === sourceTableId &&
+        relationship.sourceColumnId === sourceColumnId &&
+        relationship.targetTableId === targetTableId &&
+        relationship.targetColumnId === targetColumnId,
+    );
+    if (duplicate) return;
+    const relationshipId = createEntityId('rel');
+    this.applySchemaOperation({
+      type: 'ADD_RELATIONSHIP',
+      relationship: {
+        id: relationshipId,
+        sourceTableId,
+        sourceColumnId,
+        targetTableId,
+        targetColumnId,
+        type: 'many-to-one',
+      },
+    });
+    this.selectRelationship(relationshipId);
+  }
+
+  updateRelationship(
+    relationshipId: string,
+    changes: Extract<SchemaOperation, { type: 'UPDATE_RELATIONSHIP' }>['changes'],
+  ): void {
+    this.applySchemaOperation({
+      type: 'UPDATE_RELATIONSHIP',
+      relationshipId,
+      changes,
+    });
   }
 
   selectTable(tableId: string): void {

@@ -48,7 +48,12 @@
         <button class="primary" type="button" (click)="store.createTable()"><b>＋</b> Table</button
         ><span></span
         ><button type="button" (click)="store.autoLayout(); fitDiagram()">⌘ Auto layout</button
-        ><button type="button" disabled title="Visual relationship creation is the next stage">
+        ><button
+          type="button"
+          [class.active]="relationshipMode()"
+          (click)="relationshipMode.update((active) => !active)"
+          title="Drag from one column handle to another"
+        >
           ⌗ Relation
         </button>
       </div>
@@ -58,10 +63,12 @@
         [selectedTableId]="store.selection()?.tableId"
         [selectedColumnId]="store.selection()?.columnId"
         [selectedRelationshipId]="store.selection()?.relationshipId"
+        [relationshipMode]="relationshipMode()"
         (diagramOperation)="store.applyDiagramOperation($event)"
         (tableSelected)="store.selectTable($event)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
+        (relationshipCreated)="createRelationship($event)"
         (selectionCleared)="store.clearSelection()"
       />
       <div class="zoom-controls">
@@ -87,6 +94,42 @@
           <div>
             <span>Type</span><strong>{{ relationship.type }}</strong>
           </div>
+          <label for="relationship-type">TYPE</label>
+          <select
+            id="relationship-type"
+            [value]="relationship.type"
+            (change)="updateRelationshipType(relationship.id, $event)"
+          >
+            <option value="many-to-one">Many to one</option>
+            <option value="one-to-many">One to many</option>
+            <option value="one-to-one">One to one</option>
+          </select>
+          <label for="relationship-delete">ON DELETE</label>
+          <select
+            id="relationship-delete"
+            [value]="relationship.onDelete ?? ''"
+            (change)="updateReferentialAction(relationship.id, 'onDelete', $event)"
+          >
+            <option value="">Unspecified</option>
+            <option value="NO ACTION">No action</option>
+            <option value="RESTRICT">Restrict</option>
+            <option value="CASCADE">Cascade</option>
+            <option value="SET NULL">Set null</option>
+            <option value="SET DEFAULT">Set default</option>
+          </select>
+          <label for="relationship-update">ON UPDATE</label>
+          <select
+            id="relationship-update"
+            [value]="relationship.onUpdate ?? ''"
+            (change)="updateReferentialAction(relationship.id, 'onUpdate', $event)"
+          >
+            <option value="">Unspecified</option>
+            <option value="NO ACTION">No action</option>
+            <option value="RESTRICT">Restrict</option>
+            <option value="CASCADE">Cascade</option>
+            <option value="SET NULL">Set null</option>
+            <option value="SET DEFAULT">Set default</option>
+          </select>
         </section>
         <button class="delete" type="button" (click)="store.deleteSelection()">
           Delete relationship

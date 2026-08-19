@@ -10,6 +10,7 @@ import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/sche
     '[style.left.px]': 'layout().x',
     '[style.top.px]': 'layout().y',
     '[class.selected]': 'selected()',
+    '[class.show-relationship-handles]': 'showRelationshipHandles()',
   },
 })
 export class TableNode {
@@ -18,8 +19,15 @@ export class TableNode {
   readonly relationships = input<RelationshipSchema[]>([]);
   readonly selected = input(false);
   readonly selectedColumnId = input<string>();
+  readonly relationshipTargetColumnId = input<string>();
+  readonly showRelationshipHandles = input(false);
   readonly tableSelected = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
+  readonly relationshipStarted = output<{
+    tableId: string;
+    columnId: string;
+    event: PointerEvent;
+  }>();
   readonly dragStarted = output<{ tableId: string; event: PointerEvent }>();
 
   protected readonly foreignKeyColumnIds = computed(() => {
@@ -45,5 +53,12 @@ export class TableNode {
   protected selectColumn(event: PointerEvent, columnId: string): void {
     event.stopPropagation();
     this.columnSelected.emit({ tableId: this.table().id, columnId });
+  }
+
+  protected startRelationship(event: PointerEvent, columnId: string): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.relationshipStarted.emit({ tableId: this.table().id, columnId, event });
   }
 }

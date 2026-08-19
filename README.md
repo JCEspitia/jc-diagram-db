@@ -35,6 +35,8 @@ visuales son representaciones independientes.
 - Undo/redo de operaciones significativas, shortcuts y fit-to-screen real.
 - Selección y eliminación contextual de tablas, columnas y relaciones.
 - Auto layout en cuadrícula, panel DBML colapsable e IDs de índices/enums reconciliados.
+- Creación visual de relaciones con handles, curva temporal y destino resaltado.
+- Inspector de relaciones con cardinalidad y acciones `ON DELETE` / `ON UPDATE`.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 

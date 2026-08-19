@@ -239,6 +239,11 @@ main {
   background: #7566e5;
   color: white;
 }
+.toolbar button.active {
+  border-color: #7767e7;
+  background: rgb(119 103 231 / 18%);
+  color: #c8c1ff;
+}
 .toolbar > span {
   height: 20px;
   width: 1px;
@@ -386,6 +391,9 @@ app-diagram-canvas {
 .relationship-inspector div strong {
   color: #cbd4e3;
   font: 11px monospace;
+}
+.relationship-inspector > label:not(:first-child) {
+  margin-top: 16px;
 }
 .statusbar {
   display: flex;

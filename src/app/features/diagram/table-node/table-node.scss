@@ -74,6 +74,11 @@ header button {
 .column-row.selected {
   background: rgb(124 111 242 / 14%);
 }
+.column-row.relationship-target {
+  background: rgb(68 201 155 / 17%);
+  outline: 1px solid #44c99b;
+  outline-offset: -1px;
+}
 .constraint {
   color: #72809a;
   font-size: 9px;
@@ -95,4 +100,14 @@ header button {
   height: 6px;
   border: 1px solid #7183a2;
   border-radius: 50%;
+  padding: 0;
+  background: #141b2b;
+  opacity: 0;
+  cursor: crosshair;
+}
+.column-row:hover .handle,
+.handle:focus-visible,
+:host.show-relationship-handles .handle {
+  opacity: 1;
+  border-color: #9184f7;
 }

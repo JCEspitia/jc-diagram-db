@@ -6,7 +6,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RelationshipSchema } from './core/schema';
+import { ReferentialAction, RelationshipSchema } from './core/schema';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore } from './state/diagram.store';
@@ -22,6 +22,7 @@ export class App {
   protected readonly store = inject(DiagramStore);
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
+  protected readonly relationshipMode = signal(false);
 
   constructor() {
     this.store.selectTable(this.store.schema().tables[0]!.id);
@@ -63,6 +64,37 @@ export class App {
     const columnId = side === 'source' ? relationship.sourceColumnId : relationship.targetColumnId;
     const table = this.store.schema().tables.find(({ id }) => id === tableId);
     return `${table?.name ?? 'Unknown'}.${table?.columns.find(({ id }) => id === columnId)?.name ?? 'unknown'}`;
+  }
+
+  protected createRelationship(event: {
+    sourceTableId: string;
+    sourceColumnId: string;
+    targetTableId: string;
+    targetColumnId: string;
+  }): void {
+    this.store.createRelationship(
+      event.sourceTableId,
+      event.sourceColumnId,
+      event.targetTableId,
+      event.targetColumnId,
+    );
+  }
+
+  protected updateRelationshipType(relationshipId: string, event: Event): void {
+    this.store.updateRelationship(relationshipId, {
+      type: inputValue(event) as RelationshipSchema['type'],
+    });
+  }
+
+  protected updateReferentialAction(
+    relationshipId: string,
+    property: 'onDelete' | 'onUpdate',
+    event: Event,
+  ): void {
+    const value = inputValue(event);
+    this.store.updateRelationship(relationshipId, {
+      [property]: value || undefined,
+    } as { onDelete?: ReferentialAction; onUpdate?: ReferentialAction });
   }
 
   @HostListener('document:keydown', ['$event'])

@@ -48,6 +48,13 @@
   stroke: #c1b9ff;
   stroke-width: 3;
 }
+.temporary-edge {
+  fill: none;
+  stroke: #44c99b;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+}
 .edge-hit-area {
   stroke: transparent;
   stroke-width: 14;

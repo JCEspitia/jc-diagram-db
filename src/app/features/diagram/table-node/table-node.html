@@ -10,6 +10,9 @@
       <div
         class="column-row"
         [class.selected]="selectedColumnId() === column.id"
+        [class.relationship-target]="relationshipTargetColumnId() === column.id"
+        [attr.data-table-id]="table().id"
+        [attr.data-column-id]="column.id"
         (pointerdown)="selectColumn($event, column.id)"
       >
         <span class="constraint" [class.primary-key]="column.primaryKey">
@@ -21,7 +24,12 @@
         </span>
         <span class="column-name">{{ column.name }}</span>
         <span class="column-type">{{ column.type }}</span>
-        <span class="handle" aria-hidden="true"></span>
+        <button
+          class="handle"
+          type="button"
+          aria-label="Create relationship from column"
+          (pointerdown)="startRelationship($event, column.id)"
+        ></button>
       </div>
     }
   </div>

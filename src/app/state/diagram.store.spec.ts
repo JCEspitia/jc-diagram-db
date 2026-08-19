@@ -107,4 +107,26 @@ describe('DiagramStore DBML synchronization', () => {
     store.renameTable(posts.id, 'users');
     expect(store.schema().tables.find(({ id }) => id === posts.id)?.name).toBe('posts');
   });
+
+  it('creates, edits, and deduplicates visual relationships', () => {
+    const store = new DiagramStore();
+    const users = store.schema().tables.find(({ name }) => name === 'users')!;
+    const posts = store.schema().tables.find(({ name }) => name === 'posts')!;
+    const usersId = users.columns.find(({ name }) => name === 'id')!;
+    const postId = posts.columns.find(({ name }) => name === 'id')!;
+    const initialCount = store.schema().relationships.length;
+
+    store.createRelationship(users.id, usersId.id, posts.id, postId.id);
+    const created = store.selectedRelationship()!;
+    store.createRelationship(users.id, usersId.id, posts.id, postId.id);
+
+    expect(store.schema().relationships).toHaveLength(initialCount + 1);
+    expect(store.dbml()).toContain('Ref: users.id > posts.id');
+    store.updateRelationship(created.id, { type: 'one-to-one', onDelete: 'CASCADE' });
+    expect(store.schema().relationships.find(({ id }) => id === created.id)).toMatchObject({
+      type: 'one-to-one',
+      onDelete: 'CASCADE',
+    });
+    expect(store.dbml()).toContain('users.id - posts.id [delete: cascade]');
+  });
 });
