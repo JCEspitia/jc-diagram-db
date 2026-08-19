@@ -5,6 +5,9 @@ import {
   editableOrthogonalPath,
   fitToScreen,
   relationshipPath,
+  routeAroundObstacles,
+  nearestPointOnPolyline,
+  roundedPolylinePath,
   orthogonalRelationshipPath,
   screenToWorld,
   worldToScreen,
@@ -42,6 +45,30 @@ describe('diagram geometry', () => {
     expect(editableOrthogonalPath(source, target, route)).toBe(
       'M 10 20 H 54 V 60 H 156 V 100 H 200',
     );
+  });
+
+  it('moves an automatic route outside blocking tables', () => {
+    const source = { x: 0, y: 100 };
+    const target = { x: 500, y: 100 };
+    const route = { sourceX: 44, targetX: 456, routeY: 100 };
+    const result = routeAroundObstacles(source, target, route, [
+      { left: 180, top: 50, right: 320, bottom: 160 },
+    ]);
+    expect(result.routeY).toBeLessThan(50);
+  });
+
+  it('rounds corners and finds insertion points on route segments', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+    ];
+    expect(roundedPolylinePath(points, 10)).toBe('M 0 0 L 90 0 Q 100 0 100 10 L 100 100');
+    expect(nearestPointOnPolyline({ x: 48, y: 6 }, points)).toEqual({
+      point: { x: 48, y: 0 },
+      segmentIndex: 0,
+      distance: 6,
+    });
   });
 
   it('keeps the world point under the cursor fixed while zooming', () => {

@@ -80,12 +80,93 @@ export interface OrthogonalRoute {
   routeY: number;
 }
 
+export interface Rectangle {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 export function editableOrthogonalPath(
   source: Point,
   target: Point,
   route: OrthogonalRoute,
 ): string {
   return `M ${source.x} ${source.y} H ${route.sourceX} V ${route.routeY} H ${route.targetX} V ${target.y} H ${target.x}`;
+}
+
+export function orthogonalRoutePoints(
+  source: Point,
+  target: Point,
+  route: OrthogonalRoute,
+): Point[] {
+  return [
+    source,
+    { x: route.sourceX, y: source.y },
+    { x: route.sourceX, y: route.routeY },
+    { x: route.targetX, y: route.routeY },
+    { x: route.targetX, y: target.y },
+    target,
+  ];
+}
+
+export function roundedPolylinePath(points: Point[], radius = 12): string {
+  if (points.length < 2) return '';
+  let path = `M ${points[0]!.x} ${points[0]!.y}`;
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const previous = points[index - 1]!;
+    const current = points[index]!;
+    const next = points[index + 1]!;
+    const incoming = distance(previous, current);
+    const outgoing = distance(current, next);
+    const cornerRadius = Math.min(radius, incoming / 2, outgoing / 2);
+    const before = pointToward(current, previous, cornerRadius);
+    const after = pointToward(current, next, cornerRadius);
+    path += ` L ${before.x} ${before.y} Q ${current.x} ${current.y} ${after.x} ${after.y}`;
+  }
+  const last = points.at(-1)!;
+  return `${path} L ${last.x} ${last.y}`;
+}
+
+export function nearestPointOnPolyline(
+  point: Point,
+  points: Point[],
+): { point: Point; segmentIndex: number; distance: number } | null {
+  if (points.length < 2) return null;
+  let nearest: { point: Point; segmentIndex: number; distance: number } | null = null;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const candidate = nearestPointOnSegment(point, points[index]!, points[index + 1]!);
+    const candidateDistance = distance(point, candidate);
+    if (!nearest || candidateDistance < nearest.distance) {
+      nearest = { point: candidate, segmentIndex: index, distance: candidateDistance };
+    }
+  }
+  return nearest;
+}
+
+function nearestPointOnSegment(point: Point, start: Point, end: Point): Point {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (!lengthSquared) return start;
+  const ratio = Math.max(
+    0,
+    Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared),
+  );
+  return { x: start.x + ratio * dx, y: start.y + ratio * dy };
+}
+
+function pointToward(from: Point, to: Point, amount: number): Point {
+  const length = distance(from, to);
+  if (!length) return from;
+  return {
+    x: from.x + ((to.x - from.x) / length) * amount,
+    y: from.y + ((to.y - from.y) / length) * amount,
+  };
+}
+
+function distance(left: Point, right: Point): number {
+  return Math.hypot(right.x - left.x, right.y - left.y);
 }
 
 export function defaultOrthogonalRoute(source: Point, target: Point): OrthogonalRoute {
@@ -95,6 +176,58 @@ export function defaultOrthogonalRoute(source: Point, target: Point): Orthogonal
     targetX: target.x - sourceDirection * 44,
     routeY: (source.y + target.y) / 2,
   };
+}
+
+export function routeAroundObstacles(
+  source: Point,
+  target: Point,
+  route: OrthogonalRoute,
+  obstacles: Rectangle[],
+  clearance = 28,
+): OrthogonalRoute {
+  const blocking = obstacles
+    .map((rectangle) => ({
+      left: rectangle.left - clearance,
+      right: rectangle.right + clearance,
+      top: rectangle.top - clearance,
+      bottom: rectangle.bottom + clearance,
+    }))
+    .filter(
+      (rectangle) =>
+        horizontalIntersects(route.sourceX, route.targetX, route.routeY, rectangle) ||
+        verticalIntersects(route.sourceX, source.y, route.routeY, rectangle) ||
+        verticalIntersects(route.targetX, route.routeY, target.y, rectangle),
+    );
+  if (!blocking.length) return route;
+  const above = Math.min(...blocking.map(({ top }) => top)) - clearance;
+  const below = Math.max(...blocking.map(({ bottom }) => bottom)) + clearance;
+  return {
+    ...route,
+    routeY: Math.abs(route.routeY - above) <= Math.abs(route.routeY - below) ? above : below,
+  };
+}
+
+function horizontalIntersects(
+  fromX: number,
+  toX: number,
+  y: number,
+  rectangle: Rectangle,
+): boolean {
+  return (
+    y >= rectangle.top &&
+    y <= rectangle.bottom &&
+    Math.max(fromX, toX) >= rectangle.left &&
+    Math.min(fromX, toX) <= rectangle.right
+  );
+}
+
+function verticalIntersects(x: number, fromY: number, toY: number, rectangle: Rectangle): boolean {
+  return (
+    x >= rectangle.left &&
+    x <= rectangle.right &&
+    Math.max(fromY, toY) >= rectangle.top &&
+    Math.min(fromY, toY) <= rectangle.bottom
+  );
 }
 
 export function tableLayout(layout: DiagramLayout, tableId: string): TableLayout {

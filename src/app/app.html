@@ -65,9 +65,46 @@
           <button type="button" (click)="dbmlCollapsed.set(false)">DBML ›</button>
         }
         <button class="primary" type="button" (click)="store.createTable()"><b>＋</b> Table</button
-        ><span></span
-        ><button type="button" (click)="store.autoLayout(); fitDiagram()">⌘ Auto layout</button
-        ><button
+        ><span></span>
+        <div class="auto-layout-control">
+          <button type="button" (click)="autoLayoutMenu.update((open) => !open)">
+            ⌘ Auto layout ▾
+          </button>
+          @if (autoLayoutMenu()) {
+            <div class="auto-layout-menu">
+              <p>Choose an auto layout algorithm</p>
+              <button type="button" (click)="applyAutoLayout('left-to-right')">
+                <b>⇥</b
+                ><span
+                  ><strong>Left to right <i>1</i></strong
+                  ><small>Follow foreign-key chains from parents to dependent tables.</small></span
+                >
+              </button>
+              <button type="button" (click)="applyAutoLayout('pipeline')">
+                <b>•••</b
+                ><span
+                  ><strong>Pipeline <i>2</i></strong
+                  ><small>Group data-dependency stages and center each vertical stack.</small></span
+                >
+              </button>
+              <button type="button" (click)="applyAutoLayout('snowflake')">
+                <b>✣</b
+                ><span
+                  ><strong>Snowflake <i>3</i></strong
+                  ><small>Place the most connected tables in the center.</small></span
+                >
+              </button>
+              <button type="button" (click)="applyAutoLayout('compact')">
+                <b>▦</b
+                ><span
+                  ><strong>Compact <i>4</i></strong
+                  ><small>Pack tables into a compact rectangular grid.</small></span
+                >
+              </button>
+            </div>
+          }
+        </div>
+        <button
           type="button"
           [class.active]="relationshipMode()"
           (click)="relationshipMode.update((active) => !active)"

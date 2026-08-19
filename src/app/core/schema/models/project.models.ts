@@ -11,6 +11,7 @@ export interface RelationshipLayout {
   sourceX?: number;
   targetX?: number;
   routeY?: number;
+  waypoints?: { x: number; y: number }[];
   sourceSide?: 'left' | 'right';
   targetSide?: 'left' | 'right';
 }

@@ -1,6 +1,7 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { DbmlParseError, SimpleDbmlGenerator, SimpleDbmlParser } from '../core/dbml';
 import { zoomAtPoint } from '../core/diagram/diagram-geometry';
+import { AutoLayoutMode, calculateAutoLayout } from '../core/diagram/auto-layout/auto-layout';
 import { executeDiagramOperation } from '../core/diagram/operations/diagram-operation.executor';
 import { DiagramOperation } from '../core/diagram/operations/diagram.operations';
 import {
@@ -276,22 +277,12 @@ export class DiagramStore {
     this.setViewport({ x: 35, y: 20, zoom: 1 });
   }
 
-  autoLayout(): void {
+  autoLayout(mode: AutoLayoutMode = 'compact'): void {
     const project = this.project();
-    const tables = Object.fromEntries(
-      project.schema.tables.map((table, index) => [
-        table.id,
-        {
-          ...project.layout.tables[table.id],
-          x: 80 + (index % 3) * 340,
-          y: 80 + Math.floor(index / 3) * 280,
-        },
-      ]),
-    );
     this.commit(
       {
         ...project,
-        layout: { ...project.layout, tables },
+        layout: calculateAutoLayout(project.schema, project.layout, mode),
         updatedAt: new Date().toISOString(),
       },
       true,

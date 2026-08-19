@@ -16,6 +16,8 @@
           class="edge-hit-area"
           [attr.d]="edge.path"
           (pointerdown)="selectRelationship($event, edge.relationship.id)"
+          (pointermove)="hoverRelationshipSegment($event, edge)"
+          (pointerleave)="clearHoveredSegment($event, edge.relationship.id)"
         />
         <path
           class="edge"
@@ -26,7 +28,7 @@
         <g
           class="cardinality-symbol"
           [class.dimmed]="!edge.connected"
-          [attr.transform]="symbolTransform(edge.source, edge.route.sourceX)"
+          [attr.transform]="symbolTransform(edge.source, edge.points[1]!.x)"
         >
           @if (edge.sourceCardinality === 'many') {
             <path d="M 15 -6 L 7 0 L 15 6 M 7 -5 V 5" />
@@ -37,7 +39,7 @@
         <g
           class="cardinality-symbol"
           [class.dimmed]="!edge.connected"
-          [attr.transform]="symbolTransform(edge.target, edge.route.targetX)"
+          [attr.transform]="symbolTransform(edge.target, edge.points[edge.points.length - 2]!.x)"
         >
           @if (edge.targetCardinality === 'many') {
             <path d="M 15 -6 L 7 0 L 15 6 M 7 -5 V 5" />
@@ -49,27 +51,33 @@
           <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
         }
         @if (selectedRelationshipId() === edge.relationship.id) {
-          <circle
-            class="route-handle horizontal"
-            [attr.cx]="edge.route.sourceX"
-            [attr.cy]="(edge.source.y + edge.route.routeY) / 2"
-            r="6"
-            (pointerdown)="startRouteDrag($event, edge.relationship.id, 'sourceX')"
-          />
-          <circle
-            class="route-handle vertical"
-            [attr.cx]="(edge.route.sourceX + edge.route.targetX) / 2"
-            [attr.cy]="edge.route.routeY"
-            r="6"
-            (pointerdown)="startRouteDrag($event, edge.relationship.id, 'routeY')"
-          />
-          <circle
-            class="route-handle horizontal"
-            [attr.cx]="edge.route.targetX"
-            [attr.cy]="(edge.route.routeY + edge.target.y) / 2"
-            r="6"
-            (pointerdown)="startRouteDrag($event, edge.relationship.id, 'targetX')"
-          />
+          @for (handle of edge.handles; track handle.segmentIndex) {
+            <circle
+              class="route-handle"
+              [class.horizontal]="handle.orientation === 'horizontal'"
+              [class.vertical]="handle.orientation === 'vertical'"
+              [attr.cx]="handle.point.x"
+              [attr.cy]="handle.point.y"
+              r="5"
+              (pointerdown)="startSegmentDrag($event, edge, handle)"
+            />
+          }
+        }
+        @if (hoveredSegment(); as hovered) {
+          @if (
+            hovered.relationshipId === edge.relationship.id &&
+            selectedRelationshipId() !== edge.relationship.id
+          ) {
+            <circle
+              class="route-handle ghost"
+              [class.horizontal]="hovered.orientation === 'horizontal'"
+              [class.vertical]="hovered.orientation === 'vertical'"
+              [attr.cx]="hovered.point.x"
+              [attr.cy]="hovered.point.y"
+              r="5"
+              (pointerdown)="startHoveredSegment($event, edge)"
+            />
+          }
         }
       }
       @if (temporaryPath(); as path) {
@@ -90,6 +98,7 @@
         (columnSelected)="columnSelected.emit($event)"
         (dragStarted)="startTableDrag($event)"
         (relationshipStarted)="startRelationship($event)"
+        (columnHovered)="setHoveredColumn($event)"
       />
     }
   </div>

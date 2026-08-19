@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ReferentialAction, RelationshipSchema } from './core/schema';
+import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore } from './state/diagram.store';
@@ -23,6 +24,7 @@ export class App {
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
   protected readonly relationshipMode = signal(false);
+  protected readonly autoLayoutMenu = signal(false);
   protected readonly editorTheme = signal<'dark' | 'light'>('dark');
   protected readonly dbmlPanelWidth = signal(340);
   private panelResize?: { startX: number; startWidth: number };
@@ -60,6 +62,12 @@ export class App {
 
   protected fitDiagram(): void {
     this.canvas()?.fitDiagram();
+  }
+
+  protected applyAutoLayout(mode: AutoLayoutMode): void {
+    this.store.autoLayout(mode);
+    this.autoLayoutMenu.set(false);
+    requestAnimationFrame(() => this.fitDiagram());
   }
 
   protected startPanelResize(event: PointerEvent): void {

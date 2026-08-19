@@ -78,15 +78,26 @@
   stroke: #c7c0ff;
   stroke-width: 2;
   pointer-events: all;
+  cursor: move;
+  transition:
+    r 120ms ease,
+    fill 120ms ease,
+    opacity 120ms ease;
 }
 .route-handle.horizontal {
-  cursor: ew-resize;
+  cursor: ns-resize;
 }
 .route-handle.vertical {
-  cursor: ns-resize;
+  cursor: ew-resize;
 }
 .route-handle:hover {
   fill: #7767e7;
+  r: 7px;
+}
+.route-handle.ghost {
+  fill: #7767e7;
+  stroke: #ffffff;
+  opacity: 0.75;
 }
 @keyframes relationship-flow {
   to {

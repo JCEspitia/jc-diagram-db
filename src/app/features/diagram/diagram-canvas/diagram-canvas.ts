@@ -10,10 +10,15 @@ import {
 } from '@angular/core';
 import {
   columnAnchor,
+  DEFAULT_TABLE_METRICS,
   defaultOrthogonalRoute,
-  editableOrthogonalPath,
   fitToScreen,
+  nearestPointOnPolyline,
   OrthogonalRoute,
+  orthogonalRoutePoints,
+  Point,
+  roundedPolylinePath,
+  routeAroundObstacles,
   screenToWorld,
   tableLayout,
   zoomAtPoint,
@@ -35,10 +40,18 @@ interface RenderedRelationship {
   source: { x: number; y: number };
   target: { x: number; y: number };
   route: OrthogonalRoute;
+  points: Point[];
+  handles: RouteSegmentHandle[];
   sourceCardinality: 'one' | 'many';
   targetCardinality: 'one' | 'many';
   connected: boolean;
   flow: 'forward' | 'reverse' | null;
+}
+
+interface RouteSegmentHandle {
+  segmentIndex: number;
+  point: Point;
+  orientation: 'horizontal' | 'vertical';
 }
 
 interface RelationshipEndpoint {
@@ -91,11 +104,13 @@ export class DiagramCanvas {
         source: RelationshipEndpoint;
       }
     | {
-        kind: 'route';
+        kind: 'segment';
         pointerId: number;
         relationshipId: string;
         from?: RelationshipLayout;
-        control: 'sourceX' | 'routeY' | 'targetX';
+        segmentIndex: number;
+        orientation: 'horizontal' | 'vertical';
+        points: Point[];
       }
     | undefined;
   private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
@@ -109,6 +124,13 @@ export class DiagramCanvas {
     relationshipId: string;
     layout: RelationshipLayout;
   } | null>(null);
+  protected readonly hoveredSegment = signal<{
+    relationshipId: string;
+    point: Point;
+    segmentIndex: number;
+    orientation: 'horizontal' | 'vertical';
+  } | null>(null);
+  private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
   protected readonly transform = computed(() => {
@@ -117,7 +139,7 @@ export class DiagramCanvas {
   });
 
   protected readonly edges = computed<RenderedRelationship[]>(() =>
-    this.schema().relationships.flatMap((relationship) => {
+    this.schema().relationships.flatMap((relationship, relationshipIndex) => {
       const preview = this.tablePreview();
       const sourceTable = this.schema().tables.find(({ id }) => id === relationship.sourceTableId);
       const targetTable = this.schema().tables.find(({ id }) => id === relationship.targetTableId);
@@ -150,32 +172,93 @@ export class DiagramCanvas {
       const previewLayout =
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
       const defaults = defaultOrthogonalRoute(source, target);
-      const route: OrthogonalRoute = {
+      let route: OrthogonalRoute = {
         sourceX: previewLayout?.sourceX ?? previewLayout?.routeX ?? defaults.sourceX,
         targetX: previewLayout?.targetX ?? previewLayout?.routeX ?? defaults.targetX,
-        routeY: previewLayout?.routeY ?? defaults.routeY,
+        routeY: previewLayout?.routeY ?? defaults.routeY + ((relationshipIndex % 5) - 2) * 10,
       };
+      const manuallyRouted = Boolean(
+        previewLayout?.sourceX !== undefined ||
+        previewLayout?.targetX !== undefined ||
+        previewLayout?.routeY !== undefined ||
+        previewLayout?.routeX !== undefined ||
+        previewLayout?.waypoints?.length,
+      );
+      if (!manuallyRouted) {
+        const obstacles = this.schema()
+          .tables.filter(({ id }) => id !== sourceTable.id && id !== targetTable.id)
+          .map((table) => {
+            const position =
+              preview?.tableId === table.id ? preview.layout : tableLayout(this.layout(), table.id);
+            return {
+              left: position.x,
+              top: position.y,
+              right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
+              bottom:
+                position.y +
+                DEFAULT_TABLE_METRICS.headerHeight +
+                table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+            };
+          });
+        route = routeAroundObstacles(source, target, route, obstacles);
+      }
       const selectedTableId = this.selectedTableId();
+      const hoveredColumn = this.hoveredColumn();
+      const columnFocus =
+        hoveredColumn &&
+        this.schema().relationships.some(
+          (candidate) =>
+            (candidate.sourceTableId === hoveredColumn.tableId &&
+              candidate.sourceColumnId === hoveredColumn.columnId) ||
+            (candidate.targetTableId === hoveredColumn.tableId &&
+              candidate.targetColumnId === hoveredColumn.columnId),
+        )
+          ? hoveredColumn
+          : null;
+      const sourceFocused = columnFocus
+        ? relationship.sourceTableId === columnFocus.tableId &&
+          relationship.sourceColumnId === columnFocus.columnId
+        : false;
+      const targetFocused = columnFocus
+        ? relationship.targetTableId === columnFocus.tableId &&
+          relationship.targetColumnId === columnFocus.columnId
+        : false;
+      const savedPoints = previewLayout?.waypoints?.length
+        ? [source, ...previewLayout.waypoints, target]
+        : null;
+      const points =
+        savedPoints && isOrthogonalPolyline(savedPoints)
+          ? savedPoints
+          : orthogonalRoutePoints(source, target, route);
       return [
         {
           relationship,
-          path: editableOrthogonalPath(source, target, route),
+          path: roundedPolylinePath(points),
           source,
           target,
           route,
+          points,
+          handles: routeSegmentHandles(points),
           sourceCardinality: relationship.type === 'many-to-one' ? 'many' : 'one',
           targetCardinality: relationship.type === 'one-to-many' ? 'many' : 'one',
-          connected:
-            !selectedTableId ||
-            relationship.sourceTableId === selectedTableId ||
-            relationship.targetTableId === selectedTableId,
-          flow: !selectedTableId
-            ? null
-            : relationship.sourceTableId === selectedTableId
+          connected: columnFocus
+            ? sourceFocused || targetFocused
+            : !selectedTableId ||
+              relationship.sourceTableId === selectedTableId ||
+              relationship.targetTableId === selectedTableId,
+          flow: columnFocus
+            ? sourceFocused
               ? 'forward'
-              : relationship.targetTableId === selectedTableId
+              : targetFocused
                 ? 'reverse'
-                : null,
+                : null
+            : !selectedTableId
+              ? null
+              : relationship.sourceTableId === selectedTableId
+                ? 'forward'
+                : relationship.targetTableId === selectedTableId
+                  ? 'reverse'
+                  : null,
         },
       ];
     }),
@@ -184,10 +267,12 @@ export class DiagramCanvas {
   protected readonly temporaryPath = computed(() => {
     const temporary = this.temporaryRelationship();
     return temporary
-      ? editableOrthogonalPath(
-          temporary.source,
-          temporary.cursor,
-          defaultOrthogonalRoute(temporary.source, temporary.cursor),
+      ? roundedPolylinePath(
+          orthogonalRoutePoints(
+            temporary.source,
+            temporary.cursor,
+            defaultOrthogonalRoute(temporary.source, temporary.cursor),
+          ),
         )
       : null;
   });
@@ -283,19 +368,25 @@ export class DiagramCanvas {
       this.relationshipTarget.set(
         this.endpointAt(event.clientX, event.clientY, interaction.source),
       );
-    } else {
+    } else if (interaction.kind === 'segment') {
       const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
       const cursor = screenToWorld(
         { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
         this.layout().viewport,
       );
-      const current = this.routePreview()?.layout ?? interaction.from ?? {};
+      const points = interaction.points.map((point) => ({ ...point }));
+      const start = points[interaction.segmentIndex]!;
+      const end = points[interaction.segmentIndex + 1]!;
+      if (interaction.orientation === 'horizontal') {
+        start.y = cursor.y;
+        end.y = cursor.y;
+      } else {
+        start.x = cursor.x;
+        end.x = cursor.x;
+      }
       this.routePreview.set({
         relationshipId: interaction.relationshipId,
-        layout: {
-          ...current,
-          [interaction.control]: interaction.control === 'routeY' ? cursor.y : cursor.x,
-        },
+        layout: { ...interaction.from, waypoints: points.slice(1, -1) },
       });
     }
   }
@@ -382,23 +473,71 @@ export class DiagramCanvas {
     return `translate(${point.x} ${point.y}) scale(${towardX >= point.x ? 1 : -1} 1)`;
   }
 
-  protected startRouteDrag(
+  protected startSegmentDrag(
     event: PointerEvent,
-    relationshipId: string,
-    control: 'sourceX' | 'routeY' | 'targetX',
+    edge: RenderedRelationship,
+    handle: RouteSegmentHandle,
   ): void {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    this.relationshipSelected.emit(relationshipId);
+    this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
-      kind: 'route',
+      kind: 'segment',
       pointerId: event.pointerId,
-      relationshipId,
-      from: this.layout().relationships?.[relationshipId],
-      control,
+      relationshipId: edge.relationship.id,
+      from: this.layout().relationships?.[edge.relationship.id],
+      segmentIndex: handle.segmentIndex,
+      orientation: handle.orientation,
+      points: edge.points,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
+  }
+
+  protected hoverRelationshipSegment(event: PointerEvent, edge: RenderedRelationship): void {
+    if (this.interaction) return;
+    const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
+    const cursor = screenToWorld(
+      { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
+      this.layout().viewport,
+    );
+    const nearest = edge.handles
+      .map((handle) => ({
+        handle,
+        nearest: nearestPointOnPolyline(cursor, [
+          edge.points[handle.segmentIndex]!,
+          edge.points[handle.segmentIndex + 1]!,
+        ])!,
+      }))
+      .sort((left, right) => left.nearest.distance - right.nearest.distance)[0];
+    if (!nearest || nearest.nearest.distance > 18 / this.layout().viewport.zoom) {
+      this.hoveredSegment.set(null);
+      return;
+    }
+    this.hoveredSegment.set({
+      relationshipId: edge.relationship.id,
+      point: nearest.nearest.point,
+      segmentIndex: nearest.handle.segmentIndex,
+      orientation: nearest.handle.orientation,
+    });
+  }
+
+  protected clearHoveredSegment(event: PointerEvent, relationshipId: string): void {
+    if ((event.relatedTarget as Element | null)?.classList.contains('route-handle')) return;
+    if (this.hoveredSegment()?.relationshipId === relationshipId && !this.interaction) {
+      this.hoveredSegment.set(null);
+    }
+  }
+
+  protected startHoveredSegment(event: PointerEvent, edge: RenderedRelationship): void {
+    const hovered = this.hoveredSegment();
+    if (!hovered || hovered.relationshipId !== edge.relationship.id) return;
+    this.startSegmentDrag(event, edge, hovered);
+    this.hoveredSegment.set(null);
+  }
+
+  protected setHoveredColumn(column: { tableId: string; columnId: string } | null): void {
+    this.hoveredColumn.set(column);
   }
 
   fitDiagram(): void {
@@ -433,4 +572,28 @@ export class DiagramCanvas {
     this.temporaryRelationship.set(null);
     this.relationshipTarget.set(null);
   }
+}
+
+function routeSegmentHandles(points: Point[]): RouteSegmentHandle[] {
+  const handles: RouteSegmentHandle[] = [];
+  for (let index = 1; index < points.length - 2; index += 1) {
+    const start = points[index]!;
+    const end = points[index + 1]!;
+    const horizontal = Math.abs(start.y - end.y) < 0.01;
+    const vertical = Math.abs(start.x - end.x) < 0.01;
+    if (!horizontal && !vertical) continue;
+    handles.push({
+      segmentIndex: index,
+      point: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+      orientation: horizontal ? 'horizontal' : 'vertical',
+    });
+  }
+  return handles;
+}
+
+function isOrthogonalPolyline(points: Point[]): boolean {
+  return points.slice(0, -1).every((point, index) => {
+    const next = points[index + 1]!;
+    return Math.abs(point.x - next.x) < 0.01 || Math.abs(point.y - next.y) < 0.01;
+  });
 }

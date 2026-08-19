@@ -23,6 +23,7 @@ export class TableNode {
   readonly showRelationshipHandles = input(false);
   readonly tableSelected = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
+  readonly columnHovered = output<{ tableId: string; columnId: string } | null>();
   readonly relationshipStarted = output<{
     tableId: string;
     columnId: string;
@@ -59,6 +60,10 @@ export class TableNode {
   protected interactWithColumn(event: PointerEvent, columnId: string): void {
     if (this.showRelationshipHandles()) this.startRelationship(event, columnId);
     else this.selectColumn(event, columnId);
+  }
+
+  protected hoverColumn(columnId: string): void {
+    this.columnHovered.emit({ tableId: this.table().id, columnId });
   }
 
   protected startRelationship(event: PointerEvent, columnId: string): void {
