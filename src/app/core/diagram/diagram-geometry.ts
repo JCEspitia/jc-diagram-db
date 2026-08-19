@@ -144,6 +144,77 @@ export function nearestPointOnPolyline(
   return nearest;
 }
 
+export function pullOrthogonalSegment(
+  points: Point[],
+  segmentIndex: number,
+  at: Point,
+  requestedHalfLength = 20,
+): { points: Point[]; segmentIndex: number } {
+  const start = points[segmentIndex];
+  const end = points[segmentIndex + 1];
+  if (!start || !end) return { points, segmentIndex };
+  const horizontal = Math.abs(start.y - end.y) < 0.01;
+  const segmentLength = distance(start, end);
+  const halfLength = Math.min(requestedHalfLength, segmentLength / 3);
+  const direction = horizontal ? Math.sign(end.x - start.x) : Math.sign(end.y - start.y);
+  const first = horizontal
+    ? { x: at.x - direction * halfLength, y: start.y }
+    : { x: start.x, y: at.y - direction * halfLength };
+  const second = horizontal
+    ? { x: at.x + direction * halfLength, y: start.y }
+    : { x: start.x, y: at.y + direction * halfLength };
+  return {
+    points: [
+      ...points.slice(0, segmentIndex + 1),
+      first,
+      { ...first },
+      { ...second },
+      second,
+      ...points.slice(segmentIndex + 1),
+    ],
+    segmentIndex: segmentIndex + 2,
+  };
+}
+
+export function moveOrthogonalSegment(
+  points: Point[],
+  segmentIndex: number,
+  orientation: 'horizontal' | 'vertical',
+  coordinate: number,
+): Point[] {
+  const moved = points.map((point) => ({ ...point }));
+  const start = moved[segmentIndex];
+  const end = moved[segmentIndex + 1];
+  if (!start || !end) return moved;
+  if (orientation === 'horizontal') {
+    start.y = coordinate;
+    end.y = coordinate;
+  } else {
+    start.x = coordinate;
+    end.x = coordinate;
+  }
+  return moved;
+}
+
+export function normalizeOrthogonalPolyline(points: Point[]): Point[] {
+  const normalized: Point[] = [];
+  for (const point of points) {
+    const previous = normalized.at(-1);
+    if (previous && distance(previous, point) < 0.01) continue;
+    normalized.push({ ...point });
+    while (normalized.length >= 3) {
+      const first = normalized.at(-3)!;
+      const middle = normalized.at(-2)!;
+      const last = normalized.at(-1)!;
+      const collinearX = Math.abs(first.x - middle.x) < 0.01 && Math.abs(middle.x - last.x) < 0.01;
+      const collinearY = Math.abs(first.y - middle.y) < 0.01 && Math.abs(middle.y - last.y) < 0.01;
+      if (!collinearX && !collinearY) break;
+      normalized.splice(-2, 1);
+    }
+  }
+  return normalized;
+}
+
 function nearestPointOnSegment(point: Point, start: Point, end: Point): Point {
   const dx = end.x - start.x;
   const dy = end.y - start.y;

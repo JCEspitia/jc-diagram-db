@@ -51,6 +51,14 @@
           <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
         }
         @if (selectedRelationshipId() === edge.relationship.id) {
+          @for (candidate of edge.pullCandidates; track candidate.segmentIndex + '-' + $index) {
+            <circle
+              class="route-candidate"
+              [attr.cx]="candidate.point.x"
+              [attr.cy]="candidate.point.y"
+              r="1.8"
+            />
+          }
           @for (handle of edge.handles; track handle.segmentIndex) {
             <circle
               class="route-handle"
@@ -64,10 +72,7 @@
           }
         }
         @if (hoveredSegment(); as hovered) {
-          @if (
-            hovered.relationshipId === edge.relationship.id &&
-            selectedRelationshipId() !== edge.relationship.id
-          ) {
+          @if (hovered.relationshipId === edge.relationship.id) {
             <circle
               class="route-handle ghost"
               [class.horizontal]="hovered.orientation === 'horizontal'"

@@ -43,6 +43,8 @@ visuales son representaciones independientes.
 - Cardinalidades visibles, badges `PK/FK/NN/UQ/AI` y flujo animado al seleccionar tablas.
 - Routing automático con carriles paralelos y evasión básica de tablas intermedias.
 - Conexiones suavizadas con controles por tramo que solo se desplazan horizontal o verticalmente.
+- Extracción de nuevos desvíos ortogonales desde cualquier tramo y simplificación automática de la ruta.
+- Separación mínima entre nuevos controles y esquinas para evitar rutas demasiado estrechas.
 - Foco por columna: al pasar el cursor se resaltan sus relaciones y se anima su dirección.
 - Auto layout `Left to right`, `Pipeline`, `Snowflake` y `Compact`.
 

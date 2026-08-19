@@ -84,6 +84,11 @@
     fill 120ms ease,
     opacity 120ms ease;
 }
+.route-candidate {
+  fill: #8074ee;
+  opacity: 0.8;
+  pointer-events: none;
+}
 .route-handle.horizontal {
   cursor: ns-resize;
 }

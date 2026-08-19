@@ -7,6 +7,9 @@ import {
   relationshipPath,
   routeAroundObstacles,
   nearestPointOnPolyline,
+  moveOrthogonalSegment,
+  normalizeOrthogonalPolyline,
+  pullOrthogonalSegment,
   roundedPolylinePath,
   orthogonalRelationshipPath,
   screenToWorld,
@@ -19,6 +22,44 @@ describe('diagram geometry', () => {
     const viewport = { x: 100, y: 40, zoom: 1.5 };
     const world = { x: 20, y: 30 };
     expect(screenToWorld(worldToScreen(world, viewport), viewport)).toEqual(world);
+  });
+
+  it('pulls a new movable lane from an existing segment', () => {
+    const route = pullOrthogonalSegment(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+      0,
+      { x: 50, y: 0 },
+      10,
+    );
+    const moved = moveOrthogonalSegment(route.points, route.segmentIndex, 'horizontal', 30);
+
+    expect(moved).toEqual([
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      { x: 40, y: 30 },
+      { x: 60, y: 30 },
+      { x: 60, y: 0 },
+      { x: 100, y: 0 },
+    ]);
+  });
+
+  it('removes zero-length and collinear route points', () => {
+    expect(
+      normalizeOrthogonalPolyline([
+        { x: 0, y: 0 },
+        { x: 20, y: 0 },
+        { x: 20, y: 0 },
+        { x: 40, y: 0 },
+        { x: 40, y: 30 },
+      ]),
+    ).toEqual([
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      { x: 40, y: 30 },
+    ]);
   });
 
   it('locates a column anchor from table layout and row index', () => {
