@@ -10,30 +10,6 @@
 >
   <div class="world" [style.transform]="transform()">
     <svg class="relationships" width="1600" height="1000">
-      <defs>
-        <marker
-          id="cardinality-one"
-          viewBox="-1 -5 10 10"
-          refX="0"
-          refY="0"
-          markerWidth="9"
-          markerHeight="9"
-          orient="auto-start-reverse"
-        >
-          <path d="M 1 -4 V 4" />
-        </marker>
-        <marker
-          id="cardinality-many"
-          viewBox="-1 -5 10 10"
-          refX="0"
-          refY="0"
-          markerWidth="9"
-          markerHeight="9"
-          orient="auto-start-reverse"
-        >
-          <path d="M 8 -4 L 1 0 L 8 4 M 1 -4 V 4" />
-        </marker>
-      </defs>
       @for (edge of edges(); track edge.relationship.id) {
         <path class="edge-shadow" [class.dimmed]="!edge.connected" [attr.d]="edge.path" />
         <path
@@ -46,23 +22,53 @@
           [class.selected]="selectedRelationshipId() === edge.relationship.id"
           [class.dimmed]="!edge.connected"
           [attr.d]="edge.path"
-          [attr.marker-start]="
-            edge.sourceCardinality === 'many' ? 'url(#cardinality-many)' : 'url(#cardinality-one)'
-          "
-          [attr.marker-end]="
-            edge.targetCardinality === 'many' ? 'url(#cardinality-many)' : 'url(#cardinality-one)'
-          "
         />
+        <g
+          class="cardinality-symbol"
+          [class.dimmed]="!edge.connected"
+          [attr.transform]="symbolTransform(edge.source, edge.route.sourceX)"
+        >
+          @if (edge.sourceCardinality === 'many') {
+            <path d="M 15 -6 L 7 0 L 15 6 M 7 -5 V 5" />
+          } @else {
+            <path d="M 8 -5 V 5" />
+          }
+        </g>
+        <g
+          class="cardinality-symbol"
+          [class.dimmed]="!edge.connected"
+          [attr.transform]="symbolTransform(edge.target, edge.route.targetX)"
+        >
+          @if (edge.targetCardinality === 'many') {
+            <path d="M 15 -6 L 7 0 L 15 6 M 7 -5 V 5" />
+          } @else {
+            <path d="M 8 -5 V 5" />
+          }
+        </g>
         @if (edge.flow) {
           <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
         }
         @if (selectedRelationshipId() === edge.relationship.id) {
           <circle
-            class="route-handle"
-            [attr.cx]="edge.routeX"
-            [attr.cy]="edge.handleY"
+            class="route-handle horizontal"
+            [attr.cx]="edge.route.sourceX"
+            [attr.cy]="(edge.source.y + edge.route.routeY) / 2"
             r="6"
-            (pointerdown)="startRouteDrag($event, edge.relationship.id)"
+            (pointerdown)="startRouteDrag($event, edge.relationship.id, 'sourceX')"
+          />
+          <circle
+            class="route-handle vertical"
+            [attr.cx]="(edge.route.sourceX + edge.route.targetX) / 2"
+            [attr.cy]="edge.route.routeY"
+            r="6"
+            (pointerdown)="startRouteDrag($event, edge.relationship.id, 'routeY')"
+          />
+          <circle
+            class="route-handle horizontal"
+            [attr.cx]="edge.route.targetX"
+            [attr.cy]="(edge.route.routeY + edge.target.y) / 2"
+            r="6"
+            (pointerdown)="startRouteDrag($event, edge.relationship.id, 'targetX')"
           />
         }
       }

@@ -80,12 +80,16 @@ export class App {
     sourceColumnId: string;
     targetTableId: string;
     targetColumnId: string;
+    sourceSide: 'left' | 'right';
+    targetSide: 'left' | 'right';
   }): void {
     this.store.createRelationship(
       event.sourceTableId,
       event.sourceColumnId,
       event.targetTableId,
       event.targetColumnId,
+      event.sourceSide,
+      event.targetSide,
     );
   }
 

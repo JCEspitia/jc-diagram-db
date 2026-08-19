@@ -169,3 +169,6 @@ header button {
   opacity: 1;
   border-color: #9184f7;
 }
+:host.show-relationship-handles .column-row {
+  cursor: crosshair;
+}

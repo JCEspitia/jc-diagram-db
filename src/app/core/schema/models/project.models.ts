@@ -8,6 +8,9 @@ export interface DiagramLayout {
 
 export interface RelationshipLayout {
   routeX?: number;
+  sourceX?: number;
+  targetX?: number;
+  routeY?: number;
   sourceSide?: 'left' | 'right';
   targetSide?: 'left' | 'right';
 }

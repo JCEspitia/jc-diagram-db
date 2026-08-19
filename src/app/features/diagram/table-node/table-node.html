@@ -13,7 +13,7 @@
         [class.relationship-target]="relationshipTargetColumnId() === column.id"
         [attr.data-table-id]="table().id"
         [attr.data-column-id]="column.id"
-        (pointerdown)="selectColumn($event, column.id)"
+        (pointerdown)="interactWithColumn($event, column.id)"
       >
         <span class="constraints">
           @if (column.primaryKey) {

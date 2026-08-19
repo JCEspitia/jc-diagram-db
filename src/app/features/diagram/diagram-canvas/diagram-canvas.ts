@@ -10,8 +10,10 @@ import {
 } from '@angular/core';
 import {
   columnAnchor,
+  defaultOrthogonalRoute,
+  editableOrthogonalPath,
   fitToScreen,
-  orthogonalRelationshipPath,
+  OrthogonalRoute,
   screenToWorld,
   tableLayout,
   zoomAtPoint,
@@ -30,8 +32,9 @@ import { TableNode } from '../table-node/table-node';
 interface RenderedRelationship {
   relationship: RelationshipSchema;
   path: string;
-  routeX: number;
-  handleY: number;
+  source: { x: number; y: number };
+  target: { x: number; y: number };
+  route: OrthogonalRoute;
   sourceCardinality: 'one' | 'many';
   targetCardinality: 'one' | 'many';
   connected: boolean;
@@ -41,6 +44,7 @@ interface RenderedRelationship {
 interface RelationshipEndpoint {
   tableId: string;
   columnId: string;
+  side: 'left' | 'right';
 }
 
 @Component({
@@ -66,6 +70,8 @@ export class DiagramCanvas {
     sourceColumnId: string;
     targetTableId: string;
     targetColumnId: string;
+    sourceSide: 'left' | 'right';
+    targetSide: 'left' | 'right';
   }>();
   readonly selectionCleared = output<void>();
 
@@ -89,6 +95,7 @@ export class DiagramCanvas {
         pointerId: number;
         relationshipId: string;
         from?: RelationshipLayout;
+        control: 'sourceX' | 'routeY' | 'targetX';
       }
     | undefined;
   private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
@@ -98,7 +105,10 @@ export class DiagramCanvas {
     source: { x: number; y: number };
     cursor: { x: number; y: number };
   } | null>(null);
-  private readonly routePreview = signal<{ relationshipId: string; routeX: number } | null>(null);
+  private readonly routePreview = signal<{
+    relationshipId: string;
+    layout: RelationshipLayout;
+  } | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
   protected readonly transform = computed(() => {
@@ -137,17 +147,22 @@ export class DiagramCanvas {
         routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left'),
       );
       const routePreview = this.routePreview();
-      const routeX =
-        routePreview?.relationshipId === relationship.id
-          ? routePreview.routeX
-          : (routeLayout?.routeX ?? (source.x + target.x) / 2);
+      const previewLayout =
+        routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
+      const defaults = defaultOrthogonalRoute(source, target);
+      const route: OrthogonalRoute = {
+        sourceX: previewLayout?.sourceX ?? previewLayout?.routeX ?? defaults.sourceX,
+        targetX: previewLayout?.targetX ?? previewLayout?.routeX ?? defaults.targetX,
+        routeY: previewLayout?.routeY ?? defaults.routeY,
+      };
       const selectedTableId = this.selectedTableId();
       return [
         {
           relationship,
-          path: orthogonalRelationshipPath(source, target, routeX),
-          routeX,
-          handleY: (source.y + target.y) / 2,
+          path: editableOrthogonalPath(source, target, route),
+          source,
+          target,
+          route,
           sourceCardinality: relationship.type === 'many-to-one' ? 'many' : 'one',
           targetCardinality: relationship.type === 'one-to-many' ? 'many' : 'one',
           connected:
@@ -168,7 +183,13 @@ export class DiagramCanvas {
 
   protected readonly temporaryPath = computed(() => {
     const temporary = this.temporaryRelationship();
-    return temporary ? orthogonalRelationshipPath(temporary.source, temporary.cursor) : null;
+    return temporary
+      ? editableOrthogonalPath(
+          temporary.source,
+          temporary.cursor,
+          defaultOrthogonalRoute(temporary.source, temporary.cursor),
+        )
+      : null;
   });
 
   protected tablePosition(tableId: string) {
@@ -207,20 +228,22 @@ export class DiagramCanvas {
   protected startRelationship({
     tableId,
     columnId,
+    sourceSide,
     event,
   }: {
     tableId: string;
     columnId: string;
+    sourceSide: 'left' | 'right';
     event: PointerEvent;
   }): void {
     const table = this.schema().tables.find(({ id }) => id === tableId);
     const columnIndex = table?.columns.findIndex(({ id }) => id === columnId) ?? -1;
     if (!table || columnIndex < 0) return;
-    const source = columnAnchor(tableLayout(this.layout(), tableId), columnIndex, 'right');
+    const source = columnAnchor(tableLayout(this.layout(), tableId), columnIndex, sourceSide);
     this.interaction = {
       kind: 'relationship',
       pointerId: event.pointerId,
-      source: { tableId, columnId },
+      source: { tableId, columnId, side: sourceSide },
     };
     this.temporaryRelationship.set({ source, cursor: source });
     (event.target as Element).setPointerCapture(event.pointerId);
@@ -266,7 +289,14 @@ export class DiagramCanvas {
         { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
         this.layout().viewport,
       );
-      this.routePreview.set({ relationshipId: interaction.relationshipId, routeX: cursor.x });
+      const current = this.routePreview()?.layout ?? interaction.from ?? {};
+      this.routePreview.set({
+        relationshipId: interaction.relationshipId,
+        layout: {
+          ...current,
+          [interaction.control]: interaction.control === 'routeY' ? cursor.y : cursor.x,
+        },
+      });
     }
   }
 
@@ -300,6 +330,8 @@ export class DiagramCanvas {
           sourceColumnId: interaction.source.columnId,
           targetTableId: target.tableId,
           targetColumnId: target.columnId,
+          sourceSide: interaction.source.side,
+          targetSide: target.side,
         });
       }
       this.clearTemporaryRelationship();
@@ -310,7 +342,7 @@ export class DiagramCanvas {
           type: 'CHANGE_RELATIONSHIP_ROUTE',
           relationshipId: interaction.relationshipId,
           from: interaction.from,
-          to: { ...interaction.from, routeX: preview.routeX },
+          to: preview.layout,
         });
       }
       this.routePreview.set(null);
@@ -346,7 +378,15 @@ export class DiagramCanvas {
     this.relationshipSelected.emit(relationshipId);
   }
 
-  protected startRouteDrag(event: PointerEvent, relationshipId: string): void {
+  protected symbolTransform(point: { x: number; y: number }, towardX: number): string {
+    return `translate(${point.x} ${point.y}) scale(${towardX >= point.x ? 1 : -1} 1)`;
+  }
+
+  protected startRouteDrag(
+    event: PointerEvent,
+    relationshipId: string,
+    control: 'sourceX' | 'routeY' | 'targetX',
+  ): void {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
@@ -356,6 +396,7 @@ export class DiagramCanvas {
       pointerId: event.pointerId,
       relationshipId,
       from: this.layout().relationships?.[relationshipId],
+      control,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
   }
@@ -383,7 +424,9 @@ export class DiagramCanvas {
     if (!tableId || !columnId || (tableId === source.tableId && columnId === source.columnId)) {
       return null;
     }
-    return { tableId, columnId };
+    const bounds = row.getBoundingClientRect();
+    const side = clientX < bounds.left + bounds.width / 2 ? 'left' : 'right';
+    return { tableId, columnId, side };
   }
 
   private clearTemporaryRelationship(): void {

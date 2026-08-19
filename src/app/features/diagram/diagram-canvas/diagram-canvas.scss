@@ -44,10 +44,14 @@
   stroke-width: 2;
   pointer-events: none;
 }
-.relationships marker path {
+.cardinality-symbol {
   fill: none;
-  stroke: #7c6ff2;
-  stroke-width: 1.5;
+  stroke: #a8b2c4;
+  stroke-width: 1.7;
+  pointer-events: none;
+}
+.cardinality-symbol.dimmed {
+  opacity: 0.12;
 }
 .edge.dimmed,
 .edge-shadow.dimmed {
@@ -73,8 +77,13 @@
   fill: #0d1320;
   stroke: #c7c0ff;
   stroke-width: 2;
-  cursor: ew-resize;
   pointer-events: all;
+}
+.route-handle.horizontal {
+  cursor: ew-resize;
+}
+.route-handle.vertical {
+  cursor: ns-resize;
 }
 .route-handle:hover {
   fill: #7767e7;

@@ -74,6 +74,29 @@ export function orthogonalRelationshipPath(
   return `M ${source.x} ${source.y} H ${routeX} V ${target.y} H ${target.x}`;
 }
 
+export interface OrthogonalRoute {
+  sourceX: number;
+  targetX: number;
+  routeY: number;
+}
+
+export function editableOrthogonalPath(
+  source: Point,
+  target: Point,
+  route: OrthogonalRoute,
+): string {
+  return `M ${source.x} ${source.y} H ${route.sourceX} V ${route.routeY} H ${route.targetX} V ${target.y} H ${target.x}`;
+}
+
+export function defaultOrthogonalRoute(source: Point, target: Point): OrthogonalRoute {
+  const sourceDirection = target.x >= source.x ? 1 : -1;
+  return {
+    sourceX: source.x + sourceDirection * 44,
+    targetX: target.x - sourceDirection * 44,
+    routeY: (source.y + target.y) / 2,
+  };
+}
+
 export function tableLayout(layout: DiagramLayout, tableId: string): TableLayout {
   return layout.tables[tableId] ?? { x: 0, y: 0 };
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   columnAnchor,
+  defaultOrthogonalRoute,
+  editableOrthogonalPath,
   fitToScreen,
   relationshipPath,
   orthogonalRelationshipPath,
@@ -29,6 +31,16 @@ describe('diagram geometry', () => {
   it('generates an editable orthogonal route', () => {
     expect(orthogonalRelationshipPath({ x: 10, y: 20 }, { x: 200, y: 80 }, 120)).toBe(
       'M 10 20 H 120 V 80 H 200',
+    );
+  });
+
+  it('generates a multi-point orthogonal route', () => {
+    const source = { x: 10, y: 20 };
+    const target = { x: 200, y: 100 };
+    const route = defaultOrthogonalRoute(source, target);
+    expect(route).toEqual({ sourceX: 54, targetX: 156, routeY: 60 });
+    expect(editableOrthogonalPath(source, target, route)).toBe(
+      'M 10 20 H 54 V 60 H 156 V 100 H 200',
     );
   });
 

@@ -26,6 +26,7 @@ export class TableNode {
   readonly relationshipStarted = output<{
     tableId: string;
     columnId: string;
+    sourceSide: 'left' | 'right';
     event: PointerEvent;
   }>();
   readonly dragStarted = output<{ tableId: string; event: PointerEvent }>();
@@ -55,10 +56,23 @@ export class TableNode {
     this.columnSelected.emit({ tableId: this.table().id, columnId });
   }
 
+  protected interactWithColumn(event: PointerEvent, columnId: string): void {
+    if (this.showRelationshipHandles()) this.startRelationship(event, columnId);
+    else this.selectColumn(event, columnId);
+  }
+
   protected startRelationship(event: PointerEvent, columnId: string): void {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    this.relationshipStarted.emit({ tableId: this.table().id, columnId, event });
+    const row = (event.target as Element).closest<HTMLElement>('.column-row');
+    const bounds = row?.getBoundingClientRect();
+    const sourceSide = bounds && event.clientX < bounds.left + bounds.width / 2 ? 'left' : 'right';
+    this.relationshipStarted.emit({
+      tableId: this.table().id,
+      columnId,
+      sourceSide,
+      event,
+    });
   }
 }

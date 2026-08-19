@@ -189,6 +189,8 @@ export class DiagramStore {
     sourceColumnId: string,
     targetTableId: string,
     targetColumnId: string,
+    sourceSide?: 'left' | 'right',
+    targetSide?: 'left' | 'right',
   ): void {
     const duplicate = this.schema().relationships.some(
       (relationship) =>
@@ -210,6 +212,16 @@ export class DiagramStore {
         type: 'many-to-one',
       },
     });
+    if (sourceSide || targetSide) {
+      this.project.update((project) => ({
+        ...project,
+        layout: executeDiagramOperation(project.layout, {
+          type: 'CHANGE_RELATIONSHIP_ROUTE',
+          relationshipId,
+          to: { sourceSide, targetSide },
+        }),
+      }));
+    }
     this.selectRelationship(relationshipId);
   }
 
