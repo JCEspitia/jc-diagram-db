@@ -9,11 +9,17 @@
   (wheel)="zoom($event)"
 >
   <div class="world" [style.transform]="transform()">
-    <svg class="relationships" width="1600" height="1000">
+    <svg
+      class="relationships"
+      [class.editing]="selectedRelationshipId()"
+      width="1600"
+      height="1000"
+    >
       @for (edge of edges(); track edge.relationship.id) {
         <path class="edge-shadow" [class.dimmed]="!edge.connected" [attr.d]="edge.path" />
         <path
           class="edge-hit-area"
+          [class.active]="selectedRelationshipId() === edge.relationship.id"
           [attr.d]="edge.path"
           (pointerdown)="selectRelationship($event, edge.relationship.id)"
           (pointermove)="hoverRelationshipSegment($event, edge)"
@@ -51,6 +57,24 @@
           <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
         }
         @if (selectedRelationshipId() === edge.relationship.id) {
+          @if (edge.canReset) {
+            <foreignObject
+              class="route-reset"
+              [attr.x]="edge.resetPoint.x - 13"
+              [attr.y]="edge.resetPoint.y - 31"
+              width="26"
+              height="26"
+            >
+              <button
+                type="button"
+                title="Reset line"
+                aria-label="Reset line and calculate the best route"
+                (pointerdown)="resetRelationshipRoute($event, edge.relationship.id)"
+              >
+                ↻
+              </button>
+            </foreignObject>
+          }
           @for (candidate of edge.pullCandidates; track candidate.segmentIndex + '-' + $index) {
             <circle
               class="route-candidate"

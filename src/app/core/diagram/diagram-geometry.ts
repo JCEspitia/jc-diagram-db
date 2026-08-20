@@ -148,21 +148,23 @@ export function pullOrthogonalSegment(
   points: Point[],
   segmentIndex: number,
   at: Point,
-  requestedHalfLength = 20,
+  requestedHalfLength = 64,
 ): { points: Point[]; segmentIndex: number } {
   const start = points[segmentIndex];
   const end = points[segmentIndex + 1];
   if (!start || !end) return { points, segmentIndex };
   const horizontal = Math.abs(start.y - end.y) < 0.01;
-  const segmentLength = distance(start, end);
-  const halfLength = Math.min(requestedHalfLength, segmentLength / 3);
   const direction = horizontal ? Math.sign(end.x - start.x) : Math.sign(end.y - start.y);
+  const distanceFromStart = distance(start, at);
+  const distanceToEnd = distance(at, end);
+  const before = Math.min(requestedHalfLength, distanceFromStart);
+  const after = Math.min(requestedHalfLength, distanceToEnd);
   const first = horizontal
-    ? { x: at.x - direction * halfLength, y: start.y }
-    : { x: start.x, y: at.y - direction * halfLength };
+    ? { x: at.x - direction * before, y: start.y }
+    : { x: start.x, y: at.y - direction * before };
   const second = horizontal
-    ? { x: at.x + direction * halfLength, y: start.y }
-    : { x: start.x, y: at.y + direction * halfLength };
+    ? { x: at.x + direction * after, y: start.y }
+    : { x: start.x, y: at.y + direction * after };
   return {
     points: [
       ...points.slice(0, segmentIndex + 1),

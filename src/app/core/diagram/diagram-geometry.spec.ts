@@ -24,28 +24,6 @@ describe('diagram geometry', () => {
     expect(screenToWorld(worldToScreen(world, viewport), viewport)).toEqual(world);
   });
 
-  it('pulls a new movable lane from an existing segment', () => {
-    const route = pullOrthogonalSegment(
-      [
-        { x: 0, y: 0 },
-        { x: 100, y: 0 },
-      ],
-      0,
-      { x: 50, y: 0 },
-      10,
-    );
-    const moved = moveOrthogonalSegment(route.points, route.segmentIndex, 'horizontal', 30);
-
-    expect(moved).toEqual([
-      { x: 0, y: 0 },
-      { x: 40, y: 0 },
-      { x: 40, y: 30 },
-      { x: 60, y: 30 },
-      { x: 60, y: 0 },
-      { x: 100, y: 0 },
-    ]);
-  });
-
   it('removes zero-length and collinear route points', () => {
     expect(
       normalizeOrthogonalPolyline([
@@ -59,6 +37,47 @@ describe('diagram geometry', () => {
       { x: 0, y: 0 },
       { x: 40, y: 0 },
       { x: 40, y: 30 },
+    ]);
+  });
+
+  it('moves a complete vertical segment without dividing it', () => {
+    expect(
+      moveOrthogonalSegment(
+        [
+          { x: 0, y: 0 },
+          { x: 40, y: 0 },
+          { x: 40, y: 100 },
+          { x: 90, y: 100 },
+        ],
+        1,
+        'vertical',
+        65,
+      ),
+    ).toEqual([
+      { x: 0, y: 0 },
+      { x: 65, y: 0 },
+      { x: 65, y: 100 },
+      { x: 90, y: 100 },
+    ]);
+  });
+
+  it('pulls a wide new lane around a candidate point', () => {
+    const route = pullOrthogonalSegment(
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: 200 },
+      ],
+      0,
+      { x: 0, y: 100 },
+    );
+
+    expect(moveOrthogonalSegment(route.points, route.segmentIndex, 'vertical', 80)).toEqual([
+      { x: 0, y: 0 },
+      { x: 0, y: 36 },
+      { x: 80, y: 36 },
+      { x: 80, y: 164 },
+      { x: 0, y: 164 },
+      { x: 0, y: 200 },
     ]);
   });
 

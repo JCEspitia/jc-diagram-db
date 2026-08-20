@@ -45,6 +45,8 @@ interface RenderedRelationship {
   points: Point[];
   handles: RouteSegmentHandle[];
   pullCandidates: RouteSegmentHandle[];
+  resetPoint: Point;
+  canReset: boolean;
   sourceCardinality: 'one' | 'many';
   targetCardinality: 'one' | 'many';
   connected: boolean;
@@ -64,7 +66,6 @@ interface RelationshipEndpoint {
 }
 
 const MIN_ROUTE_POINT_DISTANCE = 36;
-const MIN_PULL_OFFSET = 24;
 
 @Component({
   selector: 'app-diagram-canvas',
@@ -117,7 +118,6 @@ export class DiagramCanvas {
         segmentIndex: number;
         orientation: 'horizontal' | 'vertical';
         points: Point[];
-        pullOrigin?: number;
       }
     | undefined;
   private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
@@ -191,22 +191,22 @@ export class DiagramCanvas {
         previewLayout?.routeX !== undefined ||
         previewLayout?.waypoints?.length,
       );
+      const obstacles = this.schema()
+        .tables.filter(({ id }) => id !== sourceTable.id && id !== targetTable.id)
+        .map((table) => {
+          const position =
+            preview?.tableId === table.id ? preview.layout : tableLayout(this.layout(), table.id);
+          return {
+            left: position.x,
+            top: position.y,
+            right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
+            bottom:
+              position.y +
+              DEFAULT_TABLE_METRICS.headerHeight +
+              table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+          };
+        });
       if (!manuallyRouted) {
-        const obstacles = this.schema()
-          .tables.filter(({ id }) => id !== sourceTable.id && id !== targetTable.id)
-          .map((table) => {
-            const position =
-              preview?.tableId === table.id ? preview.layout : tableLayout(this.layout(), table.id);
-            return {
-              left: position.x,
-              top: position.y,
-              right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
-              bottom:
-                position.y +
-                DEFAULT_TABLE_METRICS.headerHeight +
-                table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
-            };
-          });
         route = routeAroundObstacles(source, target, route, obstacles);
       }
       const selectedTableId = this.selectedTableId();
@@ -237,6 +237,31 @@ export class DiagramCanvas {
         savedPoints && isOrthogonalPolyline(savedPoints)
           ? savedPoints
           : orthogonalRoutePoints(source, target, route);
+      const automaticSource = columnAnchor(
+        sourceLayout,
+        sourceIndex,
+        sourceOnLeft ? 'left' : 'right',
+      );
+      const automaticTarget = columnAnchor(
+        targetLayout,
+        targetIndex,
+        sourceOnLeft ? 'right' : 'left',
+      );
+      const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
+      const automaticRoute = routeAroundObstacles(
+        automaticSource,
+        automaticTarget,
+        {
+          ...automaticDefaults,
+          routeY: automaticDefaults.routeY + ((relationshipIndex % 5) - 2) * 10,
+        },
+        obstacles,
+      );
+      const automaticPoints = orthogonalRoutePoints(
+        automaticSource,
+        automaticTarget,
+        automaticRoute,
+      );
       return [
         {
           relationship,
@@ -247,6 +272,8 @@ export class DiagramCanvas {
           points,
           handles: routeSegmentHandles(points),
           pullCandidates: routePullCandidates(points),
+          resetPoint: routeActionPoint(points),
+          canReset: manuallyRouted && !samePolyline(points, automaticPoints),
           sourceCardinality: relationship.type === 'many-to-one' ? 'many' : 'one',
           targetCardinality: relationship.type === 'one-to-many' ? 'many' : 'one',
           connected: columnFocus
@@ -382,17 +409,11 @@ export class DiagramCanvas {
         { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
         this.layout().viewport,
       );
-      const requestedCoordinate = interaction.orientation === 'horizontal' ? cursor.y : cursor.x;
-      const coordinate =
-        interaction.pullOrigin !== undefined &&
-        Math.abs(requestedCoordinate - interaction.pullOrigin) < MIN_PULL_OFFSET
-          ? interaction.pullOrigin
-          : requestedCoordinate;
       const points = moveOrthogonalSegment(
         interaction.points,
         interaction.segmentIndex,
         interaction.orientation,
-        coordinate,
+        interaction.orientation === 'horizontal' ? cursor.y : cursor.x,
       );
       this.routePreview.set({
         relationshipId: interaction.relationshipId,
@@ -484,6 +505,18 @@ export class DiagramCanvas {
     this.relationshipSelected.emit(relationshipId);
   }
 
+  protected resetRelationshipRoute(event: PointerEvent, relationshipId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.hoveredSegment.set(null);
+    this.diagramOperation.emit({
+      type: 'CHANGE_RELATIONSHIP_ROUTE',
+      relationshipId,
+      from: this.layout().relationships?.[relationshipId],
+      to: {},
+    });
+  }
+
   protected symbolTransform(point: { x: number; y: number }, towardX: number): string {
     return `translate(${point.x} ${point.y}) scale(${towardX >= point.x ? 1 : -1} 1)`;
   }
@@ -497,24 +530,14 @@ export class DiagramCanvas {
     event.preventDefault();
     event.stopPropagation();
     this.relationshipSelected.emit(edge.relationship.id);
-    const endpointSegment =
-      handle.segmentIndex === 0 || handle.segmentIndex === edge.points.length - 2;
-    const prepared = endpointSegment
-      ? pullOrthogonalSegment(edge.points, handle.segmentIndex, handle.point)
-      : { points: edge.points, segmentIndex: handle.segmentIndex };
     this.interaction = {
       kind: 'segment',
       pointerId: event.pointerId,
       relationshipId: edge.relationship.id,
       from: this.layout().relationships?.[edge.relationship.id],
-      segmentIndex: prepared.segmentIndex,
+      segmentIndex: handle.segmentIndex,
       orientation: handle.orientation,
-      points: prepared.points,
-      pullOrigin: endpointSegment
-        ? handle.orientation === 'horizontal'
-          ? handle.point.y
-          : handle.point.x
-        : undefined,
+      points: edge.points,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
   }
@@ -567,7 +590,6 @@ export class DiagramCanvas {
       segmentIndex: pulled.segmentIndex,
       orientation: hovered.orientation,
       points: pulled.points,
-      pullOrigin: hovered.orientation === 'horizontal' ? hovered.point.y : hovered.point.x,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
     this.hoveredSegment.set(null);
@@ -613,19 +635,12 @@ export class DiagramCanvas {
 
 function routeSegmentHandles(points: Point[]): RouteSegmentHandle[] {
   const handles: RouteSegmentHandle[] = [];
-  for (let index = 0; index < points.length - 1; index += 1) {
+  for (let index = 1; index < points.length - 2; index += 1) {
     const start = points[index]!;
     const end = points[index + 1]!;
     const horizontal = Math.abs(start.y - end.y) < 0.01;
     const vertical = Math.abs(start.x - end.x) < 0.01;
     if (!horizontal && !vertical) continue;
-    const endpointSegment = index === 0 || index === points.length - 2;
-    if (
-      endpointSegment &&
-      Math.hypot(end.x - start.x, end.y - start.y) < MIN_ROUTE_POINT_DISTANCE * 2
-    ) {
-      continue;
-    }
     handles.push({
       segmentIndex: index,
       point: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
@@ -637,7 +652,7 @@ function routeSegmentHandles(points: Point[]): RouteSegmentHandle[] {
 
 function routePullCandidates(points: Point[], preferredSpacing = 56): RouteSegmentHandle[] {
   const candidates: RouteSegmentHandle[] = [];
-  for (let index = 0; index < points.length - 1; index += 1) {
+  for (let index = 1; index < points.length - 2; index += 1) {
     const start = points[index]!;
     const end = points[index + 1]!;
     const horizontal = Math.abs(start.y - end.y) < 0.01;
@@ -664,9 +679,36 @@ function routePullCandidates(points: Point[], preferredSpacing = 56): RouteSegme
   return candidates;
 }
 
+function routeActionPoint(points: Point[]): Point {
+  let longest = { start: points[0]!, end: points[1]!, length: -1 };
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index]!;
+    const end = points[index + 1]!;
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    if (length > longest.length) longest = { start, end, length };
+  }
+  return {
+    x: (longest.start.x + longest.end.x) / 2,
+    y: (longest.start.y + longest.end.y) / 2,
+  };
+}
+
 function isOrthogonalPolyline(points: Point[]): boolean {
   return points.slice(0, -1).every((point, index) => {
     const next = points[index + 1]!;
     return Math.abs(point.x - next.x) < 0.01 || Math.abs(point.y - next.y) < 0.01;
   });
+}
+
+function samePolyline(left: Point[], right: Point[], tolerance = 0.01): boolean {
+  const normalizedLeft = normalizeOrthogonalPolyline(left);
+  const normalizedRight = normalizeOrthogonalPolyline(right);
+  return (
+    normalizedLeft.length === normalizedRight.length &&
+    normalizedLeft.every(
+      (point, index) =>
+        Math.abs(point.x - normalizedRight[index]!.x) < tolerance &&
+        Math.abs(point.y - normalizedRight[index]!.y) < tolerance,
+    )
+  );
 }

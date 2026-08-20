@@ -29,6 +29,12 @@
   pointer-events: none;
   z-index: 1;
 }
+.relationships.editing {
+  z-index: 3;
+}
+.relationships.editing .edge-hit-area:not(.active) {
+  pointer-events: none;
+}
 .edge,
 .edge-shadow,
 .edge-hit-area {
@@ -88,6 +94,31 @@
   fill: #8074ee;
   opacity: 0.8;
   pointer-events: none;
+}
+.route-reset {
+  overflow: visible;
+  pointer-events: all;
+}
+.route-reset button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #8074ee;
+  border-radius: 5px;
+  color: #d9d5ff;
+  background: #172033;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 35%);
+  cursor: pointer;
+  font:
+    600 18px/1 system-ui,
+    sans-serif;
+}
+.route-reset button:hover {
+  color: #ffffff;
+  border-color: #c7c0ff;
+  background: #41379a;
 }
 .route-handle.horizontal {
   cursor: ns-resize;
