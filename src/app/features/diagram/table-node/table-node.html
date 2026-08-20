@@ -1,11 +1,13 @@
-<article class="table-card" [attr.title]="table().note || null" (pointerdown)="select()">
+<article class="table-card" [appTooltip]="table().note" (pointerdown)="select()">
   <header (pointerdown)="startDrag($event)">
     <svg lucideTable2 size="14"></svg>
     <strong>{{ table().name }}</strong>
     @if (table().note) {
       <svg lucideMessageSquareText class="note-icon" size="13" aria-label="Table comment"></svg>
     }
-    <button type="button" aria-label="Table options"><svg lucideEllipsis size="16"></svg></button>
+    <button appTooltip="Table options" type="button" aria-label="Table options">
+      <svg lucideEllipsis size="16"></svg>
+    </button>
   </header>
 
   <div class="columns">
@@ -16,7 +18,7 @@
         [class.relationship-target]="relationshipTargetColumnId() === column.id"
         [attr.data-table-id]="table().id"
         [attr.data-column-id]="column.id"
-        [attr.title]="column.note || null"
+        [appTooltip]="column.note"
         (pointerdown)="interactWithColumn($event, column.id)"
         (pointerenter)="hoverColumn(column.id)"
         (pointerleave)="columnHovered.emit(null)"
@@ -41,18 +43,19 @@
         <span class="column-type">{{ column.type }}</span>
         <span class="badges">
           @if (!column.nullable) {
-            <b title="Not null">NN</b>
+            <b appTooltip="Not null">NN</b>
           }
           @if (column.unique) {
-            <b title="Unique">UQ</b>
+            <b appTooltip="Unique">UQ</b>
           }
           @if (column.increment) {
-            <b title="Auto increment">AI</b>
+            <b appTooltip="Auto increment">AI</b>
           }
         </span>
         <button
           class="handle"
           type="button"
+          appTooltip="Create relationship"
           aria-label="Create relationship from column"
           (pointerdown)="startRelationship($event, column.id)"
         ></button>

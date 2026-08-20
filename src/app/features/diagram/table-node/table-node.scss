@@ -63,7 +63,7 @@ header > .note-icon {
 .column-row {
   height: 29px;
   display: grid;
-  grid-template-columns: 22px minmax(55px, 1fr) auto auto 7px;
+  grid-template-columns: 44px minmax(48px, 1fr) auto auto 7px;
   align-items: center;
   gap: 5px;
   padding: 0 8px;
@@ -94,6 +94,7 @@ header > .note-icon {
   align-items: center;
   gap: 4px;
   height: 16px;
+  min-width: 44px;
 }
 .constraints i {
   position: relative;

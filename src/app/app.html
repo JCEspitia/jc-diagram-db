@@ -9,6 +9,7 @@
     <nav aria-label="Project actions">
       <button
         type="button"
+        appTooltip="Change theme"
         aria-label="Toggle workspace theme"
         (click)="editorTheme.update((theme) => (theme === 'dark' ? 'light' : 'dark'))"
       >
@@ -18,12 +19,24 @@
           <svg lucideMoon size="16"></svg>
         }
       </button>
-      <button type="button" aria-label="Undo" [disabled]="!store.canUndo()" (click)="store.undo()">
+      <button
+        appTooltip="Undo"
+        type="button"
+        aria-label="Undo"
+        [disabled]="!store.canUndo()"
+        (click)="store.undo()"
+      >
         <svg lucideUndo2 size="16"></svg></button
-      ><button type="button" aria-label="Redo" [disabled]="!store.canRedo()" (click)="store.redo()">
+      ><button
+        appTooltip="Redo"
+        type="button"
+        aria-label="Redo"
+        [disabled]="!store.canRedo()"
+        (click)="store.redo()"
+      >
         <svg lucideRedo2 size="16"></svg>
       </button>
-      <button class="export" type="button" disabled title="Available with import/export">
+      <button class="export" type="button" disabled appTooltip="Available with import/export">
         Export
       </button>
     </nav>
@@ -37,7 +50,7 @@
     <nav class="sidebar-rail" aria-label="Sidebar views">
       <button
         type="button"
-        title="DBML editor"
+        appTooltip="DBML editor"
         aria-label="Show DBML editor"
         [class.active]="activeSidebar() === 'dbml'"
         (click)="activeSidebar.set('dbml'); dbmlCollapsed.set(false)"
@@ -46,7 +59,7 @@
       </button>
       <button
         type="button"
-        title="Inspector"
+        appTooltip="Tables"
         aria-label="Show inspector"
         [class.active]="activeSidebar() === 'inspector'"
         (click)="activeSidebar.set('inspector'); dbmlCollapsed.set(false)"
@@ -57,7 +70,12 @@
     <aside class="dbml-panel">
       <div class="panel-heading">
         <span>DBML</span>
-        <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
+        <button
+          appTooltip="Collapse sidebar"
+          type="button"
+          aria-label="Collapse sidebar"
+          (click)="dbmlCollapsed.set(true)"
+        >
           <svg lucidePanelLeftClose size="16"></svg>
         </button>
       </div>
@@ -134,7 +152,7 @@
           type="button"
           [class.active]="relationshipMode()"
           (click)="relationshipMode.update((active) => !active)"
-          title="Drag from one column handle to another"
+          appTooltip="Drag from one column handle to another"
         >
           <svg lucideLink2 size="15"></svg> Relation
         </button>
@@ -162,12 +180,27 @@
         (selectionCleared)="store.clearSelection()"
       />
       <div class="zoom-controls">
-        <button type="button" aria-label="Zoom out" (click)="store.zoomBy(0.8)">
+        <button
+          appTooltip="Zoom out"
+          type="button"
+          aria-label="Zoom out"
+          (click)="store.zoomBy(0.8)"
+        >
           <svg lucideZoomOut size="15"></svg></button
         ><span>{{ store.zoomPercent() }}%</span
-        ><button type="button" aria-label="Zoom in" (click)="store.zoomBy(1.25)">
+        ><button
+          appTooltip="Zoom in"
+          type="button"
+          aria-label="Zoom in"
+          (click)="store.zoomBy(1.25)"
+        >
           <svg lucideZoomIn size="15"></svg></button
-        ><button type="button" aria-label="Fit diagram" (click)="fitDiagram()">
+        ><button
+          appTooltip="Fit diagram"
+          type="button"
+          aria-label="Fit diagram"
+          (click)="fitDiagram()"
+        >
           <svg lucideScan size="15"></svg>
         </button>
       </div>
@@ -175,7 +208,12 @@
     <aside class="inspector">
       <div class="panel-heading">
         <span>Tables</span>
-        <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
+        <button
+          appTooltip="Collapse sidebar"
+          type="button"
+          aria-label="Collapse sidebar"
+          (click)="dbmlCollapsed.set(true)"
+        >
           <svg lucidePanelLeftClose size="16"></svg>
         </button>
       </div>
@@ -229,7 +267,7 @@
                 type="button"
                 class="drag-grip"
                 draggable="true"
-                title="Drag to reorder table"
+                appTooltip="Drag to reorder table"
                 aria-label="Drag to reorder table"
                 (dragstart)="startTableReorder($event, table.id)"
                 (dragend)="finishReorder()"
@@ -259,6 +297,7 @@
               <button
                 type="button"
                 class="more"
+                appTooltip="Table options"
                 aria-label="Table options"
                 (click)="
                   $event.stopPropagation();
@@ -304,7 +343,7 @@
                       type="button"
                       class="field-drag-grip"
                       draggable="true"
-                      title="Drag to reorder field"
+                      appTooltip="Drag to reorder field"
                       aria-label="Drag to reorder field"
                       (dragstart)="startColumnReorder($event, table.id, column.id)"
                       (dragend)="finishReorder()"
@@ -326,7 +365,7 @@
                       type="button"
                       class="field-flag not-null"
                       [class.active]="!column.nullable"
-                      title="Not null"
+                      appTooltip="Not null"
                       [attr.aria-pressed]="!column.nullable"
                       (click)="toggleColumnFlag(table.id, column.id, 'nullable', column.nullable)"
                     >
@@ -336,7 +375,7 @@
                       type="button"
                       class="field-flag primary-key"
                       [class.active]="column.primaryKey"
-                      title="Primary key"
+                      appTooltip="Primary key"
                       [attr.aria-pressed]="column.primaryKey"
                       (click)="
                         toggleColumnFlag(table.id, column.id, 'primaryKey', column.primaryKey)
@@ -347,6 +386,7 @@
                     <button
                       type="button"
                       class="more"
+                      appTooltip="More column options"
                       aria-label="More column options"
                       (click)="columnMenuId.set(columnMenuId() === column.id ? null : column.id)"
                     >

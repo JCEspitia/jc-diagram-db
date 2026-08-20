@@ -77,7 +77,7 @@
             <div>
               <button
                 type="button"
-                title="Relationship settings"
+                appTooltip="Relationship settings"
                 aria-label="Open relationship settings"
                 [class.active]="relationshipToolboxId() === edge.relationship.id"
                 (pointerdown)="toggleRelationshipToolbox($event, edge.relationship.id)"
@@ -87,7 +87,7 @@
               @if (edge.canReset) {
                 <button
                   type="button"
-                  title="Reset line"
+                  appTooltip="Reset line"
                   aria-label="Reset line and calculate the best route"
                   (pointerdown)="resetRelationshipRoute($event, edge.relationship.id)"
                 >
@@ -110,7 +110,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'one' && edge.targetCardinality === 'one'
                   "
-                  title="One to one"
+                  appTooltip="One to one"
                   (pointerdown)="changeRelationshipType($event, edge.relationship.id, 'one', 'one')"
                 >
                   1:1
@@ -120,7 +120,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'one' && edge.targetCardinality === 'many'
                   "
-                  title="One to many"
+                  appTooltip="One to many"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'one', 'many')
                   "
@@ -132,7 +132,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'many' && edge.targetCardinality === 'one'
                   "
-                  title="Many to one"
+                  appTooltip="Many to one"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'many', 'one')
                   "
@@ -144,7 +144,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'zero' && edge.targetCardinality === 'one'
                   "
-                  title="Zero to one"
+                  appTooltip="Zero to one"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'zero', 'one')
                   "
@@ -156,7 +156,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'one' && edge.targetCardinality === 'zero'
                   "
-                  title="One to zero"
+                  appTooltip="One to zero"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'one', 'zero')
                   "
@@ -168,7 +168,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'zero' && edge.targetCardinality === 'many'
                   "
-                  title="Zero to many"
+                  appTooltip="Zero to many"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'zero', 'many')
                   "
@@ -180,7 +180,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'many' && edge.targetCardinality === 'zero'
                   "
-                  title="Many to zero"
+                  appTooltip="Many to zero"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'many', 'zero')
                   "
@@ -192,7 +192,7 @@
                   [class.active]="
                     edge.sourceCardinality === 'many' && edge.targetCardinality === 'many'
                   "
-                  title="Many to many"
+                  appTooltip="Many to many"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'many', 'many')
                   "
@@ -201,7 +201,7 @@
                 </button>
                 <button
                   type="button"
-                  [title]="
+                  [appTooltip]="
                     'Move source port to the ' + (edge.sourceSide === 'left' ? 'right' : 'left')
                   "
                   [attr.aria-label]="'Source port: ' + edge.sourceSide"
@@ -223,7 +223,7 @@
                 </button>
                 <button
                   type="button"
-                  [title]="
+                  [appTooltip]="
                     'Move target port to the ' + (edge.targetSide === 'left' ? 'right' : 'left')
                   "
                   [attr.aria-label]="'Target port: ' + edge.targetSide"
@@ -246,7 +246,7 @@
                 <button
                   type="button"
                   class="danger"
-                  title="Delete relationship"
+                  appTooltip="Delete relationship"
                   aria-label="Delete relationship"
                   (pointerdown)="deleteRelationship($event, edge.relationship.id)"
                 >

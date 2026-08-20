@@ -11,6 +11,7 @@ import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore } from './state/diagram.store';
+import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import {
   LucideChevronRight,
   LucideCode2,
@@ -67,6 +68,7 @@ import {
     LucideX,
     LucideZoomIn,
     LucideZoomOut,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',

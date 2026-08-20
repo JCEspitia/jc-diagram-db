@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/schema';
+import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import {
   LucideEllipsis,
   LucideKeyRound,
@@ -10,7 +11,14 @@ import {
 
 @Component({
   selector: 'app-table-node',
-  imports: [LucideEllipsis, LucideKeyRound, LucideLink2, LucideMessageSquareText, LucideTable2],
+  imports: [
+    LucideEllipsis,
+    LucideKeyRound,
+    LucideLink2,
+    LucideMessageSquareText,
+    LucideTable2,
+    TooltipDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './table-node.html',
   styleUrl: './table-node.scss',

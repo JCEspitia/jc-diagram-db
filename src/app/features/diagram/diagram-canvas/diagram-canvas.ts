@@ -36,6 +36,7 @@ import {
   ViewportState,
 } from '../../../core/schema';
 import { TableNode } from '../table-node/table-node';
+import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import {
   LucideArrowLeftFromLine,
   LucideArrowRightFromLine,
@@ -87,6 +88,7 @@ const ENDPOINT_LANE_DISTANCE = 44;
     LucideRotateCcw,
     LucideSettings,
     LucideTrash2,
+    TooltipDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diagram-canvas.html',
