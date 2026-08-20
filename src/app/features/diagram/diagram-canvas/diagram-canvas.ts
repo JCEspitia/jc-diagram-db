@@ -66,6 +66,7 @@ interface RelationshipEndpoint {
 }
 
 const MIN_ROUTE_POINT_DISTANCE = 36;
+const ENDPOINT_LANE_DISTANCE = 44;
 
 @Component({
   selector: 'app-diagram-canvas',
@@ -165,16 +166,10 @@ export class DiagramCanvas {
           : tableLayout(this.layout(), targetTable.id);
       const sourceOnLeft = sourceLayout.x > targetLayout.x;
       const routeLayout = this.layout().relationships?.[relationship.id];
-      const source = columnAnchor(
-        sourceLayout,
-        sourceIndex,
-        routeLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right'),
-      );
-      const target = columnAnchor(
-        targetLayout,
-        targetIndex,
-        routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left'),
-      );
+      const sourceSide = routeLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right');
+      const targetSide = routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left');
+      const source = columnAnchor(sourceLayout, sourceIndex, sourceSide);
+      const target = columnAnchor(targetLayout, targetIndex, targetSide);
       const routePreview = this.routePreview();
       const previewLayout =
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
@@ -183,6 +178,11 @@ export class DiagramCanvas {
         sourceX: previewLayout?.sourceX ?? previewLayout?.routeX ?? defaults.sourceX,
         targetX: previewLayout?.targetX ?? previewLayout?.routeX ?? defaults.targetX,
         routeY: previewLayout?.routeY ?? defaults.routeY + ((relationshipIndex % 5) - 2) * 10,
+      };
+      route = {
+        ...route,
+        sourceX: outwardLaneX(source.x, route.sourceX, sourceSide),
+        targetX: outwardLaneX(target.x, route.targetX, targetSide),
       };
       const manuallyRouted = Boolean(
         previewLayout?.sourceX !== undefined ||
@@ -234,7 +234,9 @@ export class DiagramCanvas {
         ? [source, ...previewLayout.waypoints, target]
         : null;
       const points =
-        savedPoints && isOrthogonalPolyline(savedPoints)
+        savedPoints &&
+        isOrthogonalPolyline(savedPoints) &&
+        routeExitsOutward(savedPoints, sourceSide, targetSide)
           ? savedPoints
           : orthogonalRoutePoints(source, target, route);
       const automaticSource = columnAnchor(
@@ -409,11 +411,21 @@ export class DiagramCanvas {
         { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
         this.layout().viewport,
       );
+      const requestedCoordinate = interaction.orientation === 'horizontal' ? cursor.y : cursor.x;
+      const coordinate = keepSegmentOutsideTables(
+        interaction.points,
+        interaction.segmentIndex,
+        interaction.orientation,
+        requestedCoordinate,
+        this.schema(),
+        this.layout(),
+        this.tablePreview(),
+      );
       const points = moveOrthogonalSegment(
         interaction.points,
         interaction.segmentIndex,
         interaction.orientation,
-        interaction.orientation === 'horizontal' ? cursor.y : cursor.x,
+        coordinate,
       );
       this.routePreview.set({
         relationshipId: interaction.relationshipId,
@@ -711,4 +723,70 @@ function samePolyline(left: Point[], right: Point[], tolerance = 0.01): boolean 
         Math.abs(point.y - normalizedRight[index]!.y) < tolerance,
     )
   );
+}
+
+function outwardLaneX(anchorX: number, requestedX: number, side: 'left' | 'right'): number {
+  return side === 'left'
+    ? Math.min(requestedX, anchorX - ENDPOINT_LANE_DISTANCE)
+    : Math.max(requestedX, anchorX + ENDPOINT_LANE_DISTANCE);
+}
+
+function routeExitsOutward(
+  points: Point[],
+  sourceSide: 'left' | 'right',
+  targetSide: 'left' | 'right',
+): boolean {
+  const source = points[0];
+  const afterSource = points[1];
+  const beforeTarget = points.at(-2);
+  const target = points.at(-1);
+  if (!source || !afterSource || !beforeTarget || !target) return false;
+  const sourceExitsOutward =
+    sourceSide === 'left' ? afterSource.x < source.x : afterSource.x > source.x;
+  const targetExitsOutward =
+    targetSide === 'left' ? beforeTarget.x < target.x : beforeTarget.x > target.x;
+  return sourceExitsOutward && targetExitsOutward;
+}
+
+function keepSegmentOutsideTables(
+  points: Point[],
+  segmentIndex: number,
+  orientation: 'horizontal' | 'vertical',
+  requestedCoordinate: number,
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  preview: { tableId: string; layout: TableLayout } | null,
+): number {
+  const start = points[segmentIndex];
+  const end = points[segmentIndex + 1];
+  if (!start || !end) return requestedCoordinate;
+
+  let coordinate = requestedCoordinate;
+  for (const table of schema.tables) {
+    const position = preview?.tableId === table.id ? preview.layout : tableLayout(layout, table.id);
+    const left = position.x - ENDPOINT_LANE_DISTANCE;
+    const right =
+      position.x + (position.width ?? DEFAULT_TABLE_METRICS.width) + ENDPOINT_LANE_DISTANCE;
+    const top = position.y - ENDPOINT_LANE_DISTANCE;
+    const bottom =
+      position.y +
+      DEFAULT_TABLE_METRICS.headerHeight +
+      table.columns.length * DEFAULT_TABLE_METRICS.rowHeight +
+      ENDPOINT_LANE_DISTANCE;
+
+    if (orientation === 'vertical') {
+      const overlapsVertically =
+        Math.max(start.y, end.y) >= top && Math.min(start.y, end.y) <= bottom;
+      if (overlapsVertically && coordinate > left && coordinate < right) {
+        coordinate = coordinate - left <= right - coordinate ? left : right;
+      }
+    } else {
+      const overlapsHorizontally =
+        Math.max(start.x, end.x) >= left && Math.min(start.x, end.x) <= right;
+      if (overlapsHorizontally && coordinate > top && coordinate < bottom) {
+        coordinate = coordinate - top <= bottom - coordinate ? top : bottom;
+      }
+    }
+  }
+  return coordinate;
 }
