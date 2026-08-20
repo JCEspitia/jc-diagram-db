@@ -13,6 +13,7 @@ import {
   TableSchema,
 } from './core/schema';
 import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
+import { DiagramExportFormat, exportDiagram } from './core/export/diagram-exporter';
 import { checkExpressionError } from './core/schema/validation/check-expression.validator';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
@@ -25,6 +26,8 @@ import {
   LucideBraces,
   LucideCode2,
   LucideEllipsis,
+  LucideFileImage,
+  LucideFileText,
   LucideGripVertical,
   LucideGrid2x2,
   LucideKeyRound,
@@ -58,6 +61,8 @@ import {
     LucideBraces,
     LucideCode2,
     LucideEllipsis,
+    LucideFileImage,
+    LucideFileText,
     LucideGripVertical,
     LucideGrid2x2,
     LucideKeyRound,
@@ -106,6 +111,10 @@ export class App {
   protected readonly relationshipMode = signal(false);
   protected readonly autoLayoutMenu = signal(false);
   protected readonly detailLevelMenu = signal(false);
+  protected readonly exportMenu = signal(false);
+  protected readonly exportAreaId = signal<string | null>(null);
+  protected readonly exporting = signal(false);
+  protected readonly exportError = signal<string | null>(null);
   protected readonly editorTheme = signal<'dark' | 'light'>('light');
   protected readonly dbmlPanelWidth = signal(340);
   private panelResize?: { startX: number; startWidth: number };
@@ -346,6 +355,30 @@ export class App {
     this.detailLevelMenu.set(false);
   }
 
+  protected async performExport(format: DiagramExportFormat): Promise<void> {
+    if (this.exporting()) return;
+    this.exporting.set(true);
+    this.exportError.set(null);
+    try {
+      await exportDiagram(
+        {
+          schema: this.store.schema(),
+          layout: this.store.layout(),
+          projectName: this.store.project().name,
+          ...(this.exportAreaId() ? { areaId: this.exportAreaId()! } : {}),
+        },
+        format,
+      );
+      this.exportMenu.set(false);
+    } catch (error) {
+      this.exportError.set(
+        error instanceof Error ? error.message : 'The export could not be created.',
+      );
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
   protected startPanelResize(event: PointerEvent): void {
     event.preventDefault();
     this.panelResize = { startX: event.clientX, startWidth: this.dbmlPanelWidth() };
@@ -428,6 +461,7 @@ export class App {
     const target = event.target as Element | null;
     if (!target?.closest('.auto-layout-control')) this.autoLayoutMenu.set(false);
     if (!target?.closest('.detail-level-control')) this.detailLevelMenu.set(false);
+    if (!target?.closest('.export-control')) this.exportMenu.set(false);
     if (!target?.closest('.table-menu, .managed-table-header .more')) {
       this.tableMenuId.set(null);
     }

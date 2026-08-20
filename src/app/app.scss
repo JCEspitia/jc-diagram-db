@@ -40,6 +40,88 @@
   border-color: #484f58;
   background: #353b43;
 }
+.export-control {
+  position: relative;
+}
+.export-menu {
+  position: absolute;
+  z-index: 100;
+  top: 38px;
+  right: 0;
+  width: 290px;
+  padding: 10px;
+  border: 1px solid #414850;
+  border-radius: 8px;
+  background: #20262d;
+  color: #e8ecef;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 35%);
+}
+.export-menu header {
+  display: grid;
+  gap: 3px;
+  padding: 2px 3px 10px;
+}
+.export-menu header strong {
+  font-size: 12px;
+}
+.export-menu header small,
+.export-menu p {
+  color: #96a1ab;
+  font-size: 9px;
+}
+.export-menu .export-error {
+  color: #ff9aa2;
+}
+.export-menu label {
+  display: grid;
+  gap: 5px;
+  padding: 8px 3px;
+  border-top: 1px solid #363e46;
+  color: #aeb7bf;
+  font-size: 9px;
+}
+.export-menu select {
+  width: 100%;
+  height: 31px;
+  padding: 0 8px;
+  border: 1px solid #46515b;
+  border-radius: 5px;
+  background: #181e24;
+  color: #edf0f2;
+  font-size: 10px;
+}
+.export-formats {
+  display: grid;
+  gap: 4px;
+  margin-top: 5px;
+}
+.topbar nav .export-formats button {
+  width: 100%;
+  height: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border-radius: 5px;
+  color: #dce2e7;
+}
+.export-formats button > span {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  text-align: left;
+}
+.export-formats button b {
+  font-size: 10px;
+}
+.export-formats button small {
+  color: #89959f;
+  font-size: 8px;
+}
+.export-menu p {
+  margin: 8px 3px 1px;
+  line-height: 1.45;
+}
 .workspace {
   grid-template-columns: var(--dbml-width, 410px) 4px minmax(320px, 1fr) 250px;
 }
