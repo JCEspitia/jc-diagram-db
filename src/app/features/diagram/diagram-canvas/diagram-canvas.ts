@@ -108,7 +108,9 @@ export class DiagramCanvas {
   readonly tableSelected = output<string>();
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
+  readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
   readonly areaEditRequested = output<string>();
+  readonly areaCollapsedChanged = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly relationshipSelected = output<string>();
   readonly relationshipTypeChanged = output<{
@@ -210,14 +212,25 @@ export class DiagramCanvas {
       const targetIndex =
         targetTable?.columns.findIndex(({ id }) => id === relationship.targetColumnId) ?? -1;
       if (!sourceTable || !targetTable || sourceIndex < 0 || targetIndex < 0) return [];
-      const sourceLayout = this.tablePosition(sourceTable.id);
-      const targetLayout = this.tablePosition(targetTable.id);
+      const sourceArea = this.collapsedAreaForTable(sourceTable.id);
+      const targetArea = this.collapsedAreaForTable(targetTable.id);
+      if (sourceArea && sourceArea === targetArea) return [];
+      const sourceLayout = sourceArea
+        ? { x: sourceArea.x, y: sourceArea.y, width: 180 }
+        : this.tablePosition(sourceTable.id);
+      const targetLayout = targetArea
+        ? { x: targetArea.x, y: targetArea.y, width: 180 }
+        : this.tablePosition(targetTable.id);
       const sourceOnLeft = sourceLayout.x > targetLayout.x;
       const routeLayout = this.layout().relationships?.[relationship.id];
       const sourceSide = routeLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right');
       const targetSide = routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left');
-      const source = columnAnchor(sourceLayout, sourceIndex, sourceSide);
-      const target = columnAnchor(targetLayout, targetIndex, targetSide);
+      const source = sourceArea
+        ? collapsedAreaAnchor(sourceArea, sourceSide)
+        : columnAnchor(sourceLayout, sourceIndex, sourceSide);
+      const target = targetArea
+        ? collapsedAreaAnchor(targetArea, targetSide)
+        : columnAnchor(targetLayout, targetIndex, targetSide);
       const routePreview = this.routePreview();
       const previewLayout =
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
@@ -240,7 +253,10 @@ export class DiagramCanvas {
         previewLayout?.waypoints?.length,
       );
       const obstacles = this.schema()
-        .tables.filter(({ id }) => id !== sourceTable.id && id !== targetTable.id)
+        .tables.filter(
+          ({ id }) =>
+            id !== sourceTable.id && id !== targetTable.id && !this.collapsedAreaForTable(id),
+        )
         .map((table) => {
           const position = this.tablePosition(table.id);
           return {
@@ -286,16 +302,12 @@ export class DiagramCanvas {
         routeExitsOutward(savedPoints, sourceSide, targetSide)
           ? savedPoints
           : orthogonalRoutePoints(source, target, route);
-      const automaticSource = columnAnchor(
-        sourceLayout,
-        sourceIndex,
-        sourceOnLeft ? 'left' : 'right',
-      );
-      const automaticTarget = columnAnchor(
-        targetLayout,
-        targetIndex,
-        sourceOnLeft ? 'right' : 'left',
-      );
+      const automaticSource = sourceArea
+        ? collapsedAreaAnchor(sourceArea, sourceOnLeft ? 'left' : 'right')
+        : columnAnchor(sourceLayout, sourceIndex, sourceOnLeft ? 'left' : 'right');
+      const automaticTarget = targetArea
+        ? collapsedAreaAnchor(targetArea, sourceOnLeft ? 'right' : 'left')
+        : columnAnchor(targetLayout, targetIndex, sourceOnLeft ? 'right' : 'left');
       const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
       const automaticRoute = routeAroundObstacles(
         automaticSource,
@@ -388,6 +400,16 @@ export class DiagramCanvas {
     return this.schema()
       .tables.filter(({ id }) => ids.has(id))
       .map(({ name }) => name);
+  }
+
+  protected tableVisible(tableId: string): boolean {
+    return !this.collapsedAreaForTable(tableId);
+  }
+
+  private collapsedAreaForTable(tableId: string): DiagramAreaLayout | undefined {
+    return Object.values(this.layout().areas ?? {}).find(
+      (area) => area.collapsed && area.tableIds?.includes(tableId),
+    );
   }
 
   protected startAreaMove({ areaId, event }: { areaId: string; event: PointerEvent }): void {
@@ -873,17 +895,19 @@ export class DiagramCanvas {
   focusArea(areaId: string): void {
     const area = this.layout().areas?.[areaId];
     if (!area) return;
+    const width = area.collapsed ? 180 : area.width;
+    const height = area.collapsed ? 30 : area.height;
     const element = this.viewportElement().nativeElement;
     const from = this.layout().viewport;
     const zoom = Math.min(
       from.zoom,
       1,
-      (element.clientWidth - 80) / area.width,
-      (element.clientHeight - 80) / area.height,
+      (element.clientWidth - 80) / width,
+      (element.clientHeight - 80) / height,
     );
     const to: ViewportState = {
-      x: element.clientWidth / 2 - (area.x + area.width / 2) * zoom,
-      y: element.clientHeight / 2 - (area.y + area.height / 2) * zoom,
+      x: element.clientWidth / 2 - (area.x + width / 2) * zoom,
+      y: element.clientHeight / 2 - (area.y + height / 2) * zoom,
       zoom,
     };
     this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from, to });
@@ -1020,6 +1044,10 @@ function outwardLaneX(anchorX: number, requestedX: number, side: 'left' | 'right
   return side === 'left'
     ? Math.min(requestedX, anchorX - ENDPOINT_LANE_DISTANCE)
     : Math.max(requestedX, anchorX + ENDPOINT_LANE_DISTANCE);
+}
+
+function collapsedAreaAnchor(area: DiagramAreaLayout, side: 'left' | 'right'): Point {
+  return { x: side === 'left' ? area.x : area.x + 180, y: area.y + 15 };
 }
 
 function routeExitsOutward(

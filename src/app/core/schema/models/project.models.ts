@@ -16,6 +16,7 @@ export interface DiagramAreaLayout {
   width: number;
   height: number;
   tableIds?: EntityId[];
+  collapsed?: boolean;
 }
 
 export interface RelationshipLayout {

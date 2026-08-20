@@ -190,7 +190,9 @@
         (tableSelected)="store.selectTable($event)"
         (tableEditRequested)="editManagedTable($event)"
         (tableColorChanged)="store.updateTableColor($event.tableId, $event.color)"
+        (tableAreaChanged)="store.assignTableToArea($event.tableId, $event.areaId)"
         (areaEditRequested)="editManagedArea($event)"
+        (areaCollapsedChanged)="store.toggleAreaCollapsed($event)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
         (relationshipTypeChanged)="
@@ -709,15 +711,46 @@
                     }
                   </div>
                   <div class="enum-values-title">Tables inside</div>
+                  <label class="area-table-picker">
+                    <span>Add a table</span>
+                    <select (change)="assignTableFromAreaPanel(entry[0], $event)">
+                      <option value="">Select table...</option>
+                      @for (table of store.schema().tables; track table.id) {
+                        @if (!entry[1].tableIds?.includes(table.id)) {
+                          <option [value]="table.id">{{ table.name }}</option>
+                        }
+                      }
+                    </select>
+                  </label>
                   <div class="area-tables">
                     @for (table of tablesForArea(entry[0]); track table.id) {
                       <button type="button" (click)="selectManagedTable(table.id)">
-                        <svg lucideTable2 size="13"></svg>{{ table.name }}
+                        <svg lucideTable2 size="13"></svg><span>{{ table.name }}</span>
+                        <svg
+                          class="remove-area-table"
+                          lucideX
+                          size="13"
+                          appTooltip="Remove from area"
+                          (click)="
+                            $event.stopPropagation(); store.assignTableToArea(table.id, null)
+                          "
+                        ></svg>
                       </button>
                     } @empty {
-                      <small>Drag tables into the area on the canvas.</small>
+                      <small>Assign tables using the selector or the table options menu.</small>
                     }
                   </div>
+                  <button class="enum-add" type="button" (click)="store.compactArea(entry[0])">
+                    <svg lucideMinimize2 size="14"></svg> Compact area
+                  </button>
+                  <button
+                    class="enum-add"
+                    type="button"
+                    (click)="store.toggleAreaCollapsed(entry[0])"
+                  >
+                    <svg lucideChevronRight size="14"></svg>
+                    {{ entry[1].collapsed ? 'Expand area' : 'Collapse area' }}
+                  </button>
                   <button class="enum-add" type="button" (click)="focusArea(entry[0])">
                     <svg lucideLocateFixed size="14"></svg> Focus on canvas
                   </button>

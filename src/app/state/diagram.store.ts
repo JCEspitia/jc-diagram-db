@@ -70,19 +70,22 @@ export class DiagramStore {
   applyDiagramOperation(operation: DiagramOperation): void {
     this.changeOrigin.set('canvas');
     const project = this.project();
-    const rawLayout = executeDiagramOperation(project.layout, operation);
+    let rawLayout = executeDiagramOperation(project.layout, operation);
+    if (operation.type === 'MOVE_TABLE') {
+      rawLayout = expandMemberAreas(project.schema, rawLayout, operation.tableId);
+    } else if (operation.type === 'RESIZE_AREA') {
+      rawLayout = containAreaMembers(project.schema, rawLayout, operation.areaId);
+    }
     const schema = synchroniseTableGroups(
       project.schema,
       rawLayout,
       operation.type === 'MOVE_AREA',
     );
     const layout = synchronizeLayout(rawLayout, schema);
-    const changesDbml =
-      operation.type === 'ADD_AREA' ||
-      operation.type === 'UPDATE_AREA' ||
-      operation.type === 'DELETE_AREA' ||
-      ((operation.type === 'MOVE_TABLE' || operation.type === 'RESIZE_AREA') &&
-        !sameTableGroups(project.schema.tableGroups ?? [], schema.tableGroups ?? []));
+    const changesDbml = !sameTableGroups(
+      project.schema.tableGroups ?? [],
+      schema.tableGroups ?? [],
+    );
     const next = {
       ...project,
       schema,
@@ -321,6 +324,75 @@ export class DiagramStore {
     const from = this.layout().areas?.[areaId];
     if (!from) return;
     this.applyDiagramOperation({ type: 'UPDATE_AREA', areaId, from, to: { ...from, ...changes } });
+  }
+
+  assignTableToArea(tableId: string, areaId: string | null): void {
+    if (!this.schema().tables.some(({ id }) => id === tableId)) return;
+    const project = this.project();
+    if (areaId && !project.layout.areas?.[areaId]) return;
+    const areas = Object.fromEntries(
+      Object.entries(project.layout.areas ?? {}).map(([id, area]) => [
+        id,
+        {
+          ...area,
+          tableIds: [
+            ...(area.tableIds ?? []).filter((candidate) => candidate !== tableId),
+            ...(id === areaId ? [tableId] : []),
+          ],
+        },
+      ]),
+    );
+    let layout: DiagramLayout = { ...project.layout, areas };
+    if (areaId) {
+      const area = areas[areaId]!;
+      const wasMember = project.layout.areas?.[areaId]?.tableIds?.includes(tableId);
+      if (!wasMember) {
+        const existingBounds = memberBounds(
+          project.schema,
+          project.layout,
+          area.tableIds?.filter((id) => id !== tableId) ?? [],
+        );
+        layout = {
+          ...layout,
+          tables: {
+            ...layout.tables,
+            [tableId]: {
+              ...layout.tables[tableId],
+              x: existingBounds?.left ?? area.x + AREA_PADDING,
+              y: existingBounds
+                ? existingBounds.bottom + AREA_PADDING
+                : area.y + AREA_HEADER_HEIGHT,
+            },
+          },
+        };
+      }
+      layout = containAreaMembers(project.schema, layout, areaId);
+    }
+    const schema = synchroniseTableGroups(project.schema, layout, true);
+    this.commit(
+      {
+        ...project,
+        schema,
+        layout: synchronizeLayout(layout, schema),
+        dbml: preserveDbmlComments(project.dbml, this.generator.generate(schema)),
+        updatedAt: new Date().toISOString(),
+      },
+      true,
+    );
+  }
+
+  compactArea(areaId: string): void {
+    const project = this.project();
+    const area = project.layout.areas?.[areaId];
+    if (!area) return;
+    const bounds = memberBounds(project.schema, project.layout, area.tableIds ?? []);
+    if (!bounds) return;
+    this.updateArea(areaId, areaAroundBounds(area, bounds));
+  }
+
+  toggleAreaCollapsed(areaId: string): void {
+    const area = this.layout().areas?.[areaId];
+    if (area) this.updateArea(areaId, { collapsed: !area.collapsed });
   }
 
   deleteArea(areaId: string): void {
@@ -590,19 +662,19 @@ export class DiagramStore {
   }
 }
 
-function sameTableGroups(
-  left: NonNullable<DatabaseSchema['tableGroups']>,
-  right: NonNullable<DatabaseSchema['tableGroups']>,
-): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-
 function nextName(base: string, existingNames: string[]): string {
   const names = new Set(existingNames);
   if (!names.has(base)) return base;
   let suffix = 2;
   while (names.has(`${base}_${suffix}`)) suffix += 1;
   return `${base}_${suffix}`;
+}
+
+function sameTableGroups(
+  left: NonNullable<DatabaseSchema['tableGroups']>,
+  right: NonNullable<DatabaseSchema['tableGroups']>,
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 export function supportsAutoIncrement(type: string): boolean {
@@ -647,6 +719,7 @@ function synchronizeLayout(layout: DiagramLayout, schema: DatabaseSchema): Diagr
           width: existing?.width ?? 520,
           height: existing?.height ?? 360,
           tableIds: group.tableIds,
+          ...(existing?.collapsed ? { collapsed: true } : {}),
         },
       ];
     }),
@@ -659,40 +732,108 @@ function synchroniseTableGroups(
   layout: DiagramLayout,
   preserveMembership: boolean,
 ): DatabaseSchema {
-  const previous = new Map((schema.tableGroups ?? []).map((group) => [group.id, group]));
   const tableGroups = Object.entries(layout.areas ?? {}).map(([id, area]) => ({
     id,
     name: area.name,
     color: area.color,
     ...(area.note ? { note: area.note } : {}),
-    tableIds: preserveMembership
-      ? (previous.get(id)?.tableIds ?? area.tableIds ?? [])
-      : tableIdsInsideArea(schema, layout, area),
+    tableIds:
+      area.tableIds ??
+      (preserveMembership
+        ? ((schema.tableGroups ?? []).find((group) => group.id === id)?.tableIds ?? [])
+        : []),
   }));
   return { ...schema, tableGroups };
 }
 
-function tableIdsInsideArea(
+interface Bounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const AREA_PADDING = 24;
+const AREA_HEADER_HEIGHT = 42;
+
+function tableBounds(
   schema: DatabaseSchema,
   layout: DiagramLayout,
-  area: DiagramAreaLayout,
-): string[] {
-  return schema.tables.flatMap((table) => {
-    const position = layout.tables[table.id];
-    if (!position) return [];
-    const centerX = position.x + (position.width ?? DEFAULT_TABLE_METRICS.width) / 2;
-    const centerY =
+  tableId: string,
+): Bounds | undefined {
+  const table = schema.tables.find(({ id }) => id === tableId);
+  const position = layout.tables[tableId];
+  if (!table || !position) return undefined;
+  return {
+    left: position.x,
+    top: position.y,
+    right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
+    bottom:
       position.y +
-      (DEFAULT_TABLE_METRICS.headerHeight +
-        table.columns.length * DEFAULT_TABLE_METRICS.rowHeight) /
-        2;
-    return centerX >= area.x &&
-      centerX <= area.x + area.width &&
-      centerY >= area.y &&
-      centerY <= area.y + area.height
-      ? [table.id]
-      : [];
+      DEFAULT_TABLE_METRICS.headerHeight +
+      table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+  };
+}
+
+function memberBounds(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  tableIds: string[],
+): Bounds | undefined {
+  const bounds = tableIds.flatMap((id) => {
+    const value = tableBounds(schema, layout, id);
+    return value ? [value] : [];
   });
+  if (!bounds.length) return undefined;
+  return {
+    left: Math.min(...bounds.map(({ left }) => left)),
+    top: Math.min(...bounds.map(({ top }) => top)),
+    right: Math.max(...bounds.map(({ right }) => right)),
+    bottom: Math.max(...bounds.map(({ bottom }) => bottom)),
+  };
+}
+
+function areaAroundBounds(area: DiagramAreaLayout, bounds: Bounds): Partial<DiagramAreaLayout> {
+  const x = bounds.left - AREA_PADDING;
+  const y = bounds.top - AREA_HEADER_HEIGHT;
+  return {
+    x,
+    y,
+    width: Math.max(240, bounds.right + AREA_PADDING - x),
+    height: Math.max(160, bounds.bottom + AREA_PADDING - y),
+  };
+}
+
+function containAreaMembers(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  areaId: string,
+): DiagramLayout {
+  const area = layout.areas?.[areaId];
+  if (!area) return layout;
+  const bounds = memberBounds(schema, layout, area.tableIds ?? []);
+  if (!bounds) return layout;
+  const left = Math.min(area.x, bounds.left - AREA_PADDING);
+  const top = Math.min(area.y, bounds.top - AREA_HEADER_HEIGHT);
+  const right = Math.max(area.x + area.width, bounds.right + AREA_PADDING);
+  const bottom = Math.max(area.y + area.height, bounds.bottom + AREA_PADDING);
+  return {
+    ...layout,
+    areas: {
+      ...layout.areas,
+      [areaId]: { ...area, x: left, y: top, width: right - left, height: bottom - top },
+    },
+  };
+}
+
+function expandMemberAreas(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  tableId: string,
+): DiagramLayout {
+  return (schema.tableGroups ?? [])
+    .filter(({ tableIds }) => tableIds.includes(tableId))
+    .reduce((current, group) => containAreaMembers(schema, current, group.id), layout);
 }
 
 function createExampleProject(): DiagramProject {

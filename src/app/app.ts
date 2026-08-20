@@ -25,6 +25,7 @@ import {
   LucideLink2,
   LucideLocateFixed,
   LucideMoon,
+  LucideMinimize2,
   LucidePanelLeftClose,
   LucidePencil,
   LucidePlus,
@@ -57,6 +58,7 @@ import {
     LucideLink2,
     LucideLocateFixed,
     LucideMoon,
+    LucideMinimize2,
     LucidePanelLeftClose,
     LucidePencil,
     LucidePlus,
@@ -165,6 +167,13 @@ export class App {
   protected updateAreaNote(areaId: string, event: Event): void {
     const note = inputValue(event).trim();
     this.store.updateArea(areaId, { note: note || undefined });
+  }
+
+  protected assignTableFromAreaPanel(areaId: string, event: Event): void {
+    const tableId = inputValue(event);
+    if (!tableId) return;
+    this.store.assignTableToArea(tableId, areaId);
+    (event.target as HTMLSelectElement).value = '';
   }
 
   protected renameEnum(enumId: string, event: Event): void {

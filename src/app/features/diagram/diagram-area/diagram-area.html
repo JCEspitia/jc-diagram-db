@@ -5,6 +5,7 @@
   [style.width.px]="area().width"
   [style.height.px]="area().height"
   [style.--area-color]="area().color"
+  [class.collapsed]="area().collapsed"
 >
   <header
     [appTooltip]="tooltipDetails() ? 'Area details' : null"
@@ -12,7 +13,15 @@
     appTooltipPosition="side"
     (pointerdown)="startMove($event)"
   >
-    <span></span>
+    <button
+      type="button"
+      class="collapse-action"
+      [attr.aria-label]="area().collapsed ? 'Expand area' : 'Collapse area'"
+      [appTooltip]="area().collapsed ? 'Expand area' : 'Compact area'"
+      (pointerdown)="toggleCollapsed($event)"
+    >
+      <svg lucideChevronRight size="13"></svg>
+    </button>
     <strong>{{ area().name }}</strong>
     <button
       type="button"

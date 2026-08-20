@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DiagramAreaLayout } from '../../../core/schema';
 import { TooltipDetails, TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
-import { LucideSettings } from '@lucide/angular';
+import { LucideChevronRight, LucideSettings } from '@lucide/angular';
 
 @Component({
   selector: 'app-diagram-area',
-  imports: [LucideSettings, TooltipDirective],
+  imports: [LucideChevronRight, LucideSettings, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diagram-area.html',
   styleUrl: './diagram-area.scss',
@@ -17,6 +17,7 @@ export class DiagramArea {
   readonly moveStarted = output<{ areaId: string; event: PointerEvent }>();
   readonly resizeStarted = output<{ areaId: string; event: PointerEvent }>();
   readonly editRequested = output<string>();
+  readonly collapsedChanged = output<string>();
 
   protected tooltipDetails(): TooltipDetails | undefined {
     if (!this.area().note && !this.tableNames().length) return undefined;
@@ -45,5 +46,11 @@ export class DiagramArea {
     event.preventDefault();
     event.stopPropagation();
     this.editRequested.emit(this.areaId());
+  }
+
+  protected toggleCollapsed(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.collapsedChanged.emit(this.areaId());
   }
 }

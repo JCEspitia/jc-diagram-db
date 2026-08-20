@@ -33,6 +33,28 @@
             <svg lucideTable2 size="14"></svg>
             Edit in Tables
           </button>
+          @if (areas().length) {
+            <span>Move to area</span>
+            <div class="area-options-list">
+              @for (entry of areas(); track entry[0]) {
+                <button
+                  type="button"
+                  [class.selected]="currentAreaId() === entry[0]"
+                  (pointerdown)="changeArea($event, entry[0])"
+                >
+                  <i [style.background]="entry[1].color"></i>
+                  <svg lucideFolderInput size="13"></svg>
+                  {{ entry[1].name }}
+                </button>
+              }
+              @if (currentAreaId()) {
+                <button type="button" (pointerdown)="changeArea($event, null)">
+                  <svg lucideFolderMinus size="13"></svg>
+                  Remove from area
+                </button>
+              }
+            </div>
+          }
           <span>Header color</span>
           <div class="canvas-color-picker">
             @for (color of tableColors; track color) {

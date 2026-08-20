@@ -29,6 +29,25 @@ header span {
   border: 1px solid currentColor;
   border-radius: 2px;
 }
+.collapse-action svg {
+  transition: transform 140ms ease;
+  transform: rotate(90deg);
+}
+.area.collapsed {
+  width: 180px !important;
+  height: 30px !important;
+  background: var(--area-color);
+}
+.area.collapsed header {
+  border-bottom: 0;
+  color: #ffffff;
+}
+.area.collapsed .collapse-action svg {
+  transform: rotate(0);
+}
+.area.collapsed .resize-handle {
+  display: none;
+}
 header strong {
   overflow: hidden;
   text-overflow: ellipsis;

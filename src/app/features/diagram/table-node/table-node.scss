@@ -67,7 +67,7 @@ header button {
   z-index: 10;
   top: 27px;
   right: -4px;
-  width: 154px;
+  width: 184px;
   padding: 4px;
   border: 1px solid #3e4854;
   border-radius: 6px;
@@ -95,6 +95,20 @@ header button {
   color: #99a5b1;
   font-size: 10px;
   font-weight: 700;
+}
+.area-options-list {
+  display: grid;
+  gap: 2px;
+}
+.area-options-list button.selected {
+  background: #344352;
+  color: #ffffff;
+}
+.area-options-list i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 2px;
 }
 .canvas-color-picker {
   display: grid;

@@ -1489,6 +1489,23 @@ main {
   font-size: 10px;
   cursor: pointer;
 }
+.area-tables button span {
+  overflow: hidden;
+  flex: 1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.area-tables button .remove-area-table {
+  flex: 0 0 auto;
+  color: #87939e;
+}
+.area-tables button .remove-area-table:hover {
+  color: #ff8f98;
+}
+.area-table-picker select {
+  width: 100%;
+}
 .area-tables button:hover {
   background: #2c3640;
   color: #ffffff;

@@ -11,6 +11,31 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.dbml()).toContain("TableGroup product_group [color: #d35400, note: 'Catalog'] {");
     expect(store.schema().tableGroups?.[0]?.id).toBe(areaId);
   });
+
+  it('keeps explicitly assigned tables inside their area and compacts its bounds', () => {
+    const store = new DiagramStore();
+    const table = store.schema().tables[0]!;
+    const areaId = store.createArea();
+    store.assignTableToArea(table.id, areaId);
+    const from = store.layout().tables[table.id]!;
+
+    store.applyDiagramOperation({
+      type: 'MOVE_TABLE',
+      tableId: table.id,
+      from,
+      to: { ...from, x: 1200, y: 700 },
+    });
+
+    const expanded = store.layout().areas?.[areaId]!;
+    expect(expanded.tableIds).toContain(table.id);
+    expect(expanded.x + expanded.width).toBeGreaterThan(1200);
+    expect(store.dbml()).toMatch(/TableGroup "New area"[^]*users/);
+
+    store.compactArea(areaId);
+    const compact = store.layout().areas?.[areaId]!;
+    expect(compact.width).toBeLessThan(expanded.width);
+    expect(compact.tableIds).toContain(table.id);
+  });
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 

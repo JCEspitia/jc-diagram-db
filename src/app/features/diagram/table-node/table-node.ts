@@ -13,12 +13,15 @@ import {
   RelationshipSchema,
   TableLayout,
   TableSchema,
+  DiagramAreaLayout,
 } from '../../../core/schema';
 import { TooltipDetails, TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from '../../../shared/table-colors';
 import {
   LucideEllipsis,
   LucideFingerprint,
+  LucideFolderInput,
+  LucideFolderMinus,
   LucideInfo,
   LucideKeyRound,
   LucideLink2,
@@ -31,6 +34,8 @@ import {
   imports: [
     LucideEllipsis,
     LucideFingerprint,
+    LucideFolderInput,
+    LucideFolderMinus,
     LucideInfo,
     LucideKeyRound,
     LucideLink2,
@@ -57,9 +62,11 @@ export class TableNode {
   readonly selectedColumnId = input<string>();
   readonly relationshipTargetColumnId = input<string>();
   readonly showRelationshipHandles = input(false);
+  readonly areas = input<[string, DiagramAreaLayout][]>([]);
   readonly tableSelected = output<string>();
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
+  readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly columnHovered = output<{ tableId: string; columnId: string } | null>();
   readonly relationshipStarted = output<{
@@ -72,6 +79,9 @@ export class TableNode {
   protected readonly optionsOpen = signal(false);
   protected readonly tableColors = TABLE_COLORS;
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
+  protected readonly currentAreaId = computed(
+    () => this.areas().find(([_id, area]) => area.tableIds?.includes(this.table().id))?.[0] ?? null,
+  );
 
   protected readonly foreignKeyColumnIds = computed(() => {
     const tableId = this.table().id;
@@ -131,6 +141,13 @@ export class TableNode {
     event.preventDefault();
     event.stopPropagation();
     this.tableColorChanged.emit({ tableId: this.table().id, color });
+  }
+
+  protected changeArea(event: PointerEvent, areaId: string | null): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.optionsOpen.set(false);
+    this.tableAreaChanged.emit({ tableId: this.table().id, areaId });
   }
 
   protected columnTooltip(column: ColumnSchema): TooltipDetails | undefined {

@@ -17,6 +17,7 @@
         (moveStarted)="startAreaMove($event)"
         (resizeStarted)="startAreaResize($event)"
         (editRequested)="areaEditRequested.emit($event)"
+        (collapsedChanged)="areaCollapsedChanged.emit($event)"
       />
     }
     <svg
@@ -318,23 +319,27 @@
     </svg>
 
     @for (table of schema().tables; track table.id) {
-      <app-table-node
-        [table]="table"
-        [layout]="tablePosition(table.id)"
-        [relationships]="schema().relationships"
-        [enums]="schema().enums"
-        [selected]="selectedTableId() === table.id"
-        [selectedColumnId]="selectedColumnId()"
-        [relationshipTargetColumnId]="relationshipTarget()?.columnId"
-        [showRelationshipHandles]="relationshipMode()"
-        (tableSelected)="tableSelected.emit($event)"
-        (tableEditRequested)="tableEditRequested.emit($event)"
-        (tableColorChanged)="tableColorChanged.emit($event)"
-        (columnSelected)="columnSelected.emit($event)"
-        (dragStarted)="startTableDrag($event)"
-        (relationshipStarted)="startRelationship($event)"
-        (columnHovered)="setHoveredColumn($event)"
-      />
+      @if (tableVisible(table.id)) {
+        <app-table-node
+          [table]="table"
+          [layout]="tablePosition(table.id)"
+          [relationships]="schema().relationships"
+          [enums]="schema().enums"
+          [selected]="selectedTableId() === table.id"
+          [selectedColumnId]="selectedColumnId()"
+          [relationshipTargetColumnId]="relationshipTarget()?.columnId"
+          [showRelationshipHandles]="relationshipMode()"
+          [areas]="areaEntries()"
+          (tableSelected)="tableSelected.emit($event)"
+          (tableEditRequested)="tableEditRequested.emit($event)"
+          (tableColorChanged)="tableColorChanged.emit($event)"
+          (tableAreaChanged)="tableAreaChanged.emit($event)"
+          (columnSelected)="columnSelected.emit($event)"
+          (dragStarted)="startTableDrag($event)"
+          (relationshipStarted)="startRelationship($event)"
+          (columnHovered)="setHoveredColumn($event)"
+        />
+      }
     }
   </div>
 </section>
