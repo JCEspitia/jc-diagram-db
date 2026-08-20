@@ -3,6 +3,7 @@ import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/sche
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import {
   LucideEllipsis,
+  LucideFingerprint,
   LucideKeyRound,
   LucideLink2,
   LucideMessageSquareText,
@@ -13,6 +14,7 @@ import {
   selector: 'app-table-node',
   imports: [
     LucideEllipsis,
+    LucideFingerprint,
     LucideKeyRound,
     LucideLink2,
     LucideMessageSquareText,

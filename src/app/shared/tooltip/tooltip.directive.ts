@@ -15,6 +15,7 @@ let nextTooltipId = 0;
 })
 export class TooltipDirective implements OnDestroy {
   readonly appTooltip = input<string | null | undefined>('');
+  readonly appTooltipPosition = input<'top' | 'side'>('top');
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly renderer = inject(Renderer2);
@@ -62,10 +63,21 @@ export class TooltipDirective implements OnDestroy {
     const hostBounds = this.host.nativeElement.getBoundingClientRect();
     const tooltipBounds = tooltip.getBoundingClientRect();
     const gap = 8;
-    let left = hostBounds.left + (hostBounds.width - tooltipBounds.width) / 2;
-    left = Math.max(gap, Math.min(left, window.innerWidth - tooltipBounds.width - gap));
-    let top = hostBounds.top - tooltipBounds.height - gap;
-    if (top < gap) top = hostBounds.bottom + gap;
+    let left: number;
+    let top: number;
+    if (this.appTooltipPosition() === 'side') {
+      const right = hostBounds.right + gap;
+      const fitsRight = right + tooltipBounds.width <= window.innerWidth - gap;
+      left = fitsRight ? right : hostBounds.left - tooltipBounds.width - gap;
+      left = Math.max(gap, Math.min(left, window.innerWidth - tooltipBounds.width - gap));
+      top = hostBounds.top + (hostBounds.height - tooltipBounds.height) / 2;
+      top = Math.max(gap, Math.min(top, window.innerHeight - tooltipBounds.height - gap));
+    } else {
+      left = hostBounds.left + (hostBounds.width - tooltipBounds.width) / 2;
+      left = Math.max(gap, Math.min(left, window.innerWidth - tooltipBounds.width - gap));
+      top = hostBounds.top - tooltipBounds.height - gap;
+      if (top < gap) top = hostBounds.bottom + gap;
+    }
     tooltip.style.left = `${Math.round(left)}px`;
     tooltip.style.top = `${Math.round(top)}px`;
   }

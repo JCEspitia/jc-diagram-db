@@ -1,5 +1,5 @@
-<article class="table-card" [appTooltip]="table().note" (pointerdown)="select()">
-  <header (pointerdown)="startDrag($event)">
+<article class="table-card" (pointerdown)="select()">
+  <header [appTooltip]="table().note" (pointerdown)="startDrag($event)">
     <svg lucideTable2 size="14"></svg>
     <strong>{{ table().name }}</strong>
     @if (table().note) {
@@ -19,10 +19,12 @@
         [attr.data-table-id]="table().id"
         [attr.data-column-id]="column.id"
         [appTooltip]="column.note"
+        appTooltipPosition="side"
         (pointerdown)="interactWithColumn($event, column.id)"
         (pointerenter)="hoverColumn(column.id)"
         (pointerleave)="columnHovered.emit(null)"
       >
+        <span class="column-name">{{ column.name }}</span>
         <span class="constraints">
           @if (column.primaryKey) {
             <svg lucideKeyRound size="12" class="key-icon" aria-label="Primary key"></svg>
@@ -38,15 +40,14 @@
               aria-label="Column comment"
             ></svg>
           }
+          @if (column.unique) {
+            <svg lucideFingerprint size="12" class="unique-icon" aria-label="Unique"></svg>
+          }
         </span>
-        <span class="column-name">{{ column.name }}</span>
         <span class="column-type">{{ column.type }}</span>
         <span class="badges">
           @if (!column.nullable) {
             <b appTooltip="Not null">NN</b>
-          }
-          @if (column.unique) {
-            <b appTooltip="Unique">UQ</b>
           }
           @if (column.increment) {
             <b appTooltip="Auto increment">AI</b>
