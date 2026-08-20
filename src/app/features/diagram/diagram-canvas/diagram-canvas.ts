@@ -35,6 +35,12 @@ import {
   ViewportState,
 } from '../../../core/schema';
 import { TableNode } from '../table-node/table-node';
+import {
+  LucideArrowLeftRight,
+  LucideRotateCcw,
+  LucideSettings,
+  LucideTrash2,
+} from '@lucide/angular';
 
 interface RenderedRelationship {
   relationship: RelationshipSchema;
@@ -70,7 +76,7 @@ const ENDPOINT_LANE_DISTANCE = 44;
 
 @Component({
   selector: 'app-diagram-canvas',
-  imports: [TableNode],
+  imports: [TableNode, LucideArrowLeftRight, LucideRotateCcw, LucideSettings, LucideTrash2],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diagram-canvas.html',
   styleUrl: './diagram-canvas.scss',
@@ -86,6 +92,12 @@ export class DiagramCanvas {
   readonly tableSelected = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly relationshipSelected = output<string>();
+  readonly relationshipTypeChanged = output<{
+    relationshipId: string;
+    type: RelationshipSchema['type'];
+  }>();
+  readonly relationshipInverted = output<string>();
+  readonly relationshipDeleted = output<string>();
   readonly relationshipCreated = output<{
     sourceTableId: string;
     sourceColumnId: string;
@@ -139,6 +151,7 @@ export class DiagramCanvas {
     orientation: 'horizontal' | 'vertical';
   } | null>(null);
   private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
+  protected readonly relationshipToolboxId = signal<string | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
   protected readonly transform = computed(() => {
@@ -529,8 +542,40 @@ export class DiagramCanvas {
     });
   }
 
+  protected changeRelationshipType(
+    event: PointerEvent,
+    relationshipId: string,
+    type: RelationshipSchema['type'],
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.relationshipTypeChanged.emit({ relationshipId, type });
+  }
+
+  protected invertRelationship(event: PointerEvent, relationshipId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.relationshipInverted.emit(relationshipId);
+  }
+
+  protected deleteRelationship(event: PointerEvent, relationshipId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.relationshipDeleted.emit(relationshipId);
+    this.relationshipToolboxId.set(null);
+  }
+
+  protected toggleRelationshipToolbox(event: PointerEvent, relationshipId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.relationshipToolboxId.update((current) =>
+      current === relationshipId ? null : relationshipId,
+    );
+  }
+
   protected symbolTransform(point: { x: number; y: number }, towardX: number): string {
-    return `translate(${point.x} ${point.y}) scale(${towardX >= point.x ? 1 : -1} 1)`;
+    const direction = towardX >= point.x ? 1 : -1;
+    return `translate(${point.x + direction * 14} ${point.y})`;
   }
 
   protected startSegmentDrag(

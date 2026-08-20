@@ -70,10 +70,21 @@
   pointer-events: none;
 }
 .cardinality-symbol {
-  fill: none;
-  stroke: #8e949b;
-  stroke-width: 1.4;
   pointer-events: none;
+}
+.cardinality-symbol circle {
+  fill: #ffffff;
+  stroke: #8e949b;
+  stroke-width: 1.5;
+}
+.cardinality-symbol text {
+  fill: #60666d;
+  stroke: none;
+  dominant-baseline: middle;
+  text-anchor: middle;
+  font:
+    700 9px/1 'Segoe UI Variable Text',
+    sans-serif;
 }
 .cardinality-symbol.dimmed {
   opacity: 0.12;
@@ -138,6 +149,107 @@
   color: #ffffff;
   border-color: #3558ff;
   background: #f1f5ff;
+}
+.route-actions {
+  overflow: visible;
+  pointer-events: all;
+}
+.route-actions > div {
+  display: flex;
+  gap: 3px;
+}
+.route-actions button {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #cfd5db;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #55606b;
+  box-shadow: 0 3px 10px rgb(25 35 45 / 16%);
+  cursor: pointer;
+}
+.route-actions button:hover,
+.route-actions button.active {
+  border-color: #3558ff;
+  background: #eef2ff;
+  color: #3558ff;
+}
+.relationship-toolbox {
+  overflow: visible;
+  pointer-events: all;
+}
+.relationship-toolbox > div {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #d7dce1;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgb(25 35 45 / 20%);
+}
+.relationship-toolbox button {
+  min-width: 39px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #59616a;
+  font:
+    700 10px/1 'Segoe UI Variable Text',
+    sans-serif;
+  cursor: pointer;
+}
+.relationship-toolbox button:hover {
+  background: #edf1f5;
+  color: #1f2933;
+}
+.relationship-toolbox button.active {
+  background: #34445a;
+  color: #ffffff;
+}
+.relationship-toolbox button.danger {
+  color: #df3f49;
+}
+.relationship-toolbox button.danger:hover {
+  background: #fff0f1;
+}
+:host-context(.dark-theme) .cardinality-symbol circle {
+  fill: #111820;
+  stroke: #8f9aa6;
+}
+:host-context(.dark-theme) .cardinality-symbol text {
+  fill: #d9e0e6;
+}
+:host-context(.dark-theme) .relationship-toolbox > div {
+  border-color: #46515d;
+  background: #252c34;
+}
+:host-context(.dark-theme) .relationship-toolbox button {
+  color: #cbd2d9;
+}
+:host-context(.dark-theme) .relationship-toolbox button:hover {
+  background: #343d47;
+  color: #ffffff;
+}
+:host-context(.dark-theme) .relationship-toolbox button.active {
+  background: #5470d8;
+}
+:host-context(.dark-theme) .route-actions button {
+  border-color: #46515d;
+  background: #252c34;
+  color: #cbd2d9;
+}
+:host-context(.dark-theme) .route-actions button:hover,
+:host-context(.dark-theme) .route-actions button.active {
+  border-color: #6d8cff;
+  background: #303a55;
+  color: #91a6ff;
 }
 .route-handle.horizontal {
   cursor: ns-resize;

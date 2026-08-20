@@ -11,10 +11,63 @@ import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore } from './state/diagram.store';
+import {
+  LucideChevronRight,
+  LucideCode2,
+  LucideEllipsis,
+  LucideGripVertical,
+  LucideGrid2x2,
+  LucideKeyRound,
+  LucideLink2,
+  LucideLocateFixed,
+  LucideMoon,
+  LucidePanelLeftClose,
+  LucidePencil,
+  LucidePlus,
+  LucideRedo2,
+  LucideScan,
+  LucideSearch,
+  LucideSun,
+  LucideSnowflake,
+  LucideTable2,
+  LucideTrash2,
+  LucideUndo2,
+  LucideWorkflow,
+  LucideX,
+  LucideZoomIn,
+  LucideZoomOut,
+} from '@lucide/angular';
 
 @Component({
   selector: 'app-root',
-  imports: [DiagramCanvas, DbmlEditor],
+  imports: [
+    DiagramCanvas,
+    DbmlEditor,
+    LucideChevronRight,
+    LucideCode2,
+    LucideEllipsis,
+    LucideGripVertical,
+    LucideGrid2x2,
+    LucideKeyRound,
+    LucideLink2,
+    LucideLocateFixed,
+    LucideMoon,
+    LucidePanelLeftClose,
+    LucidePencil,
+    LucidePlus,
+    LucideRedo2,
+    LucideScan,
+    LucideSearch,
+    LucideSun,
+    LucideSnowflake,
+    LucideTable2,
+    LucideTrash2,
+    LucideUndo2,
+    LucideWorkflow,
+    LucideX,
+    LucideZoomIn,
+    LucideZoomOut,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -29,6 +82,10 @@ export class App {
   protected readonly tableMenuId = signal<string | null>(null);
   protected readonly columnMenuId = signal<string | null>(null);
   protected readonly editingTableId = signal<string | null>(null);
+  protected readonly draggedTableId = signal<string | null>(null);
+  protected readonly draggedColumn = signal<{ tableId: string; columnId: string } | null>(null);
+  protected readonly tableDropTargetId = signal<string | null>(null);
+  protected readonly columnDropTargetId = signal<string | null>(null);
   protected readonly relationshipMode = signal(false);
   protected readonly autoLayoutMenu = signal(false);
   protected readonly editorTheme = signal<'dark' | 'light'>('light');
@@ -71,6 +128,43 @@ export class App {
     return table.columns.find(({ id }) => id === columnId)?.name ?? 'Unknown field';
   }
 
+  protected startTableReorder(event: DragEvent, tableId: string): void {
+    this.draggedTableId.set(tableId);
+    event.dataTransfer?.setData('text/plain', tableId);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  protected dropTable(event: DragEvent, targetTableId: string): void {
+    event.preventDefault();
+    const tableId = this.draggedTableId();
+    if (tableId) this.store.moveTable(tableId, targetTableId, dropPosition(event));
+    this.finishReorder();
+  }
+
+  protected startColumnReorder(event: DragEvent, tableId: string, columnId: string): void {
+    event.stopPropagation();
+    this.draggedColumn.set({ tableId, columnId });
+    event.dataTransfer?.setData('text/plain', columnId);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  protected dropColumn(event: DragEvent, tableId: string, targetColumnId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const dragged = this.draggedColumn();
+    if (dragged?.tableId === tableId) {
+      this.store.moveColumn(tableId, dragged.columnId, targetColumnId, dropPosition(event));
+    }
+    this.finishReorder();
+  }
+
+  protected finishReorder(): void {
+    this.draggedTableId.set(null);
+    this.draggedColumn.set(null);
+    this.tableDropTargetId.set(null);
+    this.columnDropTargetId.set(null);
+  }
+
   protected renameTable(tableId: string, event: Event): void {
     this.store.renameTable(tableId, inputValue(event));
   }
@@ -96,6 +190,15 @@ export class App {
 
   protected updateNotNull(tableId: string, columnId: string, event: Event): void {
     this.store.updateColumn(tableId, columnId, { nullable: !checkboxValue(event) });
+  }
+
+  protected toggleColumnFlag(
+    tableId: string,
+    columnId: string,
+    property: 'primaryKey' | 'nullable',
+    current: boolean,
+  ): void {
+    this.store.updateColumn(tableId, columnId, { [property]: !current });
   }
 
   protected fitDiagram(): void {
@@ -204,4 +307,9 @@ function inputValue(event: Event): string {
 
 function checkboxValue(event: Event): boolean {
   return (event.target as HTMLInputElement).checked;
+}
+
+function dropPosition(event: DragEvent): 'before' | 'after' {
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after';
 }

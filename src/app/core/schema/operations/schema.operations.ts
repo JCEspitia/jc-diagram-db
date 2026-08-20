@@ -8,6 +8,12 @@ export type SchemaOperation =
       changes: Partial<Omit<TableSchema, 'id' | 'columns'>>;
     }
   | { type: 'DELETE_TABLE'; tableId: EntityId }
+  | {
+      type: 'MOVE_TABLE';
+      tableId: EntityId;
+      targetTableId: EntityId;
+      position: 'before' | 'after';
+    }
   | { type: 'ADD_COLUMN'; tableId: EntityId; column: ColumnSchema }
   | {
       type: 'UPDATE_COLUMN';
@@ -16,6 +22,13 @@ export type SchemaOperation =
       changes: Partial<Omit<ColumnSchema, 'id'>>;
     }
   | { type: 'DELETE_COLUMN'; tableId: EntityId; columnId: EntityId }
+  | {
+      type: 'MOVE_COLUMN';
+      tableId: EntityId;
+      columnId: EntityId;
+      targetColumnId: EntityId;
+      position: 'before' | 'after';
+    }
   | { type: 'ADD_RELATIONSHIP'; relationship: RelationshipSchema }
   | {
       type: 'UPDATE_RELATIONSHIP';

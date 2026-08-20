@@ -36,43 +36,95 @@
           [class.dimmed]="!edge.connected"
           [attr.transform]="symbolTransform(edge.source, edge.points[1]!.x)"
         >
-          @if (edge.sourceCardinality === 'many') {
-            <path d="M 15 -6 L 7 0 L 15 6 M 7 -5 V 5" />
-          } @else {
-            <path d="M 8 -5 V 5" />
-          }
+          <circle r="10" />
+          <text x="0" y="0">{{ edge.sourceCardinality === 'many' ? 'N' : '1' }}</text>
         </g>
         <g
           class="cardinality-symbol"
           [class.dimmed]="!edge.connected"
           [attr.transform]="symbolTransform(edge.target, edge.points[edge.points.length - 2]!.x)"
         >
-          @if (edge.targetCardinality === 'many') {
-            <path d="M 15 -6 L 7 0 L 15 6 M 7 -5 V 5" />
-          } @else {
-            <path d="M 8 -5 V 5" />
-          }
+          <circle r="10" />
+          <text x="0" y="0">{{ edge.targetCardinality === 'many' ? 'N' : '1' }}</text>
         </g>
         @if (edge.flow) {
           <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
         }
         @if (selectedRelationshipId() === edge.relationship.id) {
-          @if (edge.canReset) {
-            <foreignObject
-              class="route-reset"
-              [attr.x]="edge.resetPoint.x - 13"
-              [attr.y]="edge.resetPoint.y - 31"
-              width="26"
-              height="26"
-            >
+          <foreignObject
+            class="route-actions"
+            [attr.x]="edge.resetPoint.x - (edge.canReset ? 29 : 14)"
+            [attr.y]="edge.resetPoint.y - 35"
+            [attr.width]="edge.canReset ? 58 : 29"
+            height="30"
+          >
+            <div>
               <button
                 type="button"
-                title="Reset line"
-                aria-label="Reset line and calculate the best route"
-                (pointerdown)="resetRelationshipRoute($event, edge.relationship.id)"
+                title="Relationship settings"
+                aria-label="Open relationship settings"
+                [class.active]="relationshipToolboxId() === edge.relationship.id"
+                (pointerdown)="toggleRelationshipToolbox($event, edge.relationship.id)"
               >
-                ↻
+                <svg lucideSettings size="15"></svg>
               </button>
+              @if (edge.canReset) {
+                <button
+                  type="button"
+                  title="Reset line"
+                  aria-label="Reset line and calculate the best route"
+                  (pointerdown)="resetRelationshipRoute($event, edge.relationship.id)"
+                >
+                  <svg lucideRotateCcw size="15"></svg>
+                </button>
+              }
+            </div>
+          </foreignObject>
+          @if (relationshipToolboxId() === edge.relationship.id) {
+            <foreignObject
+              class="relationship-toolbox"
+              [attr.x]="edge.resetPoint.x - 105"
+              [attr.y]="edge.resetPoint.y + 12"
+              width="210"
+              height="42"
+            >
+              <div>
+                <button
+                  type="button"
+                  [class.active]="edge.relationship.type === 'one-to-one'"
+                  title="One to one"
+                  (pointerdown)="changeRelationshipType($event, edge.relationship.id, 'one-to-one')"
+                >
+                  1:1
+                </button>
+                <button
+                  type="button"
+                  [class.active]="edge.relationship.type !== 'one-to-one'"
+                  title="One to many"
+                  (pointerdown)="
+                    changeRelationshipType($event, edge.relationship.id, 'one-to-many')
+                  "
+                >
+                  1:N
+                </button>
+                <button
+                  type="button"
+                  title="Invert relationship"
+                  aria-label="Invert relationship"
+                  (pointerdown)="invertRelationship($event, edge.relationship.id)"
+                >
+                  <svg lucideArrowLeftRight size="15"></svg>
+                </button>
+                <button
+                  type="button"
+                  class="danger"
+                  title="Delete relationship"
+                  aria-label="Delete relationship"
+                  (pointerdown)="deleteRelationship($event, edge.relationship.id)"
+                >
+                  <svg lucideTrash2 size="15"></svg>
+                </button>
+              </div>
             </foreignObject>
           }
           @for (candidate of edge.pullCandidates; track candidate.segmentIndex + '-' + $index) {

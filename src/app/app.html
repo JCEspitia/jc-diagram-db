@@ -12,12 +12,16 @@
         aria-label="Toggle workspace theme"
         (click)="editorTheme.update((theme) => (theme === 'dark' ? 'light' : 'dark'))"
       >
-        {{ editorTheme() === 'dark' ? '☀' : '☾' }}
+        @if (editorTheme() === 'dark') {
+          <svg lucideSun size="16"></svg>
+        } @else {
+          <svg lucideMoon size="16"></svg>
+        }
       </button>
       <button type="button" aria-label="Undo" [disabled]="!store.canUndo()" (click)="store.undo()">
-        ↶</button
+        <svg lucideUndo2 size="16"></svg></button
       ><button type="button" aria-label="Redo" [disabled]="!store.canRedo()" (click)="store.redo()">
-        ↷
+        <svg lucideRedo2 size="16"></svg>
       </button>
       <button class="export" type="button" disabled title="Available with import/export">
         Export
@@ -38,7 +42,7 @@
         [class.active]="activeSidebar() === 'dbml'"
         (click)="activeSidebar.set('dbml'); dbmlCollapsed.set(false)"
       >
-        &lt;/&gt;
+        <svg lucideCode2 size="18"></svg>
       </button>
       <button
         type="button"
@@ -47,14 +51,14 @@
         [class.active]="activeSidebar() === 'inspector'"
         (click)="activeSidebar.set('inspector'); dbmlCollapsed.set(false)"
       >
-        ◫
+        <svg lucideTable2 size="18"></svg>
       </button>
     </nav>
     <aside class="dbml-panel">
       <div class="panel-heading">
         <span>DBML</span>
         <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
-          ‹
+          <svg lucidePanelLeftClose size="16"></svg>
         </button>
       </div>
       <app-dbml-editor
@@ -83,40 +87,41 @@
     <main>
       <div class="toolbar">
         @if (dbmlCollapsed()) {
-          <button type="button" (click)="dbmlCollapsed.set(false)">Sidebar ›</button>
+          <button type="button" (click)="dbmlCollapsed.set(false)">Sidebar</button>
         }
-        <button class="primary" type="button" (click)="store.createTable()"><b>＋</b> Table</button
+        <button class="primary" type="button" (click)="store.createTable()">
+          <svg lucidePlus size="15"></svg> Table</button
         ><span></span>
         <div class="auto-layout-control">
           <button type="button" (click)="autoLayoutMenu.update((open) => !open)">
-            ⌘ Auto layout ▾
+            <svg lucideWorkflow size="15"></svg> Auto layout
           </button>
           @if (autoLayoutMenu()) {
             <div class="auto-layout-menu">
               <p>Choose an auto layout algorithm</p>
               <button type="button" (click)="applyAutoLayout('left-to-right')">
-                <b>⇥</b
+                <b><svg lucideWorkflow size="16"></svg></b
                 ><span
                   ><strong>Left to right <i>1</i></strong
                   ><small>Follow foreign-key chains from parents to dependent tables.</small></span
                 >
               </button>
               <button type="button" (click)="applyAutoLayout('pipeline')">
-                <b>•••</b
+                <b><svg lucideWorkflow size="16"></svg></b
                 ><span
                   ><strong>Pipeline <i>2</i></strong
                   ><small>Group data-dependency stages and center each vertical stack.</small></span
                 >
               </button>
               <button type="button" (click)="applyAutoLayout('snowflake')">
-                <b>✣</b
+                <b><svg lucideSnowflake size="16"></svg></b
                 ><span
                   ><strong>Snowflake <i>3</i></strong
                   ><small>Place the most connected tables in the center.</small></span
                 >
               </button>
               <button type="button" (click)="applyAutoLayout('compact')">
-                <b>▦</b
+                <b><svg lucideGrid2x2 size="16"></svg></b
                 ><span
                   ><strong>Compact <i>4</i></strong
                   ><small>Pack tables into a compact rectangular grid.</small></span
@@ -131,7 +136,7 @@
           (click)="relationshipMode.update((active) => !active)"
           title="Drag from one column handle to another"
         >
-          ⌗ Relation
+          <svg lucideLink2 size="15"></svg> Relation
         </button>
       </div>
       <app-diagram-canvas
@@ -145,39 +150,77 @@
         (tableSelected)="store.selectTable($event)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
+        (relationshipTypeChanged)="
+          store.updateRelationship($event.relationshipId, { type: $event.type })
+        "
+        (relationshipInverted)="store.invertRelationship($event)"
+        (relationshipDeleted)="store.deleteRelationship($event)"
         (relationshipCreated)="createRelationship($event)"
         (selectionCleared)="store.clearSelection()"
       />
       <div class="zoom-controls">
-        <button type="button" aria-label="Zoom out" (click)="store.zoomBy(0.8)">−</button
+        <button type="button" aria-label="Zoom out" (click)="store.zoomBy(0.8)">
+          <svg lucideZoomOut size="15"></svg></button
         ><span>{{ store.zoomPercent() }}%</span
-        ><button type="button" aria-label="Zoom in" (click)="store.zoomBy(1.25)">＋</button
-        ><button type="button" aria-label="Fit diagram" (click)="fitDiagram()">⌗</button>
+        ><button type="button" aria-label="Zoom in" (click)="store.zoomBy(1.25)">
+          <svg lucideZoomIn size="15"></svg></button
+        ><button type="button" aria-label="Fit diagram" (click)="fitDiagram()">
+          <svg lucideScan size="15"></svg>
+        </button>
       </div>
     </main>
     <aside class="inspector">
       <div class="panel-heading">
         <span>Tables</span>
         <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
-          ‹
+          <svg lucidePanelLeftClose size="16"></svg>
         </button>
       </div>
       <div class="tables-manager-toolbar">
-        <input
-          type="search"
-          placeholder="Filter tables"
-          aria-label="Filter tables"
-          [value]="tableFilter()"
-          (input)="tableFilter.set($any($event.target).value)"
-        />
-        <button type="button" (click)="createManagedTable()">＋ Table</button>
+        <div class="table-filter">
+          <svg lucideSearch size="15"></svg>
+          <input
+            type="search"
+            placeholder="Filter tables"
+            aria-label="Filter tables"
+            [value]="tableFilter()"
+            (input)="tableFilter.set($any($event.target).value)"
+          />
+        </div>
+        <button type="button" (click)="createManagedTable()">
+          <svg lucidePlus size="15"></svg> Table
+        </button>
       </div>
       <div class="managed-tables">
         @for (table of filteredTables(); track table.id) {
-          <article class="managed-table" [class.expanded]="expandedTableIds().has(table.id)">
-            <header class="managed-table-header">
-              <button type="button" class="disclosure" (click)="toggleTable(table.id)">
-                {{ expandedTableIds().has(table.id) ? '⌄' : '›' }}
+          <article
+            class="managed-table"
+            [class.expanded]="expandedTableIds().has(table.id)"
+            [class.dragging]="draggedTableId() === table.id"
+            [class.drop-target]="tableDropTargetId() === table.id"
+            (dragover)="$event.preventDefault(); tableDropTargetId.set(table.id)"
+            (dragleave)="tableDropTargetId.set(null)"
+            (drop)="dropTable($event, table.id)"
+          >
+            <header class="managed-table-header" (click)="toggleTable(table.id)">
+              <button
+                type="button"
+                class="drag-grip"
+                draggable="true"
+                title="Drag to reorder table"
+                aria-label="Drag to reorder table"
+                (dragstart)="startTableReorder($event, table.id)"
+                (dragend)="finishReorder()"
+                (click)="$event.stopPropagation()"
+              >
+                <svg lucideGripVertical size="15"></svg>
+              </button>
+              <button type="button" class="disclosure" tabindex="-1">
+                <svg
+                  lucideChevronRight
+                  size="16"
+                  [class.rotated]="expandedTableIds().has(table.id)"
+                ></svg>
               </button>
               @if (editingTableId() === table.id) {
                 <input
@@ -186,6 +229,7 @@
                   aria-label="Table name"
                   (change)="renameTable(table.id, $event); editingTableId.set(null)"
                   (blur)="editingTableId.set(null)"
+                  (click)="$event.stopPropagation()"
                 />
               } @else {
                 <strong>{{ table.name }}</strong>
@@ -194,23 +238,26 @@
                 type="button"
                 class="more"
                 aria-label="Table options"
-                (click)="tableMenuId.set(tableMenuId() === table.id ? null : table.id)"
+                (click)="
+                  $event.stopPropagation();
+                  tableMenuId.set(tableMenuId() === table.id ? null : table.id)
+                "
               >
-                •••
+                <svg lucideEllipsis size="17"></svg>
               </button>
               @if (tableMenuId() === table.id) {
-                <div class="table-menu">
+                <div class="table-menu" (click)="$event.stopPropagation()">
                   <button
                     type="button"
                     (click)="editingTableId.set(table.id); tableMenuId.set(null)"
                   >
-                    Rename table
+                    <svg lucidePencil size="14"></svg> Rename table
                   </button>
                   <button type="button" (click)="selectManagedTable(table.id)">
-                    Select on canvas
+                    <svg lucideLocateFixed size="14"></svg> Select on canvas
                   </button>
                   <button class="danger" type="button" (click)="store.deleteTable(table.id)">
-                    Delete table
+                    <svg lucideTrash2 size="14"></svg> Delete table
                   </button>
                 </div>
               }
@@ -219,7 +266,29 @@
               <div class="managed-table-body">
                 <div class="manager-section-title"><strong>Fields</strong></div>
                 @for (column of table.columns; track column.id) {
-                  <div class="managed-column">
+                  <div
+                    class="managed-column"
+                    [class.dragging]="draggedColumn()?.columnId === column.id"
+                    [class.drop-target]="columnDropTargetId() === column.id"
+                    (dragover)="
+                      $event.preventDefault();
+                      $event.stopPropagation();
+                      columnDropTargetId.set(column.id)
+                    "
+                    (dragleave)="columnDropTargetId.set(null)"
+                    (drop)="dropColumn($event, table.id, column.id)"
+                  >
+                    <button
+                      type="button"
+                      class="field-drag-grip"
+                      draggable="true"
+                      title="Drag to reorder field"
+                      aria-label="Drag to reorder field"
+                      (dragstart)="startColumnReorder($event, table.id, column.id)"
+                      (dragend)="finishReorder()"
+                    >
+                      <svg lucideGripVertical size="14"></svg>
+                    </button>
                     <input
                       [value]="column.name"
                       aria-label="Column name"
@@ -230,25 +299,35 @@
                       aria-label="Column type"
                       (change)="updateColumnText(table.id, column.id, 'type', $event)"
                     />
-                    <label title="Not null"
-                      >NN<input
-                        type="checkbox"
-                        [checked]="!column.nullable"
-                        (change)="updateNotNull(table.id, column.id, $event)"
-                    /></label>
-                    <label title="Primary key"
-                      >PK<input
-                        type="checkbox"
-                        [checked]="column.primaryKey"
-                        (change)="updateColumnFlag(table.id, column.id, 'primaryKey', $event)"
-                    /></label>
+                    <button
+                      type="button"
+                      class="field-flag not-null"
+                      [class.active]="!column.nullable"
+                      title="Not null"
+                      [attr.aria-pressed]="!column.nullable"
+                      (click)="toggleColumnFlag(table.id, column.id, 'nullable', column.nullable)"
+                    >
+                      N
+                    </button>
+                    <button
+                      type="button"
+                      class="field-flag primary-key"
+                      [class.active]="column.primaryKey"
+                      title="Primary key"
+                      [attr.aria-pressed]="column.primaryKey"
+                      (click)="
+                        toggleColumnFlag(table.id, column.id, 'primaryKey', column.primaryKey)
+                      "
+                    >
+                      <svg lucideKeyRound size="15"></svg>
+                    </button>
                     <button
                       type="button"
                       class="more"
                       aria-label="More column options"
                       (click)="columnMenuId.set(columnMenuId() === column.id ? null : column.id)"
                     >
-                      •••
+                      <svg lucideEllipsis size="16"></svg>
                     </button>
                     @if (columnMenuId() === column.id) {
                       <div class="column-menu">
@@ -271,14 +350,14 @@
                           type="button"
                           (click)="store.deleteColumn(table.id, column.id)"
                         >
-                          Delete field
+                          <svg lucideTrash2 size="14"></svg> Delete field
                         </button>
                       </div>
                     }
                   </div>
                 }
                 <button class="manager-add" type="button" (click)="store.addColumn(table.id)">
-                  ＋ Add field
+                  <svg lucidePlus size="14"></svg> Add field
                 </button>
                 <div class="manager-section-title"><strong>Indexes</strong></div>
                 @for (index of table.indexes; track index.id) {
@@ -291,11 +370,13 @@
                     @if (index.unique) {
                       <em>U</em>
                     }
-                    <button type="button" (click)="store.deleteIndex(table.id, index.id)">×</button>
+                    <button type="button" (click)="store.deleteIndex(table.id, index.id)">
+                      <svg lucideX size="14"></svg>
+                    </button>
                   </div>
                 }
                 <button class="manager-add" type="button" (click)="store.addIndex(table.id)">
-                  ＋ Add index
+                  <svg lucidePlus size="14"></svg> Add index
                 </button>
               </div>
             }

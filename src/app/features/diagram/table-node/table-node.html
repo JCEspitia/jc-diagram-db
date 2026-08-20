@@ -1,8 +1,8 @@
 <article class="table-card" (pointerdown)="select()">
   <header (pointerdown)="startDrag($event)">
-    <span class="table-icon" aria-hidden="true"></span>
+    <svg lucideTable2 size="14"></svg>
     <strong>{{ table().name }}</strong>
-    <button type="button" aria-label="Table options">•••</button>
+    <button type="button" aria-label="Table options"><svg lucideEllipsis size="16"></svg></button>
   </header>
 
   <div class="columns">
@@ -19,10 +19,10 @@
       >
         <span class="constraints">
           @if (column.primaryKey) {
-            <i class="key-icon" title="Primary key" aria-label="Primary key"></i>
+            <svg lucideKeyRound size="12" class="key-icon" aria-label="Primary key"></svg>
           }
           @if (foreignKeyColumnIds().has(column.id)) {
-            <i class="link-icon" title="Foreign key" aria-label="Foreign key"></i>
+            <svg lucideLink2 size="12" class="link-icon" aria-label="Foreign key"></svg>
           }
         </span>
         <span class="column-name">{{ column.name }}</span>

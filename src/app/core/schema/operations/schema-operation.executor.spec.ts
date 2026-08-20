@@ -92,6 +92,40 @@ describe('executeSchemaOperation', () => {
     expect(result.relationships).toEqual([]);
   });
 
+  it('reorders tables before or after the drop target', () => {
+    const posts = { ...users, id: 'tbl_posts', name: 'posts' };
+    const comments = { ...users, id: 'tbl_comments', name: 'comments' };
+    const schema = { ...emptySchema(), tables: [users, posts, comments] };
+
+    const result = executeSchemaOperation(schema, {
+      type: 'MOVE_TABLE',
+      tableId: users.id,
+      targetTableId: comments.id,
+      position: 'after',
+    });
+
+    expect(result.tables.map(({ id }) => id)).toEqual([posts.id, comments.id, users.id]);
+  });
+
+  it('reorders columns within their table', () => {
+    const email = { ...idColumn, id: 'col_email', name: 'email' };
+    const name = { ...idColumn, id: 'col_name', name: 'name' };
+    const schema = {
+      ...emptySchema(),
+      tables: [{ ...users, columns: [idColumn, email, name] }],
+    };
+
+    const result = executeSchemaOperation(schema, {
+      type: 'MOVE_COLUMN',
+      tableId: users.id,
+      columnId: idColumn.id,
+      targetColumnId: name.id,
+      position: 'after',
+    });
+
+    expect(result.tables[0]?.columns.map(({ id }) => id)).toEqual([email.id, name.id, idColumn.id]);
+  });
+
   it('rejects relationships whose endpoints do not exist', () => {
     const invalidRelationship: RelationshipSchema = {
       id: 'rel_invalid',

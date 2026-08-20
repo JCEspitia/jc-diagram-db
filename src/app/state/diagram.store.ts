@@ -211,6 +211,27 @@ export class DiagramStore {
     });
   }
 
+  moveTable(tableId: string, targetTableId: string, position: 'before' | 'after'): void {
+    if (tableId === targetTableId) return;
+    this.applySchemaOperation({ type: 'MOVE_TABLE', tableId, targetTableId, position });
+  }
+
+  moveColumn(
+    tableId: string,
+    columnId: string,
+    targetColumnId: string,
+    position: 'before' | 'after',
+  ): void {
+    if (columnId === targetColumnId) return;
+    this.applySchemaOperation({
+      type: 'MOVE_COLUMN',
+      tableId,
+      columnId,
+      targetColumnId,
+      position,
+    });
+  }
+
   createRelationship(
     sourceTableId: string,
     sourceColumnId: string,
@@ -271,6 +292,59 @@ export class DiagramStore {
       from,
       to: { ...from, ...changes },
     });
+  }
+
+  deleteRelationship(relationshipId: string): void {
+    this.applySchemaOperation({ type: 'DELETE_RELATIONSHIP', relationshipId });
+  }
+
+  invertRelationship(relationshipId: string): void {
+    const project = this.project();
+    const relationship = project.schema.relationships.find(({ id }) => id === relationshipId);
+    if (!relationship) return;
+    const type =
+      relationship.type === 'one-to-many'
+        ? 'many-to-one'
+        : relationship.type === 'many-to-one'
+          ? 'one-to-many'
+          : 'one-to-one';
+    const schema = executeSchemaOperation(project.schema, {
+      type: 'UPDATE_RELATIONSHIP',
+      relationshipId,
+      changes: {
+        sourceTableId: relationship.targetTableId,
+        sourceColumnId: relationship.targetColumnId,
+        targetTableId: relationship.sourceTableId,
+        targetColumnId: relationship.sourceColumnId,
+        type,
+      },
+    });
+    const currentRoute = project.layout.relationships?.[relationshipId];
+    const layout = currentRoute
+      ? executeDiagramOperation(project.layout, {
+          type: 'CHANGE_RELATIONSHIP_ROUTE',
+          relationshipId,
+          from: currentRoute,
+          to: {
+            ...currentRoute,
+            sourceSide: currentRoute.targetSide,
+            targetSide: currentRoute.sourceSide,
+            sourceX: currentRoute.targetX,
+            targetX: currentRoute.sourceX,
+            waypoints: currentRoute.waypoints ? [...currentRoute.waypoints].reverse() : undefined,
+          },
+        })
+      : project.layout;
+    this.commit(
+      {
+        ...project,
+        schema,
+        layout,
+        dbml: this.generator.generate(schema),
+        updatedAt: new Date().toISOString(),
+      },
+      true,
+    );
   }
 
   selectTable(tableId: string): void {

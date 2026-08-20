@@ -33,6 +33,19 @@ export function executeSchemaOperation(
         ),
       };
 
+    case 'MOVE_TABLE':
+      assertTableExists(schema, operation.tableId);
+      assertTableExists(schema, operation.targetTableId);
+      return {
+        ...schema,
+        tables: moveRelative(
+          schema.tables,
+          operation.tableId,
+          operation.targetTableId,
+          operation.position,
+        ),
+      };
+
     case 'ADD_COLUMN':
       assertTableExists(schema, operation.tableId);
       assert(
@@ -90,6 +103,26 @@ export function executeSchemaOperation(
         ),
       };
 
+    case 'MOVE_COLUMN':
+      assertColumnExists(schema, operation.tableId, operation.columnId);
+      assertColumnExists(schema, operation.tableId, operation.targetColumnId);
+      return {
+        ...schema,
+        tables: schema.tables.map((table) =>
+          table.id === operation.tableId
+            ? {
+                ...table,
+                columns: moveRelative(
+                  table.columns,
+                  operation.columnId,
+                  operation.targetColumnId,
+                  operation.position,
+                ),
+              }
+            : table,
+        ),
+      };
+
     case 'ADD_RELATIONSHIP':
       assert(
         !schema.relationships.some(({ id }) => id === operation.relationship.id),
@@ -121,6 +154,22 @@ export function executeSchemaOperation(
         relationships: schema.relationships.filter(({ id }) => id !== operation.relationshipId),
       };
   }
+}
+
+function moveRelative<T extends { id: string }>(
+  items: T[],
+  itemId: string,
+  targetId: string,
+  position: 'before' | 'after',
+): T[] {
+  if (itemId === targetId) return items;
+  const item = items.find(({ id }) => id === itemId);
+  if (!item) return items;
+  const withoutItem = items.filter(({ id }) => id !== itemId);
+  const targetIndex = withoutItem.findIndex(({ id }) => id === targetId);
+  if (targetIndex < 0) return items;
+  const insertionIndex = targetIndex + (position === 'after' ? 1 : 0);
+  return [...withoutItem.slice(0, insertionIndex), item, ...withoutItem.slice(insertionIndex)];
 }
 
 function assertRelationshipEndpoints(
