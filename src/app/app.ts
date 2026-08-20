@@ -288,6 +288,18 @@ export class App {
     }
   }
 
+  @HostListener('document:pointerdown', ['$event'])
+  protected closeFloatingMenus(event: PointerEvent): void {
+    const target = event.target as Element | null;
+    if (!target?.closest('.auto-layout-control')) this.autoLayoutMenu.set(false);
+    if (!target?.closest('.table-menu, .managed-table-header .more')) {
+      this.tableMenuId.set(null);
+    }
+    if (!target?.closest('.column-menu, .managed-column > .more')) {
+      this.columnMenuId.set(null);
+    }
+  }
+
   @HostListener('document:pointermove', ['$event'])
   protected resizePanel(event: PointerEvent): void {
     if (!this.panelResize) return;

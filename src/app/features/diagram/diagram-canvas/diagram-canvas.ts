@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  HostListener,
   computed,
   input,
   output,
@@ -571,6 +572,14 @@ export class DiagramCanvas {
     this.relationshipToolboxId.update((current) =>
       current === relationshipId ? null : relationshipId,
     );
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  protected closeRelationshipToolbox(event: PointerEvent): void {
+    const target = event.target as Element | null;
+    if (!target?.closest('.relationship-toolbox, .route-actions')) {
+      this.relationshipToolboxId.set(null);
+    }
   }
 
   protected symbolTransform(point: { x: number; y: number }, towardX: number): string {

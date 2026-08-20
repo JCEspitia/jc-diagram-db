@@ -1305,3 +1305,80 @@ main {
     transform: translateY(0) scale(1);
   }
 }
+
+/* Floating menu themes and compact option controls. */
+.auto-layout-menu {
+  overflow: hidden;
+  border-color: #cfd5dc;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(31 42 54 / 20%);
+}
+.auto-layout-menu p {
+  border-color: #e2e6ea;
+  background: #f7f8fa;
+  color: #343b43;
+}
+.auto-layout-menu button {
+  background: #ffffff;
+}
+.auto-layout-menu button:hover {
+  border-color: transparent;
+  background: #edf5fb;
+}
+.auto-layout-menu button > b {
+  color: #1689e5;
+}
+.auto-layout-menu button strong {
+  color: #30373f;
+}
+.auto-layout-menu button small {
+  color: #69747f;
+}
+.auto-layout-menu button i {
+  background: #e8edf2;
+  color: #586574;
+}
+.column-menu label {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 34px;
+  line-height: 1.25;
+}
+.column-menu label input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  accent-color: #1689e5;
+}
+.column-menu .danger {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #3e4752;
+  border-radius: 0 0 4px 4px;
+  margin-top: 3px;
+  padding-top: 5px;
+}
+.dark-theme .auto-layout-menu {
+  border-color: #46515d;
+  background: #202731;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 42%);
+}
+.dark-theme .auto-layout-menu p {
+  border-color: #3a444f;
+  background: #252d37;
+  color: #e2e7eb;
+}
+.dark-theme .auto-layout-menu button {
+  background: #202731;
+}
+.dark-theme .auto-layout-menu button:hover {
+  background: #303a45;
+}
+.dark-theme .auto-layout-menu button strong {
+  color: #e2e7eb;
+}
+.dark-theme .auto-layout-menu button small {
+  color: #9faab5;
+}
