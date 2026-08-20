@@ -183,21 +183,41 @@
   overflow: visible;
   pointer-events: all;
 }
-.relationship-toolbox > div {
-  height: 36px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
+.relationship-toolbox-panel {
+  display: grid;
+  gap: 5px;
+  padding: 6px;
   border: 1px solid #d7dce1;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 6px 18px rgb(25 35 45 / 20%);
 }
+.relationship-types {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+.relationship-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-top: 5px;
+  border-top: 1px solid #e5e8eb;
+}
+.relationship-controls > span:first-child {
+  padding: 0 5px;
+  color: #8a949e;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.relationship-controls .control-spacer {
+  flex: 1;
+}
 .relationship-toolbox button {
-  min-width: 39px;
-  height: 28px;
-  padding: 0 8px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px;
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -228,9 +248,12 @@
 :host-context(.dark-theme) .cardinality-symbol text {
   fill: #d9e0e6;
 }
-:host-context(.dark-theme) .relationship-toolbox > div {
+:host-context(.dark-theme) .relationship-toolbox-panel {
   border-color: #46515d;
   background: #252c34;
+}
+:host-context(.dark-theme) .relationship-controls {
+  border-color: #3b4651;
 }
 :host-context(.dark-theme) .relationship-toolbox button {
   color: #cbd2d9;

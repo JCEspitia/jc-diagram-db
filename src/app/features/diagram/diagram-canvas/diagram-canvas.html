@@ -99,184 +99,197 @@
           @if (relationshipToolboxId() === edge.relationship.id) {
             <foreignObject
               class="relationship-toolbox"
-              [attr.x]="edge.resetPoint.x - 220"
-              [attr.y]="edge.resetPoint.y + 12"
-              width="440"
-              height="42"
+              [attr.x]="edge.resetPoint.x - 134"
+              [attr.y]="edge.resetPoint.y + 10"
+              width="268"
+              height="108"
             >
-              <div>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'one' && edge.targetCardinality === 'one'
-                  "
-                  appTooltip="One to one"
-                  (pointerdown)="changeRelationshipType($event, edge.relationship.id, 'one', 'one')"
-                >
-                  1:1
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'one' && edge.targetCardinality === 'many'
-                  "
-                  appTooltip="One to many"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'one', 'many')
-                  "
-                >
-                  1:N
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'many' && edge.targetCardinality === 'one'
-                  "
-                  appTooltip="Many to one"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'many', 'one')
-                  "
-                >
-                  N:1
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'zero' && edge.targetCardinality === 'one'
-                  "
-                  appTooltip="Zero to one"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'zero', 'one')
-                  "
-                >
-                  0:1
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'one' && edge.targetCardinality === 'zero'
-                  "
-                  appTooltip="One to zero"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'one', 'zero')
-                  "
-                >
-                  1:0
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'zero' && edge.targetCardinality === 'many'
-                  "
-                  appTooltip="Zero to many"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'zero', 'many')
-                  "
-                >
-                  0:N
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'many' && edge.targetCardinality === 'zero'
-                  "
-                  appTooltip="Many to zero"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'many', 'zero')
-                  "
-                >
-                  N:0
-                </button>
-                <button
-                  type="button"
-                  [class.active]="
-                    edge.sourceCardinality === 'many' && edge.targetCardinality === 'many'
-                  "
-                  appTooltip="Many to many"
-                  (pointerdown)="
-                    changeRelationshipType($event, edge.relationship.id, 'many', 'many')
-                  "
-                >
-                  N:N
-                </button>
-                <button
-                  type="button"
-                  [appTooltip]="
-                    'Move source port to the ' + (edge.sourceSide === 'left' ? 'right' : 'left')
-                  "
-                  [attr.aria-label]="'Source port: ' + edge.sourceSide"
-                  (pointerdown)="
-                    toggleRelationshipSide(
-                      $event,
-                      edge.relationship.id,
-                      'sourceSide',
-                      edge.sourceSide
-                    )
-                  "
-                >
-                  S
-                  @if (edge.sourceSide === 'left') {
-                    <svg lucideArrowLeftFromLine size="14"></svg>
-                  } @else {
-                    <svg lucideArrowRightFromLine size="14"></svg>
-                  }
-                </button>
-                <button
-                  type="button"
-                  [appTooltip]="
-                    'Move target port to the ' + (edge.targetSide === 'left' ? 'right' : 'left')
-                  "
-                  [attr.aria-label]="'Target port: ' + edge.targetSide"
-                  (pointerdown)="
-                    toggleRelationshipSide(
-                      $event,
-                      edge.relationship.id,
-                      'targetSide',
-                      edge.targetSide
-                    )
-                  "
-                >
-                  T
-                  @if (edge.targetSide === 'left') {
-                    <svg lucideArrowLeftFromLine size="14"></svg>
-                  } @else {
-                    <svg lucideArrowRightFromLine size="14"></svg>
-                  }
-                </button>
-                <button
-                  type="button"
-                  class="danger"
-                  appTooltip="Delete relationship"
-                  aria-label="Delete relationship"
-                  (pointerdown)="deleteRelationship($event, edge.relationship.id)"
-                >
-                  <svg lucideTrash2 size="15"></svg>
-                </button>
+              <div class="relationship-toolbox-panel">
+                <div class="relationship-types">
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'one' && edge.targetCardinality === 'one'
+                    "
+                    appTooltip="One to one"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'one', 'one')
+                    "
+                  >
+                    1:1
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'one' && edge.targetCardinality === 'many'
+                    "
+                    appTooltip="One to many"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'one', 'many')
+                    "
+                  >
+                    1:N
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'many' && edge.targetCardinality === 'one'
+                    "
+                    appTooltip="Many to one"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'many', 'one')
+                    "
+                  >
+                    N:1
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'zero' && edge.targetCardinality === 'one'
+                    "
+                    appTooltip="Zero to one"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'zero', 'one')
+                    "
+                  >
+                    0:1
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'one' && edge.targetCardinality === 'zero'
+                    "
+                    appTooltip="One to zero"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'one', 'zero')
+                    "
+                  >
+                    1:0
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'zero' && edge.targetCardinality === 'many'
+                    "
+                    appTooltip="Zero to many"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'zero', 'many')
+                    "
+                  >
+                    0:N
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'many' && edge.targetCardinality === 'zero'
+                    "
+                    appTooltip="Many to zero"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'many', 'zero')
+                    "
+                  >
+                    N:0
+                  </button>
+                  <button
+                    type="button"
+                    [class.active]="
+                      edge.sourceCardinality === 'many' && edge.targetCardinality === 'many'
+                    "
+                    appTooltip="Many to many"
+                    (pointerdown)="
+                      changeRelationshipType($event, edge.relationship.id, 'many', 'many')
+                    "
+                  >
+                    N:N
+                  </button>
+                </div>
+                <div class="relationship-controls">
+                  <span>Ports</span>
+                  <button
+                    type="button"
+                    [appTooltip]="
+                      'Move source port to the ' + (edge.sourceSide === 'left' ? 'right' : 'left')
+                    "
+                    [attr.aria-label]="'Source port: ' + edge.sourceSide"
+                    (pointerdown)="
+                      toggleRelationshipSide(
+                        $event,
+                        edge.relationship.id,
+                        'sourceSide',
+                        edge.sourceSide
+                      )
+                    "
+                  >
+                    S
+                    @if (edge.sourceSide === 'left') {
+                      <svg lucideArrowLeftFromLine size="14"></svg>
+                    } @else {
+                      <svg lucideArrowRightFromLine size="14"></svg>
+                    }
+                  </button>
+                  <button
+                    type="button"
+                    [appTooltip]="
+                      'Move target port to the ' + (edge.targetSide === 'left' ? 'right' : 'left')
+                    "
+                    [attr.aria-label]="'Target port: ' + edge.targetSide"
+                    (pointerdown)="
+                      toggleRelationshipSide(
+                        $event,
+                        edge.relationship.id,
+                        'targetSide',
+                        edge.targetSide
+                      )
+                    "
+                  >
+                    T
+                    @if (edge.targetSide === 'left') {
+                      <svg lucideArrowLeftFromLine size="14"></svg>
+                    } @else {
+                      <svg lucideArrowRightFromLine size="14"></svg>
+                    }
+                  </button>
+                  <span class="control-spacer"></span>
+                  <button
+                    type="button"
+                    class="danger"
+                    appTooltip="Delete relationship"
+                    aria-label="Delete relationship"
+                    (pointerdown)="deleteRelationship($event, edge.relationship.id)"
+                  >
+                    <svg lucideTrash2 size="15"></svg>
+                  </button>
+                </div>
               </div>
             </foreignObject>
           }
-          @for (candidate of edge.pullCandidates; track candidate.segmentIndex + '-' + $index) {
-            <circle
-              class="route-candidate"
-              [attr.cx]="candidate.point.x"
-              [attr.cy]="candidate.point.y"
-              r="1.8"
-            />
-          }
-          @for (handle of edge.handles; track handle.segmentIndex) {
-            <circle
-              class="route-handle"
-              [class.horizontal]="handle.orientation === 'horizontal'"
-              [class.vertical]="handle.orientation === 'vertical'"
-              [attr.cx]="handle.point.x"
-              [attr.cy]="handle.point.y"
-              r="5"
-              (pointerdown)="startSegmentDrag($event, edge, handle)"
-            />
+          @if (relationshipToolboxId() !== edge.relationship.id) {
+            @for (candidate of edge.pullCandidates; track candidate.segmentIndex + '-' + $index) {
+              <circle
+                class="route-candidate"
+                [attr.cx]="candidate.point.x"
+                [attr.cy]="candidate.point.y"
+                r="1.8"
+              />
+            }
+            @for (handle of edge.handles; track handle.segmentIndex) {
+              <circle
+                class="route-handle"
+                [class.horizontal]="handle.orientation === 'horizontal'"
+                [class.vertical]="handle.orientation === 'vertical'"
+                [attr.cx]="handle.point.x"
+                [attr.cy]="handle.point.y"
+                r="5"
+                (pointerdown)="startSegmentDrag($event, edge, handle)"
+              />
+            }
           }
         }
         @if (hoveredSegment(); as hovered) {
-          @if (hovered.relationshipId === edge.relationship.id) {
+          @if (
+            hovered.relationshipId === edge.relationship.id &&
+            relationshipToolboxId() !== edge.relationship.id
+          ) {
             <circle
               class="route-handle ghost"
               [class.horizontal]="hovered.orientation === 'horizontal'"
