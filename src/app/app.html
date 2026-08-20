@@ -469,6 +469,34 @@
                 <button class="manager-add" type="button" (click)="store.addIndex(table.id)">
                   <svg lucidePlus size="14"></svg> Add index
                 </button>
+                <div class="manager-section-title"><strong>Check constraints</strong></div>
+                <div class="table-checks">
+                  @for (check of table.checks ?? []; track check.id) {
+                    <div class="table-check" [class.invalid]="checkError(check.expression)">
+                      <input
+                        type="text"
+                        placeholder="e.g. price > 0"
+                        [value]="check.expression"
+                        [attr.aria-invalid]="!!checkError(check.expression)"
+                        (input)="updateTableCheck(table.id, check.id, $event)"
+                      />
+                      <button
+                        type="button"
+                        appTooltip="Delete check constraint"
+                        aria-label="Delete check constraint"
+                        (click)="store.deleteTableCheck(table.id, check.id)"
+                      >
+                        <svg lucideX size="14"></svg>
+                      </button>
+                      @if (checkError(check.expression); as error) {
+                        <small>{{ error }}</small>
+                      }
+                    </div>
+                  }
+                </div>
+                <button class="manager-add" type="button" (click)="store.addTableCheck(table.id)">
+                  <svg lucidePlus size="14"></svg> Add check
+                </button>
                 <div class="manager-section-title"><strong>Table comment</strong></div>
                 <textarea
                   class="table-comment"

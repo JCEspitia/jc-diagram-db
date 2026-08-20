@@ -1,6 +1,8 @@
 import { ColumnSchema, DatabaseSchema, EntityId, TableSchema } from './schema.models';
 
-export function createEntityId(prefix: 'sch' | 'tbl' | 'col' | 'rel' | 'idx' | 'enm'): EntityId {
+export function createEntityId(
+  prefix: 'sch' | 'tbl' | 'col' | 'rel' | 'idx' | 'enm' | 'chk',
+): EntityId {
   return `${prefix}_${crypto.randomUUID()}`;
 }
 

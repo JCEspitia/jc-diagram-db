@@ -18,6 +18,7 @@ export interface TooltipDetails {
   defaultValue?: string;
   enumName?: string;
   enumValues?: string[];
+  checks?: string[];
 }
 
 @Directive({
@@ -115,6 +116,16 @@ export class TooltipDirective implements OnDestroy {
       values.className = 'app-tooltip-values';
       for (const value of details.enumValues) this.appendText(values, 'code', value);
       this.renderer.appendChild(section, values);
+      this.renderer.appendChild(tooltip, section);
+    }
+    if (details.checks?.length) {
+      const section = this.renderer.createElement('div') as HTMLElement;
+      section.className = 'app-tooltip-section';
+      this.appendText(section, 'span', 'Check constraints');
+      const checks = this.renderer.createElement('div') as HTMLElement;
+      checks.className = 'app-tooltip-checks';
+      for (const check of details.checks) this.appendText(checks, 'code', check);
+      this.renderer.appendChild(section, checks);
       this.renderer.appendChild(tooltip, section);
     }
   }

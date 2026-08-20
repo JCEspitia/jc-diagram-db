@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ReferentialAction, RelationshipSchema, TableSchema } from './core/schema';
 import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
+import { checkExpressionError } from './core/schema/validation/check-expression.validator';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore, supportsAutoIncrement } from './state/diagram.store';
@@ -197,6 +198,14 @@ export class App {
 
   protected updateTableNote(tableId: string, event: Event): void {
     this.store.updateTableNote(tableId, inputValue(event));
+  }
+
+  protected updateTableCheck(tableId: string, checkId: string, event: Event): void {
+    this.store.updateTableCheck(tableId, checkId, inputValue(event));
+  }
+
+  protected checkError(expression: string): string | null {
+    return checkExpressionError(expression);
   }
 
   protected updateColumnFlag(

@@ -101,6 +101,18 @@ body {
   background: #181e25;
   color: #c8d9e8;
 }
+.app-tooltip-checks {
+  display: grid;
+  gap: 5px;
+}
+.app-tooltip-checks code {
+  padding: 5px 7px;
+  border-left: 2px solid #6d8cff;
+  border-radius: 3px;
+  background: #181e25;
+  color: #d6e2ec;
+  white-space: pre-wrap;
+}
 
 @keyframes tooltip-in {
   from {

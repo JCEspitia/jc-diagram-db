@@ -114,6 +114,28 @@ Table service_units {
     expect(generated).toContain('Table users [color: #db4f72] {');
     expect(parser.parse(generated).schema?.tables[0]?.color).toBe('#db4f72');
   });
+
+  it('round trips multiple table check constraints', () => {
+    const result = parser.parse(`Table products {
+  id uuid [pk]
+  price decimal
+  stock integer
+
+  checks {
+    \`price > 0\`
+    \`stock >= 0 and stock < 10000\`
+  }
+}`);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.tables[0]?.checks?.map(({ expression }) => expression)).toEqual([
+      'price > 0',
+      'stock >= 0 and stock < 10000',
+    ]);
+    const generated = generator.generate(result.schema!);
+    expect(generated).toContain('checks {');
+    expect(parser.parse(generated).schema?.tables[0]?.checks).toHaveLength(2);
+  });
 });
 
 describe('Schema reconciliation', () => {

@@ -18,6 +18,7 @@ export interface TableSchema {
   indexes: IndexSchema[];
   note?: string;
   color?: string;
+  checks?: CheckConstraint[];
 }
 
 export interface ColumnSchema {
@@ -57,4 +58,9 @@ export interface IndexSchema {
   unique?: boolean;
   primaryKey?: boolean;
   name?: string;
+}
+
+export interface CheckConstraint {
+  id: EntityId;
+  expression: string;
 }

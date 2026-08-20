@@ -136,6 +136,18 @@ export class TableNode {
     };
   }
 
+  protected tableTooltip(): TooltipDetails | undefined {
+    const checks = (this.table().checks ?? [])
+      .map(({ expression }) => expression.trim())
+      .filter(Boolean);
+    if (!this.table().note && !checks.length) return undefined;
+    return {
+      title: this.table().name,
+      ...(this.table().note ? { comment: this.table().note } : {}),
+      ...(checks.length ? { checks } : {}),
+    };
+  }
+
   protected hasAdditionalInfo(column: ColumnSchema): boolean {
     return this.columnTooltip(column) !== undefined;
   }

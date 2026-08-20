@@ -10,7 +10,7 @@ import {
 import { DbmlParseError, DbmlParseResult, DbmlParser } from '../dbml.models';
 
 type Block =
-  | { kind: 'table'; value: TableSchema; parsingIndexes: boolean }
+  | { kind: 'table'; value: TableSchema; section: 'columns' | 'indexes' | 'checks' }
   | { kind: 'enum'; value: EnumSchema };
 
 export class SimpleDbmlParser implements DbmlParser {
@@ -27,8 +27,8 @@ export class SimpleDbmlParser implements DbmlParser {
 
       if (block) {
         if (line === '}') {
-          if (block.kind === 'table' && block.parsingIndexes) {
-            block.parsingIndexes = false;
+          if (block.kind === 'table' && block.section !== 'columns') {
+            block.section = 'columns';
             continue;
           }
           if (block.kind === 'table') schema.tables.push(block.value);
@@ -44,12 +44,29 @@ export class SimpleDbmlParser implements DbmlParser {
             continue;
           }
           if (/^indexes\s*\{$/i.test(line)) {
-            block.parsingIndexes = true;
+            block.section = 'indexes';
             continue;
           }
-          if (block.parsingIndexes) {
+          if (/^checks\s*\{$/i.test(line)) {
+            block.section = 'checks';
+            continue;
+          }
+          if (block.section === 'indexes') {
             const indexSchema = parseIndex(line, lineNumber, block.value, errors);
             if (indexSchema) block.value.indexes.push(indexSchema);
+            continue;
+          }
+          if (block.section === 'checks') {
+            const checkMatch = line.match(/^`((?:\\`|[^`])+)`(?:\s*\[.*\])?$/);
+            if (!checkMatch?.[1]) {
+              errors.push({ message: `Invalid check expression: ${line}`, line: lineNumber });
+            } else {
+              block.value.checks ??= [];
+              block.value.checks.push({
+                id: createEntityId('chk'),
+                expression: checkMatch[1].replaceAll('\\`', '`'),
+              });
+            }
             continue;
           }
           const parsedColumn = parseColumn(line, lineNumber, errors);
@@ -89,7 +106,7 @@ export class SimpleDbmlParser implements DbmlParser {
             columns: [],
             indexes: [],
           },
-          parsingIndexes: false,
+          section: 'columns',
         };
         continue;
       }

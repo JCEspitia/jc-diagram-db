@@ -67,6 +67,7 @@ export function validateSchema(schema: DatabaseSchema): SchemaValidationError[] 
         });
       }
     }
+    for (const check of table.checks ?? []) registerId(check.id, 'check', ids, errors);
   }
 
   for (const relationship of schema.relationships) {

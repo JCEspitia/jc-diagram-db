@@ -160,6 +160,42 @@ export class DiagramStore {
     this.applySchemaOperation({ type: 'UPDATE_TABLE', tableId, changes: { color } });
   }
 
+  addTableCheck(tableId: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    if (!table) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_TABLE',
+      tableId,
+      changes: {
+        checks: [...(table.checks ?? []), { id: createEntityId('chk'), expression: '' }],
+      },
+    });
+  }
+
+  updateTableCheck(tableId: string, checkId: string, expression: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    if (!table?.checks?.some(({ id }) => id === checkId)) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_TABLE',
+      tableId,
+      changes: {
+        checks: table.checks.map((check) =>
+          check.id === checkId ? { ...check, expression } : check,
+        ),
+      },
+    });
+  }
+
+  deleteTableCheck(tableId: string, checkId: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    if (!table) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_TABLE',
+      tableId,
+      changes: { checks: (table.checks ?? []).filter(({ id }) => id !== checkId) },
+    });
+  }
+
   deleteTable(tableId: string): void {
     this.applySchemaOperation({ type: 'DELETE_TABLE', tableId });
   }

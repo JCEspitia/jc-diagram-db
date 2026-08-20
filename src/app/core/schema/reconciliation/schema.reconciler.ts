@@ -34,7 +34,14 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
           )?.id ?? index.id,
         columns: index.columns.map((columnId) => columnIdMap.get(columnId) ?? columnId),
       }));
-      return { ...parsedTable, id: existing.id, columns, indexes };
+      const checks = parsedTable.checks?.map((check, index) => ({
+        ...check,
+        id:
+          existing.checks?.find(({ expression }) => expression === check.expression)?.id ??
+          existing.checks?.[index]?.id ??
+          check.id,
+      }));
+      return { ...parsedTable, id: existing.id, columns, indexes, ...(checks ? { checks } : {}) };
     });
 
     const relationships = parsed.relationships.map((relationship) => {

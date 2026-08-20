@@ -1373,6 +1373,57 @@ main {
   font-style: normal;
   font-size: 9px;
 }
+.table-checks {
+  display: grid;
+  gap: 6px;
+}
+.table-check {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 5px;
+}
+.table-check input {
+  min-width: 0;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid #404956;
+  border-radius: 5px;
+  background: #11171d;
+  color: #e8edf1;
+  font:
+    10.5px/1.4 ui-monospace,
+    monospace;
+}
+.table-check input:focus {
+  border-color: #1689e5;
+  outline: 2px solid rgb(22 137 229 / 14%);
+}
+.table-check button {
+  display: grid;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  place-items: center;
+  background: transparent;
+  color: #8995a0;
+  cursor: pointer;
+}
+.table-check button:hover {
+  background: #3a252a;
+  color: #ff777f;
+}
+.table-check small {
+  grid-column: 1 / -1;
+  margin: -2px 2px 1px;
+  color: #ff8188;
+  font-size: 9px;
+  line-height: 1.35;
+}
+.table-check.invalid input {
+  border-color: #b94b54;
+  background: #24171a;
+}
 @keyframes menu-in {
   from {
     opacity: 0;

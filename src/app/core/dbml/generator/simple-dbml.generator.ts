@@ -22,7 +22,13 @@ function generateTable(table: TableSchema): string {
   const indexes = table.indexes.length
     ? `\n\n  indexes {\n${table.indexes.map((index) => `    ${generateIndex(table, index)}`).join('\n')}\n  }`
     : '';
-  return `Table ${name}${settings} {\n${columns}${note}${indexes}\n}`;
+  const checkExpressions = table.checks?.filter(({ expression }) => expression.trim()) ?? [];
+  const checks = checkExpressions.length
+    ? `\n\n  checks {\n${checkExpressions
+        .map(({ expression }) => `    \`${expression.replaceAll('`', '\\`')}\``)
+        .join('\n')}\n  }`
+    : '';
+  return `Table ${name}${settings} {\n${columns}${checks}${note}${indexes}\n}`;
 }
 
 function generateIndex(table: TableSchema, index: TableSchema['indexes'][number]): string {

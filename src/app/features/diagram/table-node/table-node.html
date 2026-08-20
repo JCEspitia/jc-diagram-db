@@ -1,13 +1,21 @@
 <article class="table-card" (pointerdown)="select()">
   <header
-    [appTooltip]="table().note"
+    [appTooltip]="tableTooltip() ? 'Table details' : null"
+    [appTooltipDetails]="tableTooltip()"
+    appTooltipPosition="side"
     [style.background]="table().color ?? defaultTableColor"
     (pointerdown)="startDrag($event)"
   >
     <svg lucideTable2 size="14"></svg>
     <strong>{{ table().name }}</strong>
-    @if (table().note) {
-      <svg lucideMessageSquareText class="note-icon" size="13" aria-label="Table comment"></svg>
+    @if (tableTooltip()) {
+      <svg
+        appTooltip="Table information"
+        lucideInfo
+        class="note-icon"
+        size="13"
+        aria-label="Table information"
+      ></svg>
     }
     <div class="table-options">
       <button
