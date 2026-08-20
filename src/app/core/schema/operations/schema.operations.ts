@@ -1,4 +1,10 @@
-import { ColumnSchema, EntityId, RelationshipSchema, TableSchema } from '../models/schema.models';
+import {
+  ColumnSchema,
+  EntityId,
+  EnumSchema,
+  RelationshipSchema,
+  TableSchema,
+} from '../models/schema.models';
 
 export type SchemaOperation =
   | { type: 'ADD_TABLE'; table: TableSchema }
@@ -35,7 +41,10 @@ export type SchemaOperation =
       relationshipId: EntityId;
       changes: Partial<Omit<RelationshipSchema, 'id'>>;
     }
-  | { type: 'DELETE_RELATIONSHIP'; relationshipId: EntityId };
+  | { type: 'DELETE_RELATIONSHIP'; relationshipId: EntityId }
+  | { type: 'ADD_ENUM'; enumSchema: EnumSchema }
+  | { type: 'UPDATE_ENUM'; enumId: EntityId; changes: Partial<Omit<EnumSchema, 'id'>> }
+  | { type: 'DELETE_ENUM'; enumId: EntityId };
 
 export class SchemaOperationError extends Error {
   constructor(message: string) {

@@ -16,6 +16,7 @@ import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
 import {
   LucideChevronRight,
+  LucideBraces,
   LucideCode2,
   LucideEllipsis,
   LucideGripVertical,
@@ -47,6 +48,7 @@ import {
     DiagramCanvas,
     DbmlEditor,
     LucideChevronRight,
+    LucideBraces,
     LucideCode2,
     LucideEllipsis,
     LucideGripVertical,
@@ -82,9 +84,10 @@ export class App {
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
-  protected readonly activeSidebar = signal<'dbml' | 'inspector'>('dbml');
+  protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums'>('dbml');
   protected readonly tableFilter = signal('');
   protected readonly expandedTableIds = signal<Set<string>>(new Set());
+  protected readonly expandedEnumId = signal<string | null>(null);
   protected readonly tableMenuId = signal<string | null>(null);
   protected readonly columnMenuId = signal<string | null>(null);
   protected readonly editingTableId = signal<string | null>(null);
@@ -121,6 +124,18 @@ export class App {
     this.store.createTable();
     const tableId = this.store.selection()?.tableId;
     if (tableId) this.expandedTableIds.set(new Set([tableId]));
+  }
+
+  protected createManagedEnum(): void {
+    this.expandedEnumId.set(this.store.createEnum());
+  }
+
+  protected renameEnum(enumId: string, event: Event): void {
+    this.store.renameEnum(enumId, inputValue(event));
+  }
+
+  protected updateEnumValue(enumId: string, index: number, event: Event): void {
+    this.store.updateEnumValue(enumId, index, inputValue(event));
   }
 
   protected selectManagedTable(tableId: string): void {
@@ -201,6 +216,29 @@ export class App {
     this.store.updateColumn(tableId, columnId, {
       defaultValue: defaultValue || undefined,
     });
+  }
+
+  protected selectedEnum(type: string): string {
+    const normalized = type.replace(/\[\]$/, '').split('.').at(-1)?.replaceAll('"', '');
+    return (
+      this.store
+        .schema()
+        .enums.find(({ name }) => name.toLocaleLowerCase() === normalized?.toLocaleLowerCase())
+        ?.name ?? ''
+    );
+  }
+
+  protected updateColumnEnum(
+    tableId: string,
+    columnId: string,
+    currentType: string,
+    event: Event,
+  ): void {
+    const enumName = inputValue(event);
+    if (enumName) this.store.updateColumn(tableId, columnId, { type: enumName });
+    else if (this.selectedEnum(currentType)) {
+      this.store.updateColumn(tableId, columnId, { type: 'varchar' });
+    }
   }
 
   protected updateTableNote(tableId: string, event: Event): void {

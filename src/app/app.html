@@ -44,7 +44,8 @@
   <div
     class="workspace"
     [class.dbml-collapsed]="dbmlCollapsed()"
-    [class.show-inspector]="activeSidebar() === 'inspector'"
+    [class.show-inspector]="activeSidebar() !== 'dbml'"
+    [class.show-enums]="activeSidebar() === 'enums'"
     [style.--dbml-width.px]="dbmlPanelWidth()"
   >
     <nav class="sidebar-rail" aria-label="Sidebar views">
@@ -65,6 +66,15 @@
         (click)="activeSidebar.set('inspector'); dbmlCollapsed.set(false)"
       >
         <svg lucideTable2 size="18"></svg>
+      </button>
+      <button
+        type="button"
+        appTooltip="Enums"
+        aria-label="Show enums"
+        [class.active]="activeSidebar() === 'enums'"
+        (click)="activeSidebar.set('enums'); dbmlCollapsed.set(false)"
+      >
+        <svg lucideBraces size="18"></svg>
       </button>
     </nav>
     <aside class="dbml-panel">
@@ -209,7 +219,7 @@
     </main>
     <aside class="inspector">
       <div class="panel-heading">
-        <span>Tables</span>
+        <span>{{ activeSidebar() === 'enums' ? 'Enums' : 'Tables' }}</span>
         <button
           appTooltip="Collapse sidebar"
           type="button"
@@ -219,7 +229,7 @@
           <svg lucidePanelLeftClose size="16"></svg>
         </button>
       </div>
-      <div class="tables-manager-toolbar">
+      <div class="tables-manager-toolbar tables-only">
         <div class="table-filter">
           <svg lucideSearch size="15"></svg>
           <input
@@ -252,8 +262,11 @@
         <option value="json"></option>
         <option value="jsonb"></option>
         <option value="bytea"></option>
+        @for (enumSchema of store.schema().enums; track enumSchema.id) {
+          <option [value]="enumSchema.name"></option>
+        }
       </datalist>
-      <div class="managed-tables">
+      <div class="managed-tables tables-only">
         @for (table of filteredTables(); track table.id) {
           <article
             class="managed-table"
@@ -436,6 +449,24 @@
                             (change)="updateColumnDefault(table.id, column.id, $event)"
                           />
                         </label>
+                        <label class="column-enum">
+                          <span>Enum</span>
+                          <select
+                            (change)="updateColumnEnum(table.id, column.id, column.type, $event)"
+                          >
+                            <option value="" [selected]="!selectedEnum(column.type)">
+                              No enum
+                            </option>
+                            @for (enumSchema of store.schema().enums; track enumSchema.id) {
+                              <option
+                                [value]="enumSchema.name"
+                                [selected]="selectedEnum(column.type) === enumSchema.name"
+                              >
+                                {{ enumSchema.name }}
+                              </option>
+                            }
+                          </select>
+                        </label>
                         <label class="column-comment">
                           <span>Comment</span>
                           <textarea
@@ -540,6 +571,81 @@
           <p class="empty-inspector">No tables match this filter.</p>
         }
       </div>
+      <section class="enums-manager">
+        <div class="enums-heading">
+          <div><svg lucideCode2 size="15"></svg><strong>Enums</strong></div>
+          <span>{{ store.schema().enums.length }}</span>
+          <button type="button" appTooltip="Add enum" (click)="createManagedEnum()">
+            <svg lucidePlus size="15"></svg>
+          </button>
+        </div>
+        <div class="managed-enums">
+          @for (enumSchema of store.schema().enums; track enumSchema.id) {
+            <article class="managed-enum" [class.expanded]="expandedEnumId() === enumSchema.id">
+              <header
+                class="managed-enum-header"
+                (click)="
+                  expandedEnumId.set(expandedEnumId() === enumSchema.id ? null : enumSchema.id)
+                "
+              >
+                <svg
+                  lucideChevronRight
+                  size="15"
+                  [class.rotated]="expandedEnumId() === enumSchema.id"
+                ></svg>
+                <strong>{{ enumSchema.name }}</strong>
+                <small>{{ enumSchema.values.length }} values</small>
+              </header>
+              @if (expandedEnumId() === enumSchema.id) {
+                <div class="managed-enum-body">
+                  <label>
+                    <span>Enum name</span>
+                    <input
+                      type="text"
+                      [value]="enumSchema.name"
+                      (change)="renameEnum(enumSchema.id, $event)"
+                    />
+                  </label>
+                  <div class="enum-values-title">Values</div>
+                  @for (value of enumSchema.values; track $index; let valueIndex = $index) {
+                    <div class="enum-value">
+                      <input
+                        type="text"
+                        [value]="value"
+                        (change)="updateEnumValue(enumSchema.id, valueIndex, $event)"
+                      />
+                      <button
+                        type="button"
+                        appTooltip="Delete enum value"
+                        [disabled]="enumSchema.values.length === 1"
+                        (click)="store.deleteEnumValue(enumSchema.id, valueIndex)"
+                      >
+                        <svg lucideX size="14"></svg>
+                      </button>
+                    </div>
+                  }
+                  <button
+                    class="enum-add"
+                    type="button"
+                    (click)="store.addEnumValue(enumSchema.id)"
+                  >
+                    <svg lucidePlus size="14"></svg> Add value
+                  </button>
+                  <button
+                    class="enum-delete"
+                    type="button"
+                    (click)="store.deleteEnum(enumSchema.id)"
+                  >
+                    <svg lucideTrash2 size="14"></svg> Delete enum
+                  </button>
+                </div>
+              }
+            </article>
+          } @empty {
+            <p class="empty-enums">No enums defined.</p>
+          }
+        </div>
+      </section>
     </aside>
   </div>
   <footer class="statusbar">

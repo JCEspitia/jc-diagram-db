@@ -153,6 +153,28 @@ export function executeSchemaOperation(
         ...schema,
         relationships: schema.relationships.filter(({ id }) => id !== operation.relationshipId),
       };
+
+    case 'ADD_ENUM':
+      assert(
+        !schema.enums.some(({ id }) => id === operation.enumSchema.id),
+        `Enum ID already exists: ${operation.enumSchema.id}`,
+      );
+      return { ...schema, enums: [...schema.enums, operation.enumSchema] };
+
+    case 'UPDATE_ENUM':
+      assertEnumExists(schema, operation.enumId);
+      return {
+        ...schema,
+        enums: schema.enums.map((enumSchema) =>
+          enumSchema.id === operation.enumId
+            ? { ...enumSchema, ...operation.changes, id: enumSchema.id }
+            : enumSchema,
+        ),
+      };
+
+    case 'DELETE_ENUM':
+      assertEnumExists(schema, operation.enumId);
+      return { ...schema, enums: schema.enums.filter(({ id }) => id !== operation.enumId) };
   }
 }
 
@@ -184,6 +206,13 @@ function assertTableExists(schema: DatabaseSchema, tableId: string): void {
   assert(
     schema.tables.some(({ id }) => id === tableId),
     `Table does not exist: ${tableId}`,
+  );
+}
+
+function assertEnumExists(schema: DatabaseSchema, enumId: string): void {
+  assert(
+    schema.enums.some(({ id }) => id === enumId),
+    `Enum does not exist: ${enumId}`,
   );
 }
 

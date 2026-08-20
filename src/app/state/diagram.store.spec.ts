@@ -63,6 +63,30 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.changeOrigin()).toBe('canvas');
   });
 
+  it('creates and edits enums through visual operations', () => {
+    const store = new DiagramStore();
+    const enumId = store.createEnum();
+    store.renameEnum(enumId, 'order_status');
+    store.updateEnumValue(enumId, 0, 'pending');
+    store.addEnumValue(enumId);
+    store.updateEnumValue(enumId, 1, 'completed');
+
+    expect(store.schema().enums.find(({ id }) => id === enumId)).toMatchObject({
+      name: 'order_status',
+      values: ['pending', 'completed'],
+    });
+    expect(store.dbml()).toContain('Enum order_status');
+    expect(store.dbml()).toContain('  completed');
+
+    const users = store.schema().tables.find(({ name }) => name === 'users')!;
+    const email = users.columns.find(({ name }) => name === 'email')!;
+    store.updateColumn(users.id, email.id, { type: 'order_status' });
+    expect(store.dbml()).toContain('email order_status');
+
+    store.deleteEnum(enumId);
+    expect(store.schema().enums.some(({ id }) => id === enumId)).toBe(false);
+  });
+
   it('creates a table with layout and removes both atomically on delete', () => {
     const store = new DiagramStore();
     store.createTable();

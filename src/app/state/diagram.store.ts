@@ -200,6 +200,77 @@ export class DiagramStore {
     this.applySchemaOperation({ type: 'DELETE_TABLE', tableId });
   }
 
+  createEnum(): string {
+    const enumSchema = {
+      id: createEntityId('enm'),
+      name: nextName(
+        'new_enum',
+        this.schema().enums.map(({ name }) => name),
+      ),
+      values: ['new_value'],
+    };
+    this.applySchemaOperation({ type: 'ADD_ENUM', enumSchema });
+    return enumSchema.id;
+  }
+
+  renameEnum(enumId: string, name: string): void {
+    const normalized = name.trim();
+    if (
+      !normalized ||
+      this.schema().enums.some(({ id, name }) => id !== enumId && name === normalized)
+    )
+      return;
+    this.applySchemaOperation({ type: 'UPDATE_ENUM', enumId, changes: { name: normalized } });
+  }
+
+  addEnumValue(enumId: string): void {
+    const enumSchema = this.schema().enums.find(({ id }) => id === enumId);
+    if (!enumSchema) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_ENUM',
+      enumId,
+      changes: { values: [...enumSchema.values, nextName('new_value', enumSchema.values)] },
+    });
+  }
+
+  updateEnumValue(enumId: string, index: number, value: string): void {
+    const enumSchema = this.schema().enums.find(({ id }) => id === enumId);
+    const normalized = value.trim();
+    if (
+      !enumSchema ||
+      !normalized ||
+      enumSchema.values.some(
+        (candidate, candidateIndex) => candidateIndex !== index && candidate === normalized,
+      )
+    )
+      return;
+    this.applySchemaOperation({
+      type: 'UPDATE_ENUM',
+      enumId,
+      changes: {
+        values: enumSchema.values.map((candidate, candidateIndex) =>
+          candidateIndex === index ? normalized : candidate,
+        ),
+      },
+    });
+  }
+
+  deleteEnumValue(enumId: string, index: number): void {
+    const enumSchema = this.schema().enums.find(({ id }) => id === enumId);
+    if (!enumSchema || enumSchema.values.length <= 1) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_ENUM',
+      enumId,
+      changes: {
+        values: enumSchema.values.filter((_value, candidateIndex) => candidateIndex !== index),
+      },
+    });
+  }
+
+  deleteEnum(enumId: string): void {
+    this.applySchemaOperation({ type: 'DELETE_ENUM', enumId });
+  }
+
   addColumn(tableId: string): void {
     const table = this.schema().tables.find(({ id }) => id === tableId);
     if (!table) return;
