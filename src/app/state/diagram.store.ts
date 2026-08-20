@@ -155,9 +155,9 @@ export class DiagramStore {
     });
   }
 
-  updateTableColor(tableId: string, headerColor: string): void {
-    if (!/^#[0-9a-f]{6}$/i.test(headerColor)) return;
-    this.applySchemaOperation({ type: 'UPDATE_TABLE', tableId, changes: { headerColor } });
+  updateTableColor(tableId: string, color: string): void {
+    if (!/^#[0-9a-f]{6}$/i.test(color)) return;
+    this.applySchemaOperation({ type: 'UPDATE_TABLE', tableId, changes: { color } });
   }
 
   deleteTable(tableId: string): void {

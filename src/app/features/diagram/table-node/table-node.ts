@@ -7,8 +7,14 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/schema';
-import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
+import {
+  ColumnSchema,
+  EnumSchema,
+  RelationshipSchema,
+  TableLayout,
+  TableSchema,
+} from '../../../core/schema';
+import { TooltipDetails, TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from '../../../shared/table-colors';
 import {
   LucideEllipsis,
@@ -44,6 +50,7 @@ export class TableNode {
   readonly table = input.required<TableSchema>();
   readonly layout = input.required<TableLayout>();
   readonly relationships = input<RelationshipSchema[]>([]);
+  readonly enums = input<EnumSchema[]>([]);
   readonly selected = input(false);
   readonly selectedColumnId = input<string>();
   readonly relationshipTargetColumnId = input<string>();
@@ -110,6 +117,20 @@ export class TableNode {
     event.preventDefault();
     event.stopPropagation();
     this.tableColorChanged.emit({ tableId: this.table().id, color });
+  }
+
+  protected columnTooltip(column: ColumnSchema): TooltipDetails {
+    const enumType = column.type.replace(/\[\]$/, '').split('.').at(-1)?.replaceAll('"', '');
+    const enumSchema = this.enums().find(
+      ({ name }) => name.toLocaleLowerCase() === enumType?.toLocaleLowerCase(),
+    );
+    return {
+      title: column.name,
+      type: column.type,
+      ...(column.note ? { comment: column.note } : {}),
+      ...(column.defaultValue !== undefined ? { defaultValue: column.defaultValue } : {}),
+      ...(enumSchema ? { enumName: enumSchema.name, enumValues: enumSchema.values } : {}),
+    };
   }
 
   @HostListener('document:pointerdown', ['$event'])

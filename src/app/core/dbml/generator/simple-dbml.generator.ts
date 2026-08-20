@@ -16,7 +16,7 @@ function generateTable(table: TableSchema): string {
   const name = table.schema
     ? `${escapeIdentifier(table.schema)}.${escapeIdentifier(table.name)}`
     : escapeIdentifier(table.name);
-  const settings = table.headerColor ? ` [headercolor: ${table.headerColor}]` : '';
+  const settings = table.color ? ` [color: ${table.color}]` : '';
   const columns = table.columns.map((column) => `  ${generateColumn(column)}`).join('\n');
   const note = table.note ? `\n\n  Note: '${escapeNote(table.note)}'` : '';
   const indexes = table.indexes.length

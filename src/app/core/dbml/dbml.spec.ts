@@ -104,15 +104,15 @@ Table service_units {
   });
 
   it('round trips table header colors', () => {
-    const result = parser.parse(`Table users [headercolor: #db4f72] {
+    const result = parser.parse(`Table users [color: #db4f72] {
   id uuid [pk]
 }`);
 
     expect(result.errors).toEqual([]);
-    expect(result.schema?.tables[0]?.headerColor).toBe('#db4f72');
+    expect(result.schema?.tables[0]?.color).toBe('#db4f72');
     const generated = generator.generate(result.schema!);
-    expect(generated).toContain('Table users [headercolor: #db4f72] {');
-    expect(parser.parse(generated).schema?.tables[0]?.headerColor).toBe('#db4f72');
+    expect(generated).toContain('Table users [color: #db4f72] {');
+    expect(parser.parse(generated).schema?.tables[0]?.color).toBe('#db4f72');
   });
 });
 

@@ -257,7 +257,7 @@
         @for (table of filteredTables(); track table.id) {
           <article
             class="managed-table"
-            [style.--table-color]="table.headerColor ?? defaultTableColor"
+            [style.--table-color]="table.color ?? defaultTableColor"
             [class.expanded]="expandedTableIds().has(table.id)"
             [class.dragging]="draggedTableId() === table.id"
             [class.drop-target]="tableDropTargetId() === table.id"
@@ -467,10 +467,10 @@
                     <button
                       type="button"
                       appTooltip="Change table color"
-                      [class.selected]="(table.headerColor ?? defaultTableColor) === color"
+                      [class.selected]="(table.color ?? defaultTableColor) === color"
                       [style.--swatch-color]="color"
                       [attr.aria-label]="'Set table color to ' + color"
-                      [attr.aria-pressed]="(table.headerColor ?? defaultTableColor) === color"
+                      [attr.aria-pressed]="(table.color ?? defaultTableColor) === color"
                       (click)="store.updateTableColor(table.id, color)"
                     ></button>
                   }

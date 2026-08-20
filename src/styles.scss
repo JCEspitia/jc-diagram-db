@@ -41,6 +41,67 @@ body {
   animation: tooltip-in 110ms ease-out;
 }
 
+.app-tooltip.rich {
+  width: min(260px, calc(100vw - 16px));
+  padding: 0;
+  overflow: hidden;
+  white-space: normal;
+}
+.app-tooltip-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 11px;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  background: #272f39;
+}
+.app-tooltip-heading strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+.app-tooltip-heading code,
+.app-tooltip-section code {
+  color: #9dcdf1;
+  font:
+    10px/1.4 ui-monospace,
+    monospace;
+}
+.app-tooltip-section {
+  display: grid;
+  gap: 5px;
+  padding: 8px 11px;
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
+}
+.app-tooltip-section:last-child {
+  border-bottom: 0;
+}
+.app-tooltip-section > span {
+  color: #8f9ba7;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.app-tooltip-section p {
+  margin: 0;
+  color: #e7ebef;
+  white-space: pre-wrap;
+}
+.app-tooltip-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.app-tooltip-values code {
+  padding: 2px 5px;
+  border: 1px solid #3e4b58;
+  border-radius: 4px;
+  background: #181e25;
+  color: #c8d9e8;
+}
+
 @keyframes tooltip-in {
   from {
     opacity: 0;

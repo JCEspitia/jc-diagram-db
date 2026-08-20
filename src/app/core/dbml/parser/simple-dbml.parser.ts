@@ -75,9 +75,9 @@ export class SimpleDbmlParser implements DbmlParser {
       if (tableMatch?.[1]) {
         const qualifiedName = splitQualifiedName(tableMatch[1]);
         const tableSettings = splitSettings(tableMatch[2] ?? '');
-        const headerColor = tableSettings
-          .find((setting) => setting.toLowerCase().startsWith('headercolor:'))
-          ?.slice('headercolor:'.length)
+        const color = tableSettings
+          .find((setting) => setting.toLowerCase().startsWith('color:'))
+          ?.slice('color:'.length)
           .trim();
         block = {
           kind: 'table',
@@ -85,7 +85,7 @@ export class SimpleDbmlParser implements DbmlParser {
             id: createEntityId('tbl'),
             name: qualifiedName.name,
             ...(qualifiedName.schema ? { schema: qualifiedName.schema } : {}),
-            ...(headerColor && /^#[0-9a-f]{6}$/i.test(headerColor) ? { headerColor } : {}),
+            ...(color && /^#[0-9a-f]{6}$/i.test(color) ? { color } : {}),
             columns: [],
             indexes: [],
           },

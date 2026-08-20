@@ -17,7 +17,7 @@ export interface TableSchema {
   columns: ColumnSchema[];
   indexes: IndexSchema[];
   note?: string;
-  headerColor?: string;
+  color?: string;
 }
 
 export interface ColumnSchema {

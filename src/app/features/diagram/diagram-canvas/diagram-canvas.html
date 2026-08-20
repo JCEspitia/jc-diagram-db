@@ -299,6 +299,7 @@
         [table]="table"
         [layout]="tablePosition(table.id)"
         [relationships]="schema().relationships"
+        [enums]="schema().enums"
         [selected]="selectedTableId() === table.id"
         [selectedColumnId]="selectedColumnId()"
         [relationshipTargetColumnId]="relationshipTarget()?.columnId"

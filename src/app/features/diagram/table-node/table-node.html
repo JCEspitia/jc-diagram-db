@@ -1,7 +1,7 @@
 <article class="table-card" (pointerdown)="select()">
   <header
     [appTooltip]="table().note"
-    [style.background]="table().headerColor ?? defaultTableColor"
+    [style.background]="table().color ?? defaultTableColor"
     (pointerdown)="startDrag($event)"
   >
     <svg lucideTable2 size="14"></svg>
@@ -31,10 +31,10 @@
               <button
                 type="button"
                 appTooltip="Change table color"
-                [class.selected]="(table().headerColor ?? defaultTableColor) === color"
+                [class.selected]="(table().color ?? defaultTableColor) === color"
                 [style.--swatch-color]="color"
                 [attr.aria-label]="'Set table color to ' + color"
-                [attr.aria-pressed]="(table().headerColor ?? defaultTableColor) === color"
+                [attr.aria-pressed]="(table().color ?? defaultTableColor) === color"
                 (pointerdown)="changeColor($event, color)"
               ></button>
             }
@@ -52,7 +52,8 @@
         [class.relationship-target]="relationshipTargetColumnId() === column.id"
         [attr.data-table-id]="table().id"
         [attr.data-column-id]="column.id"
-        [appTooltip]="column.note"
+        appTooltip="Column details"
+        [appTooltipDetails]="columnTooltip(column)"
         appTooltipPosition="side"
         (pointerdown)="interactWithColumn($event, column.id)"
         (pointerenter)="hoverColumn(column.id)"
