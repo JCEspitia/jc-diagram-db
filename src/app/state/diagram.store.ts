@@ -245,6 +245,7 @@ export class DiagramStore {
     } else if (normalized.type && !supportsAutoIncrement(normalized.type)) {
       normalized.increment = false;
     }
+    if (normalized.defaultValue !== undefined) normalized.increment = false;
     this.applySchemaOperation({ type: 'UPDATE_COLUMN', tableId, columnId, changes: normalized });
   }
 

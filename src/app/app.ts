@@ -196,6 +196,13 @@ export class App {
     this.store.updateColumn(tableId, columnId, { note: note || undefined });
   }
 
+  protected updateColumnDefault(tableId: string, columnId: string, event: Event): void {
+    const defaultValue = inputValue(event).trim();
+    this.store.updateColumn(tableId, columnId, {
+      defaultValue: defaultValue || undefined,
+    });
+  }
+
   protected updateTableNote(tableId: string, event: Event): void {
     this.store.updateTableNote(tableId, inputValue(event));
   }

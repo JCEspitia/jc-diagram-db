@@ -427,6 +427,15 @@
                             (change)="updateColumnFlag(table.id, column.id, 'increment', $event)"
                           />Auto increment</label
                         >
+                        <label class="column-default">
+                          <span>Default value</span>
+                          <input
+                            type="text"
+                            placeholder="e.g. 0, now(), 'draft'"
+                            [value]="column.defaultValue ?? ''"
+                            (change)="updateColumnDefault(table.id, column.id, $event)"
+                          />
+                        </label>
                         <label class="column-comment">
                           <span>Comment</span>
                           <textarea
@@ -456,10 +465,15 @@
                     <span>
                       @for (columnId of index.columns; track columnId) {
                         <b>{{ columnName(table, columnId) }}</b>
+                        @if (!$last) {
+                          <i>, </i>
+                        }
                       }
                     </span>
-                    @if (index.unique) {
-                      <em>U</em>
+                    @if (index.primaryKey) {
+                      <em appTooltip="Primary key index">PK</em>
+                    } @else if (index.unique) {
+                      <em appTooltip="Unique index">UQ</em>
                     }
                     <button type="button" (click)="store.deleteIndex(table.id, index.id)">
                       <svg lucideX size="14"></svg>

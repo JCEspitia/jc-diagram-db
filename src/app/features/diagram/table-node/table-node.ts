@@ -98,6 +98,18 @@ export class TableNode {
     return columnIds;
   });
 
+  protected readonly primaryKeyColumnIds = computed(() => {
+    const ids = new Set(
+      this.table()
+        .columns.filter(({ primaryKey }) => primaryKey)
+        .map(({ id }) => id),
+    );
+    for (const index of this.table().indexes) {
+      if (index.primaryKey) for (const columnId of index.columns) ids.add(columnId);
+    }
+    return ids;
+  });
+
   protected select(): void {
     this.tableSelected.emit(this.table().id);
   }

@@ -115,6 +115,11 @@ describe('DiagramStore DBML synchronization', () => {
       increment: true,
       defaultValue: undefined,
     });
+    store.updateColumn(users.id, email.id, { defaultValue: '5' });
+    expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]).toMatchObject({
+      increment: false,
+      defaultValue: '5',
+    });
     store.updateColumn(users.id, email.id, { type: 'text' });
     expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]?.increment).toBe(
       false,

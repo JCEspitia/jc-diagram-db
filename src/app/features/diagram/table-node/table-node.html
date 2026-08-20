@@ -69,7 +69,7 @@
       >
         <span class="column-name">{{ column.name }}</span>
         <span class="constraints">
-          @if (column.primaryKey) {
+          @if (primaryKeyColumnIds().has(column.id)) {
             <svg
               appTooltip="Primary key"
               lucideKeyRound
