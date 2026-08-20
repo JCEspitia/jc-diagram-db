@@ -1,5 +1,10 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { DbmlParseError, SimpleDbmlGenerator, SimpleDbmlParser } from '../core/dbml';
+import {
+  DbmlParseError,
+  preserveDbmlComments,
+  SimpleDbmlGenerator,
+  SimpleDbmlParser,
+} from '../core/dbml';
 import { zoomAtPoint } from '../core/diagram/diagram-geometry';
 import { AutoLayoutMode, calculateAutoLayout } from '../core/diagram/auto-layout/auto-layout';
 import { executeDiagramOperation } from '../core/diagram/operations/diagram-operation.executor';
@@ -106,12 +111,13 @@ export class DiagramStore {
     const schema = executeSchemaOperation(project.schema, operation);
     const errors = validateSchema(schema);
     if (errors.length) throw new Error(errors.map(({ message }) => message).join('\n'));
+    const generatedDbml = this.generator.generate(schema);
     this.commit(
       {
         ...project,
         schema,
         layout: synchronizeLayout(project.layout, schema),
-        dbml: this.generator.generate(schema),
+        dbml: preserveDbmlComments(project.dbml, generatedDbml),
         updatedAt: new Date().toISOString(),
       },
       true,

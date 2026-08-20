@@ -63,6 +63,26 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.changeOrigin()).toBe('canvas');
   });
 
+  it('preserves DBML comments after visual schema operations', () => {
+    const store = new DiagramStore();
+    store.setDbml(`// User records
+Table users {
+  id uuid [pk] // Stable identifier
+  // Login address
+  email varchar [unique]
+}`);
+    vi.advanceTimersByTime(350);
+    const users = store.schema().tables[0]!;
+    const email = users.columns.find(({ name }) => name === 'email')!;
+
+    store.updateColumn(users.id, email.id, { unique: false });
+
+    expect(store.dbml()).toContain('// User records');
+    expect(store.dbml()).toContain('// Stable identifier');
+    expect(store.dbml()).toContain('// Login address');
+    expect(store.dbml()).toContain('email varchar');
+  });
+
   it('creates and edits enums through visual operations', () => {
     const store = new DiagramStore();
     const enumId = store.createEnum();
