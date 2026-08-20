@@ -43,7 +43,12 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
         sameRelationship(candidate, remapped),
       );
       return existing
-        ? { ...remapped, id: existing.id, sourceOptional: existing.sourceOptional }
+        ? {
+            ...remapped,
+            id: existing.id,
+            sourceCardinality: existing.sourceCardinality,
+            targetCardinality: existing.targetCardinality,
+          }
         : remapped;
     });
 

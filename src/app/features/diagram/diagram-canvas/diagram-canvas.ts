@@ -36,12 +36,7 @@ import {
   ViewportState,
 } from '../../../core/schema';
 import { TableNode } from '../table-node/table-node';
-import {
-  LucideArrowLeftRight,
-  LucideRotateCcw,
-  LucideSettings,
-  LucideTrash2,
-} from '@lucide/angular';
+import { LucideRotateCcw, LucideSettings, LucideTrash2 } from '@lucide/angular';
 
 interface RenderedRelationship {
   relationship: RelationshipSchema;
@@ -55,7 +50,7 @@ interface RenderedRelationship {
   resetPoint: Point;
   canReset: boolean;
   sourceCardinality: 'zero' | 'one' | 'many';
-  targetCardinality: 'one' | 'many';
+  targetCardinality: 'zero' | 'one' | 'many';
   connected: boolean;
   flow: 'forward' | 'reverse' | null;
 }
@@ -77,7 +72,7 @@ const ENDPOINT_LANE_DISTANCE = 44;
 
 @Component({
   selector: 'app-diagram-canvas',
-  imports: [TableNode, LucideArrowLeftRight, LucideRotateCcw, LucideSettings, LucideTrash2],
+  imports: [TableNode, LucideRotateCcw, LucideSettings, LucideTrash2],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diagram-canvas.html',
   styleUrl: './diagram-canvas.scss',
@@ -96,9 +91,9 @@ export class DiagramCanvas {
   readonly relationshipTypeChanged = output<{
     relationshipId: string;
     type: RelationshipSchema['type'];
-    sourceOptional: boolean;
+    sourceCardinality: 'zero' | 'one' | 'many';
+    targetCardinality: 'zero' | 'one' | 'many';
   }>();
-  readonly relationshipInverted = output<string>();
   readonly relationshipDeleted = output<string>();
   readonly relationshipCreated = output<{
     sourceTableId: string;
@@ -291,12 +286,12 @@ export class DiagramCanvas {
           pullCandidates: routePullCandidates(points),
           resetPoint: routeActionPoint(points),
           canReset: manuallyRouted && !samePolyline(points, automaticPoints),
-          sourceCardinality: relationship.sourceOptional
-            ? 'zero'
-            : relationship.type === 'many-to-one'
-              ? 'many'
-              : 'one',
-          targetCardinality: relationship.type === 'one-to-many' ? 'many' : 'one',
+          sourceCardinality:
+            relationship.sourceCardinality ??
+            (relationship.type === 'many-to-one' ? 'many' : 'one'),
+          targetCardinality:
+            relationship.targetCardinality ??
+            (relationship.type === 'one-to-many' ? 'many' : 'one'),
           connected: columnFocus
             ? sourceFocused || targetFocused
             : !selectedTableId ||
@@ -551,18 +546,23 @@ export class DiagramCanvas {
   protected changeRelationshipType(
     event: PointerEvent,
     relationshipId: string,
-    type: RelationshipSchema['type'],
-    sourceOptional = false,
+    sourceCardinality: 'zero' | 'one' | 'many',
+    targetCardinality: 'zero' | 'one' | 'many',
   ): void {
     event.preventDefault();
     event.stopPropagation();
-    this.relationshipTypeChanged.emit({ relationshipId, type, sourceOptional });
-  }
-
-  protected invertRelationship(event: PointerEvent, relationshipId: string): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.relationshipInverted.emit(relationshipId);
+    const type: RelationshipSchema['type'] =
+      sourceCardinality === 'many'
+        ? 'many-to-one'
+        : targetCardinality === 'many'
+          ? 'one-to-many'
+          : 'one-to-one';
+    this.relationshipTypeChanged.emit({
+      relationshipId,
+      type,
+      sourceCardinality,
+      targetCardinality,
+    });
   }
 
   protected deleteRelationship(event: PointerEvent, relationshipId: string): void {

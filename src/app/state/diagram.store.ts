@@ -298,49 +298,6 @@ export class DiagramStore {
     this.applySchemaOperation({ type: 'DELETE_RELATIONSHIP', relationshipId });
   }
 
-  invertRelationship(relationshipId: string): void {
-    const project = this.project();
-    const relationship = project.schema.relationships.find(({ id }) => id === relationshipId);
-    if (!relationship) return;
-    const schema = executeSchemaOperation(project.schema, {
-      type: 'UPDATE_RELATIONSHIP',
-      relationshipId,
-      changes: {
-        sourceTableId: relationship.targetTableId,
-        sourceColumnId: relationship.targetColumnId,
-        targetTableId: relationship.sourceTableId,
-        targetColumnId: relationship.sourceColumnId,
-        type: relationship.type,
-      },
-    });
-    const currentRoute = project.layout.relationships?.[relationshipId];
-    const layout = currentRoute
-      ? executeDiagramOperation(project.layout, {
-          type: 'CHANGE_RELATIONSHIP_ROUTE',
-          relationshipId,
-          from: currentRoute,
-          to: {
-            ...currentRoute,
-            sourceSide: currentRoute.targetSide,
-            targetSide: currentRoute.sourceSide,
-            sourceX: currentRoute.targetX,
-            targetX: currentRoute.sourceX,
-            waypoints: currentRoute.waypoints ? [...currentRoute.waypoints].reverse() : undefined,
-          },
-        })
-      : project.layout;
-    this.commit(
-      {
-        ...project,
-        schema,
-        layout,
-        dbml: this.generator.generate(schema),
-        updatedAt: new Date().toISOString(),
-      },
-      true,
-    );
-  }
-
   selectTable(tableId: string): void {
     this.selection.set({ tableId });
   }

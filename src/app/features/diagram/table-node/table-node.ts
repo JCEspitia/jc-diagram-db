@@ -36,11 +36,27 @@ export class TableNode {
 
   protected readonly foreignKeyColumnIds = computed(() => {
     const tableId = this.table().id;
-    return new Set(
-      this.relationships()
-        .filter(({ sourceTableId }) => sourceTableId === tableId)
-        .map(({ sourceColumnId }) => sourceColumnId),
-    );
+    const columnIds = new Set<string>();
+    for (const relationship of this.relationships()) {
+      const sourceCardinality =
+        relationship.sourceCardinality ?? (relationship.type === 'many-to-one' ? 'many' : 'one');
+      const targetCardinality =
+        relationship.targetCardinality ?? (relationship.type === 'one-to-many' ? 'many' : 'one');
+      const sourceIsForeignKey =
+        sourceCardinality === 'many' ||
+        (targetCardinality !== 'many' && sourceCardinality === 'zero') ||
+        (sourceCardinality === 'one' && targetCardinality === 'one');
+      const targetIsForeignKey =
+        targetCardinality === 'many' ||
+        (sourceCardinality !== 'many' && targetCardinality === 'zero');
+      if (sourceIsForeignKey && relationship.sourceTableId === tableId) {
+        columnIds.add(relationship.sourceColumnId);
+      }
+      if (targetIsForeignKey && relationship.targetTableId === tableId) {
+        columnIds.add(relationship.targetColumnId);
+      }
+    }
+    return columnIds;
   });
 
   protected select(): void {

@@ -153,10 +153,10 @@
         (relationshipTypeChanged)="
           store.updateRelationship($event.relationshipId, {
             type: $event.type,
-            sourceOptional: $event.sourceOptional,
+            sourceCardinality: $event.sourceCardinality,
+            targetCardinality: $event.targetCardinality,
           })
         "
-        (relationshipInverted)="store.invertRelationship($event)"
         (relationshipDeleted)="store.deleteRelationship($event)"
         (relationshipCreated)="createRelationship($event)"
         (selectionCleared)="store.clearSelection()"
