@@ -81,6 +81,22 @@ Table service_units {
     expect(parser.parse(generated).errors).toEqual([]);
   });
 
+  it('parses single-column indexes without parentheses', () => {
+    const result = parser.parse(`Table products {
+  codigo varchar
+
+  indexes {
+    codigo [unique]
+  }
+}`);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.tables[0]?.indexes[0]).toMatchObject({ unique: true });
+    expect(result.schema?.tables[0]?.indexes[0]?.columns).toEqual([
+      result.schema?.tables[0]?.columns[0]?.id,
+    ]);
+  });
+
   it('round trips table and multiline column comments', () => {
     const result = parser.parse(`Table users {
   id uuid [pk, note: 'Public\\nidentifier']

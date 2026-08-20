@@ -184,12 +184,13 @@ function parseIndex(
   table: TableSchema,
   errors: DbmlParseError[],
 ): TableSchema['indexes'][number] | undefined {
-  const match = line.match(/^\(([^)]+)\)(?:\s*\[(.*)\])?\s*$/);
-  if (!match?.[1]) {
+  const match = line.match(/^(?:\(([^)]+)\)|("[^"]+"|[\w-]+))(?:\s*\[(.*)\])?\s*$/);
+  const columnList = match?.[1] ?? match?.[2];
+  if (!columnList) {
     errors.push({ message: `Invalid index definition: ${line}`, line: lineNumber, column: 1 });
     return undefined;
   }
-  const columnNames = match[1].split(',').map((name) => unquote(name.trim()));
+  const columnNames = columnList.split(',').map((name) => unquote(name.trim()));
   const columns = columnNames.map((name) => table.columns.find((column) => column.name === name));
   const missingIndex = columns.findIndex((column) => !column);
   if (missingIndex >= 0) {
@@ -200,8 +201,8 @@ function parseIndex(
     });
     return undefined;
   }
-  const settings = splitSettings(match[2] ?? '').map((setting) => setting.toLowerCase());
-  const nameSetting = splitSettings(match[2] ?? '').find((setting) =>
+  const settings = splitSettings(match?.[3] ?? '').map((setting) => setting.toLowerCase());
+  const nameSetting = splitSettings(match?.[3] ?? '').find((setting) =>
     setting.toLowerCase().startsWith('name:'),
   );
   return {
