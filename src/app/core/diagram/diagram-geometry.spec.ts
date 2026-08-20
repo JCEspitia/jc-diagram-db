@@ -82,7 +82,7 @@ describe('diagram geometry', () => {
   });
 
   it('locates a column anchor from table layout and row index', () => {
-    expect(columnAnchor({ x: 100, y: 80 }, 1, 'right')).toEqual({ x: 400, y: 182 });
+    expect(columnAnchor({ x: 100, y: 80 }, 1, 'right')).toEqual({ x: 320, y: 159 });
   });
 
   it('generates a cubic bezier path', () => {

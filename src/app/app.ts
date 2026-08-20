@@ -23,9 +23,10 @@ export class App {
   protected readonly store = inject(DiagramStore);
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
+  protected readonly activeSidebar = signal<'dbml' | 'inspector'>('dbml');
   protected readonly relationshipMode = signal(false);
   protected readonly autoLayoutMenu = signal(false);
-  protected readonly editorTheme = signal<'dark' | 'light'>('dark');
+  protected readonly editorTheme = signal<'dark' | 'light'>('light');
   protected readonly dbmlPanelWidth = signal(340);
   private panelResize?: { startX: number; startWidth: number };
 

@@ -1,4 +1,4 @@
-<div class="shell">
+<div class="shell" [class.dark-theme]="editorTheme() === 'dark'">
   <header class="topbar">
     <a class="brand" href="#" aria-label="DiagramDB home"
       ><span class="brand-mark">D</span><span>Diagram<span>DB</span></span></a
@@ -9,7 +9,7 @@
     <nav aria-label="Project actions">
       <button
         type="button"
-        aria-label="Toggle editor theme"
+        aria-label="Toggle workspace theme"
         (click)="editorTheme.update((theme) => (theme === 'dark' ? 'light' : 'dark'))"
       >
         {{ editorTheme() === 'dark' ? '☀' : '☾' }}
@@ -27,19 +27,40 @@
   <div
     class="workspace"
     [class.dbml-collapsed]="dbmlCollapsed()"
+    [class.show-inspector]="activeSidebar() === 'inspector'"
     [style.--dbml-width.px]="dbmlPanelWidth()"
   >
+    <nav class="sidebar-rail" aria-label="Sidebar views">
+      <button
+        type="button"
+        title="DBML editor"
+        aria-label="Show DBML editor"
+        [class.active]="activeSidebar() === 'dbml'"
+        (click)="activeSidebar.set('dbml'); dbmlCollapsed.set(false)"
+      >
+        &lt;/&gt;
+      </button>
+      <button
+        type="button"
+        title="Inspector"
+        aria-label="Show inspector"
+        [class.active]="activeSidebar() === 'inspector'"
+        (click)="activeSidebar.set('inspector'); dbmlCollapsed.set(false)"
+      >
+        ◫
+      </button>
+    </nav>
     <aside class="dbml-panel">
       <div class="panel-heading">
-        <span>DBML</span
-        ><button type="button" aria-label="Collapse DBML panel" (click)="dbmlCollapsed.set(true)">
+        <span>DBML</span>
+        <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
           ‹
         </button>
       </div>
       <app-dbml-editor
         [value]="store.dbml()"
         [errors]="store.dbmlErrors()"
-        [theme]="editorTheme()"
+        theme="dark"
         (valueChange)="store.setDbml($event)"
       />
       <footer [class.invalid]="store.dbmlErrors().length > 0">
@@ -62,7 +83,7 @@
     <main>
       <div class="toolbar">
         @if (dbmlCollapsed()) {
-          <button type="button" (click)="dbmlCollapsed.set(false)">DBML ›</button>
+          <button type="button" (click)="dbmlCollapsed.set(false)">Sidebar ›</button>
         }
         <button class="primary" type="button" (click)="store.createTable()"><b>＋</b> Table</button
         ><span></span>
@@ -136,7 +157,10 @@
     </main>
     <aside class="inspector">
       <div class="panel-heading">
-        <span>Inspector</span><button type="button" (click)="store.clearSelection()">×</button>
+        <span>Inspector</span>
+        <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
+          ‹
+        </button>
       </div>
       @if (store.selectedRelationship(); as relationship) {
         <section class="relationship-inspector">

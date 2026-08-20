@@ -8,9 +8,9 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #0d1320;
-  background-image: radial-gradient(circle, #283249 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-color: #fbfbfc;
+  background-image: radial-gradient(circle, #d9dde1 0.7px, transparent 0.8px);
+  background-size: 20px 20px;
   cursor: grab;
   touch-action: none;
 }
@@ -41,19 +41,38 @@
   fill: none;
   stroke-linecap: round;
 }
+
+:host-context(.dark-theme) .viewport {
+  background-color: #111820;
+  background-image: radial-gradient(circle, #303b47 0.7px, transparent 0.8px);
+}
+:host-context(.dark-theme) .edge-shadow {
+  stroke: #111820;
+}
+:host-context(.dark-theme) .edge {
+  stroke: #7e8a97;
+}
+:host-context(.dark-theme) .edge.selected,
+:host-context(.dark-theme) .edge-flow {
+  stroke: #6d8cff;
+}
+:host-context(.dark-theme) .route-handle {
+  fill: #111820;
+  stroke: #8098ff;
+}
 .edge-shadow {
-  stroke: #080c14;
-  stroke-width: 6;
+  stroke: #ffffff;
+  stroke-width: 5;
 }
 .edge {
-  stroke: #7c6ff2;
-  stroke-width: 2;
+  stroke: #a8adb4;
+  stroke-width: 1.5;
   pointer-events: none;
 }
 .cardinality-symbol {
   fill: none;
-  stroke: #a8b2c4;
-  stroke-width: 1.7;
+  stroke: #8e949b;
+  stroke-width: 1.4;
   pointer-events: none;
 }
 .cardinality-symbol.dimmed {
@@ -64,12 +83,12 @@
   opacity: 0.12;
 }
 .edge.selected {
-  stroke: #c1b9ff;
-  stroke-width: 3;
+  stroke: #3558ff;
+  stroke-width: 2;
 }
 .edge-flow {
   fill: none;
-  stroke: #c7c0ff;
+  stroke: #3558ff;
   stroke-width: 2;
   stroke-dasharray: 2 10;
   stroke-linecap: round;
@@ -80,8 +99,8 @@
   animation-direction: reverse;
 }
 .route-handle {
-  fill: #0d1320;
-  stroke: #c7c0ff;
+  fill: #ffffff;
+  stroke: #3558ff;
   stroke-width: 2;
   pointer-events: all;
   cursor: move;
@@ -91,7 +110,7 @@
     opacity 120ms ease;
 }
 .route-candidate {
-  fill: #8074ee;
+  fill: #3558ff;
   opacity: 0.8;
   pointer-events: none;
 }
@@ -105,10 +124,10 @@
   height: 26px;
   padding: 0;
   place-items: center;
-  border: 1px solid #8074ee;
+  border: 1px solid #cfd3d8;
   border-radius: 5px;
-  color: #d9d5ff;
-  background: #172033;
+  color: #3558ff;
+  background: #ffffff;
   box-shadow: 0 3px 10px rgb(0 0 0 / 35%);
   cursor: pointer;
   font:
@@ -117,8 +136,8 @@
 }
 .route-reset button:hover {
   color: #ffffff;
-  border-color: #c7c0ff;
-  background: #41379a;
+  border-color: #3558ff;
+  background: #f1f5ff;
 }
 .route-handle.horizontal {
   cursor: ns-resize;
@@ -127,11 +146,11 @@
   cursor: ew-resize;
 }
 .route-handle:hover {
-  fill: #7767e7;
+  fill: #3558ff;
   r: 7px;
 }
 .route-handle.ghost {
-  fill: #7767e7;
+  fill: #3558ff;
   stroke: #ffffff;
   opacity: 0.75;
 }

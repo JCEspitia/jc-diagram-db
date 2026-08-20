@@ -12,9 +12,9 @@ export interface TableMetrics {
 }
 
 export const DEFAULT_TABLE_METRICS: TableMetrics = {
-  width: 300,
-  headerHeight: 45,
-  rowHeight: 38,
+  width: 220,
+  headerHeight: 34,
+  rowHeight: 30,
 };
 
 export function worldToScreen(point: Point, viewport: ViewportState): Point {
