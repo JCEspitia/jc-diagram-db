@@ -6,6 +6,8 @@ export function executeDiagramOperation(
   operation: DiagramOperation,
 ): DiagramLayout {
   switch (operation.type) {
+    case 'CHANGE_DETAIL_LEVEL':
+      return { ...layout, detailLevel: operation.to };
     case 'MOVE_TABLE':
     case 'RESIZE_TABLE':
       return {

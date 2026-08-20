@@ -6,7 +6,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ReferentialAction, RelationshipSchema, TableSchema } from './core/schema';
+import {
+  DiagramDetailLevel,
+  ReferentialAction,
+  RelationshipSchema,
+  TableSchema,
+} from './core/schema';
 import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
 import { checkExpressionError } from './core/schema/validation/check-expression.validator';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
@@ -16,6 +21,7 @@ import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
 import {
   LucideChevronRight,
+  LucideCheck,
   LucideBraces,
   LucideCode2,
   LucideEllipsis,
@@ -25,7 +31,6 @@ import {
   LucideLink2,
   LucideLocateFixed,
   LucideMoon,
-  LucideMinimize2,
   LucidePanelLeftClose,
   LucidePencil,
   LucidePlus,
@@ -49,6 +54,7 @@ import {
     DiagramCanvas,
     DbmlEditor,
     LucideChevronRight,
+    LucideCheck,
     LucideBraces,
     LucideCode2,
     LucideEllipsis,
@@ -58,7 +64,6 @@ import {
     LucideLink2,
     LucideLocateFixed,
     LucideMoon,
-    LucideMinimize2,
     LucidePanelLeftClose,
     LucidePencil,
     LucidePlus,
@@ -100,6 +105,7 @@ export class App {
   protected readonly columnDropTargetId = signal<string | null>(null);
   protected readonly relationshipMode = signal(false);
   protected readonly autoLayoutMenu = signal(false);
+  protected readonly detailLevelMenu = signal(false);
   protected readonly editorTheme = signal<'dark' | 'light'>('light');
   protected readonly dbmlPanelWidth = signal(340);
   private panelResize?: { startX: number; startWidth: number };
@@ -335,6 +341,11 @@ export class App {
     requestAnimationFrame(() => this.fitDiagram());
   }
 
+  protected setDetailLevel(level: DiagramDetailLevel): void {
+    this.store.setDetailLevel(level);
+    this.detailLevelMenu.set(false);
+  }
+
   protected startPanelResize(event: PointerEvent): void {
     event.preventDefault();
     this.panelResize = { startX: event.clientX, startWidth: this.dbmlPanelWidth() };
@@ -416,6 +427,7 @@ export class App {
   protected closeFloatingMenus(event: PointerEvent): void {
     const target = event.target as Element | null;
     if (!target?.closest('.auto-layout-control')) this.autoLayoutMenu.set(false);
+    if (!target?.closest('.detail-level-control')) this.detailLevelMenu.set(false);
     if (!target?.closest('.table-menu, .managed-table-header .more')) {
       this.tableMenuId.set(null);
     }

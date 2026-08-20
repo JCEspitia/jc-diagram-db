@@ -170,6 +170,44 @@
             </div>
           }
         </div>
+        <div class="detail-level-control">
+          <button type="button" (click)="detailLevelMenu.update((open) => !open)">
+            @switch (store.layout().detailLevel ?? 'all') {
+              @case ('names') {
+                <svg lucidePanelLeftClose size="15"></svg> Table names
+              }
+              @case ('keys') {
+                <svg lucideKeyRound size="15"></svg> Keys only
+              }
+              @default {
+                <svg lucideTable2 size="15"></svg> All fields
+              }
+            }
+          </button>
+          @if (detailLevelMenu()) {
+            <div class="detail-level-menu">
+              <p>Detail level</p>
+              <button type="button" (click)="setDetailLevel('names')">
+                <svg lucidePanelLeftClose size="15"></svg><span>Table names</span>
+                @if ((store.layout().detailLevel ?? 'all') === 'names') {
+                  <svg lucideCheck size="14"></svg>
+                }
+              </button>
+              <button type="button" (click)="setDetailLevel('keys')">
+                <svg lucideKeyRound size="15"></svg><span>Keys only</span>
+                @if (store.layout().detailLevel === 'keys') {
+                  <svg lucideCheck size="14"></svg>
+                }
+              </button>
+              <button type="button" (click)="setDetailLevel('all')">
+                <svg lucideTable2 size="15"></svg><span>All fields</span>
+                @if ((store.layout().detailLevel ?? 'all') === 'all') {
+                  <svg lucideCheck size="14"></svg>
+                }
+              </button>
+            </div>
+          }
+        </div>
         <button
           type="button"
           [class.active]="relationshipMode()"
@@ -740,9 +778,6 @@
                       <small>Assign tables using the selector or the table options menu.</small>
                     }
                   </div>
-                  <button class="enum-add" type="button" (click)="store.compactArea(entry[0])">
-                    <svg lucideMinimize2 size="14"></svg> Compact area
-                  </button>
                   <button
                     class="enum-add"
                     type="button"

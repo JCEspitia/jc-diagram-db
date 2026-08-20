@@ -74,86 +74,88 @@
     </div>
   </header>
 
-  <div class="columns">
-    @for (column of table().columns; track column.id) {
-      <div
-        class="column-row"
-        [class.selected]="selectedColumnId() === column.id"
-        [class.relationship-target]="relationshipTargetColumnId() === column.id"
-        [attr.data-table-id]="table().id"
-        [attr.data-column-id]="column.id"
-        [appTooltip]="hasAdditionalInfo(column) ? 'Column details' : null"
-        [appTooltipDetails]="columnTooltip(column)"
-        appTooltipPosition="side"
-        (pointerdown)="interactWithColumn($event, column.id)"
-        (pointerenter)="hoverColumn(column.id)"
-        (pointerleave)="columnHovered.emit(null)"
-      >
-        <span class="column-name">{{ column.name }}</span>
-        <span class="constraints">
-          @if (primaryKeyColumnIds().has(column.id)) {
-            <svg
-              appTooltip="Primary key"
-              lucideKeyRound
-              size="12"
-              class="key-icon"
-              aria-label="Primary key"
-            ></svg>
-          }
-          @if (foreignKeyColumnIds().has(column.id)) {
-            <svg
-              appTooltip="Foreign key"
-              lucideLink2
-              size="12"
-              class="link-icon"
-              aria-label="Foreign key"
-            ></svg>
-          }
-          @if (column.note) {
-            <svg
-              lucideMessageSquareText
-              appTooltip="Comment"
-              size="11"
-              class="note-icon"
-              aria-label="Column comment"
-            ></svg>
-          }
-          @if (column.unique) {
-            <svg
-              appTooltip="Unique"
-              lucideFingerprint
-              size="12"
-              class="unique-icon"
-              aria-label="Unique"
-            ></svg>
-          }
-          @if (hasAdditionalInfo(column)) {
-            <svg
-              appTooltip="Additional information"
-              lucideInfo
-              size="12"
-              class="info-icon"
-              aria-label="Additional information"
-            ></svg>
-          }
-        </span>
-        <span class="column-type">{{ column.type }}</span>
-        <span class="badges">
-          @if (!column.nullable) {
-            <b appTooltip="Not null">NN</b>
-          }
-          @if (column.increment) {
-            <b appTooltip="Auto increment">AI</b>
-          }
-        </span>
-        <button
-          class="handle"
-          type="button"
-          appTooltip="Create relationship"
-          aria-label="Create relationship from column"
-          (pointerdown)="startRelationship($event, column.id)"
-        ></button>
-      </div>
-    }
-  </div>
+  @if (detailLevel() !== 'names') {
+    <div class="columns">
+      @for (column of displayedColumns(); track column.id) {
+        <div
+          class="column-row"
+          [class.selected]="selectedColumnId() === column.id"
+          [class.relationship-target]="relationshipTargetColumnId() === column.id"
+          [attr.data-table-id]="table().id"
+          [attr.data-column-id]="column.id"
+          [appTooltip]="hasAdditionalInfo(column) ? 'Column details' : null"
+          [appTooltipDetails]="columnTooltip(column)"
+          appTooltipPosition="side"
+          (pointerdown)="interactWithColumn($event, column.id)"
+          (pointerenter)="hoverColumn(column.id)"
+          (pointerleave)="columnHovered.emit(null)"
+        >
+          <span class="column-name">{{ column.name }}</span>
+          <span class="constraints">
+            @if (primaryKeyColumnIds().has(column.id)) {
+              <svg
+                appTooltip="Primary key"
+                lucideKeyRound
+                size="12"
+                class="key-icon"
+                aria-label="Primary key"
+              ></svg>
+            }
+            @if (foreignKeyColumnIds().has(column.id)) {
+              <svg
+                appTooltip="Foreign key"
+                lucideLink2
+                size="12"
+                class="link-icon"
+                aria-label="Foreign key"
+              ></svg>
+            }
+            @if (column.note) {
+              <svg
+                lucideMessageSquareText
+                appTooltip="Comment"
+                size="11"
+                class="note-icon"
+                aria-label="Column comment"
+              ></svg>
+            }
+            @if (column.unique) {
+              <svg
+                appTooltip="Unique"
+                lucideFingerprint
+                size="12"
+                class="unique-icon"
+                aria-label="Unique"
+              ></svg>
+            }
+            @if (hasAdditionalInfo(column)) {
+              <svg
+                appTooltip="Additional information"
+                lucideInfo
+                size="12"
+                class="info-icon"
+                aria-label="Additional information"
+              ></svg>
+            }
+          </span>
+          <span class="column-type">{{ column.type }}</span>
+          <span class="badges">
+            @if (!column.nullable) {
+              <b appTooltip="Not null">NN</b>
+            }
+            @if (column.increment) {
+              <b appTooltip="Auto increment">AI</b>
+            }
+          </span>
+          <button
+            class="handle"
+            type="button"
+            appTooltip="Create relationship"
+            aria-label="Create relationship from column"
+            (pointerdown)="startRelationship($event, column.id)"
+          ></button>
+        </div>
+      }
+    </div>
+  }
 </article>

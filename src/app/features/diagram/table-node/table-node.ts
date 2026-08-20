@@ -14,6 +14,7 @@ import {
   TableLayout,
   TableSchema,
   DiagramAreaLayout,
+  DiagramDetailLevel,
 } from '../../../core/schema';
 import { TooltipDetails, TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from '../../../shared/table-colors';
@@ -63,6 +64,7 @@ export class TableNode {
   readonly relationshipTargetColumnId = input<string>();
   readonly showRelationshipHandles = input(false);
   readonly areas = input<[string, DiagramAreaLayout][]>([]);
+  readonly detailLevel = input<DiagramDetailLevel>('all');
   readonly tableSelected = output<string>();
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
@@ -118,6 +120,20 @@ export class TableNode {
       if (index.primaryKey) for (const columnId of index.columns) ids.add(columnId);
     }
     return ids;
+  });
+
+  protected readonly displayedColumns = computed(() => {
+    if (this.detailLevel() === 'names') return [];
+    if (this.detailLevel() === 'all') return this.table().columns;
+    const relationshipColumns = new Set(
+      this.relationships().flatMap((relationship) => [
+        relationship.sourceColumnId,
+        relationship.targetColumnId,
+      ]),
+    );
+    return this.table().columns.filter(
+      ({ id }) => this.primaryKeyColumnIds().has(id) || relationshipColumns.has(id),
+    );
   });
 
   protected select(): void {

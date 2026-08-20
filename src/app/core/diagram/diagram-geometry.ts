@@ -325,7 +325,7 @@ export function fitToScreen(
       bottom:
         position.y +
         DEFAULT_TABLE_METRICS.headerHeight +
-        table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+        visibleColumnCount(schema, layout, table.id) * DEFAULT_TABLE_METRICS.rowHeight,
     };
   });
   const left = Math.min(...bounds.map((bound) => bound.left));
@@ -349,4 +349,22 @@ export function fitToScreen(
     y: (size.height - contentHeight * zoom) / 2 - top * zoom,
     zoom,
   };
+}
+
+function visibleColumnCount(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  tableId: string,
+): number {
+  const table = schema.tables.find(({ id }) => id === tableId);
+  if (!table || layout.detailLevel === 'names') return 0;
+  if (!layout.detailLevel || layout.detailLevel === 'all') return table.columns.length;
+  return table.columns.filter(
+    ({ id, primaryKey }) =>
+      primaryKey ||
+      table.indexes.some((index) => index.primaryKey && index.columns.includes(id)) ||
+      schema.relationships.some(
+        ({ sourceColumnId, targetColumnId }) => sourceColumnId === id || targetColumnId === id,
+      ),
+  ).length;
 }

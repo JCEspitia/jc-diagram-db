@@ -17,6 +17,7 @@ import {
   createTable,
   DatabaseSchema,
   DiagramAreaLayout,
+  DiagramDetailLevel,
   DiagramLayout,
   DiagramProject,
   DiagramSelection,
@@ -71,10 +72,12 @@ export class DiagramStore {
     this.changeOrigin.set('canvas');
     const project = this.project();
     let rawLayout = executeDiagramOperation(project.layout, operation);
-    if (operation.type === 'MOVE_TABLE') {
+    if (operation.type === 'CHANGE_DETAIL_LEVEL') {
+      rawLayout = fitAllAreas(project.schema, rawLayout);
+    } else if (operation.type === 'MOVE_TABLE') {
       rawLayout = expandMemberAreas(project.schema, rawLayout, operation.tableId);
     } else if (operation.type === 'RESIZE_AREA') {
-      rawLayout = containAreaMembers(project.schema, rawLayout, operation.areaId);
+      rawLayout = fitAreaToMembers(project.schema, rawLayout, operation.areaId);
     }
     const schema = synchroniseTableGroups(
       project.schema,
@@ -96,6 +99,12 @@ export class DiagramStore {
       updatedAt: new Date().toISOString(),
     };
     this.commit(next, operation.type !== 'CHANGE_VIEWPORT');
+  }
+
+  setDetailLevel(level: DiagramDetailLevel): void {
+    const from = this.layout().detailLevel ?? 'all';
+    if (from !== level)
+      this.applyDiagramOperation({ type: 'CHANGE_DETAIL_LEVEL', from, to: level });
   }
 
   setDbml(source: string): void {
@@ -366,7 +375,7 @@ export class DiagramStore {
           },
         };
       }
-      layout = containAreaMembers(project.schema, layout, areaId);
+      layout = fitAreaToMembers(project.schema, layout, areaId);
     }
     const schema = synchroniseTableGroups(project.schema, layout, true);
     this.commit(
@@ -724,7 +733,7 @@ function synchronizeLayout(layout: DiagramLayout, schema: DatabaseSchema): Diagr
       ];
     }),
   );
-  return { ...layout, tables, relationships, areas };
+  return fitAllAreas(schema, { ...layout, tables, relationships, areas });
 }
 
 function synchroniseTableGroups(
@@ -768,10 +777,7 @@ function tableBounds(
     left: position.x,
     top: position.y,
     right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
-    bottom:
-      position.y +
-      DEFAULT_TABLE_METRICS.headerHeight +
-      table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+    bottom: position.y + tableVisualHeight(schema, layout, table.id),
   };
 }
 
@@ -833,7 +839,50 @@ function expandMemberAreas(
 ): DiagramLayout {
   return (schema.tableGroups ?? [])
     .filter(({ tableIds }) => tableIds.includes(tableId))
-    .reduce((current, group) => containAreaMembers(schema, current, group.id), layout);
+    .reduce((current, group) => fitAreaToMembers(schema, current, group.id), layout);
+}
+
+function fitAreaToMembers(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  areaId: string,
+): DiagramLayout {
+  const area = layout.areas?.[areaId];
+  if (!area) return layout;
+  const bounds = memberBounds(schema, layout, area.tableIds ?? []);
+  if (!bounds) return layout;
+  return {
+    ...layout,
+    areas: { ...layout.areas, [areaId]: { ...area, ...areaAroundBounds(area, bounds) } },
+  };
+}
+
+function fitAllAreas(schema: DatabaseSchema, layout: DiagramLayout): DiagramLayout {
+  return Object.keys(layout.areas ?? {}).reduce(
+    (current, areaId) => fitAreaToMembers(schema, current, areaId),
+    layout,
+  );
+}
+
+function tableVisualHeight(schema: DatabaseSchema, layout: DiagramLayout, tableId: string): number {
+  const table = schema.tables.find(({ id }) => id === tableId);
+  if (!table) return DEFAULT_TABLE_METRICS.headerHeight;
+  const level = layout.detailLevel ?? 'all';
+  if (level === 'names') return DEFAULT_TABLE_METRICS.headerHeight;
+  const count =
+    level === 'all'
+      ? table.columns.length
+      : table.columns.filter(
+          (column) =>
+            column.primaryKey ||
+            table.indexes.some((index) => index.primaryKey && index.columns.includes(column.id)) ||
+            schema.relationships.some(
+              (relationship) =>
+                relationship.sourceColumnId === column.id ||
+                relationship.targetColumnId === column.id,
+            ),
+        ).length;
+  return DEFAULT_TABLE_METRICS.headerHeight + count * DEFAULT_TABLE_METRICS.rowHeight;
 }
 
 function createExampleProject(): DiagramProject {

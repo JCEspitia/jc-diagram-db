@@ -1,5 +1,6 @@
 import {
   DiagramAreaLayout,
+  DiagramDetailLevel,
   EntityId,
   RelationshipLayout,
   TableLayout,
@@ -7,6 +8,7 @@ import {
 } from '../../schema';
 
 export type DiagramOperation =
+  | { type: 'CHANGE_DETAIL_LEVEL'; from: DiagramDetailLevel; to: DiagramDetailLevel }
   | { type: 'MOVE_TABLE'; tableId: EntityId; from: TableLayout; to: TableLayout }
   | { type: 'RESIZE_TABLE'; tableId: EntityId; from: TableLayout; to: TableLayout }
   | {

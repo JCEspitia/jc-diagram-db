@@ -5,7 +5,10 @@ export interface DiagramLayout {
   relationships?: Record<EntityId, RelationshipLayout>;
   areas?: Record<EntityId, DiagramAreaLayout>;
   viewport: ViewportState;
+  detailLevel?: DiagramDetailLevel;
 }
+
+export type DiagramDetailLevel = 'all' | 'keys' | 'names';
 
 export interface DiagramAreaLayout {
   name: string;

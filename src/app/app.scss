@@ -1538,6 +1538,61 @@ main {
   font-weight: 600;
   cursor: pointer;
 }
+.detail-level-control {
+  position: relative;
+}
+.detail-level-menu {
+  position: absolute;
+  z-index: 30;
+  top: 36px;
+  right: 0;
+  width: 190px;
+  padding: 5px;
+  border: 1px solid #d5dce3;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 18%);
+}
+.detail-level-menu p {
+  margin: 0;
+  padding: 7px 9px 8px;
+  border-bottom: 1px solid #e3e7eb;
+  color: #26313b;
+  font-size: 11px;
+  font-weight: 700;
+}
+.detail-level-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 8px 9px;
+  color: #4d5966;
+}
+.detail-level-menu button span {
+  flex: 1;
+  text-align: left;
+}
+.detail-level-menu button:hover {
+  background: #edf4fa;
+  color: var(--accent);
+}
+.dark-theme .detail-level-menu {
+  border-color: #414b55;
+  background: #202832;
+}
+.dark-theme .detail-level-menu p {
+  border-color: #38424c;
+  color: #eef1f3;
+}
+.dark-theme .detail-level-menu button {
+  color: #c8d0d7;
+}
+.dark-theme .detail-level-menu button:hover {
+  background: #303b47;
+  color: #ffffff;
+}
 .manager-view-toolbar button:hover {
   border-color: #1689e5;
   background: #273f54;

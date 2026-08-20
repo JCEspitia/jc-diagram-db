@@ -28,12 +28,14 @@ import {
 } from '../../../core/diagram/diagram-geometry';
 import { DiagramOperation } from '../../../core/diagram/operations/diagram.operations';
 import {
+  ColumnSchema,
   DatabaseSchema,
   DiagramAreaLayout,
   DiagramLayout,
   RelationshipLayout,
   RelationshipSchema,
   TableLayout,
+  TableSchema,
   ViewportState,
 } from '../../../core/schema';
 import { TableNode } from '../table-node/table-node';
@@ -207,10 +209,12 @@ export class DiagramCanvas {
     this.schema().relationships.flatMap((relationship, relationshipIndex) => {
       const sourceTable = this.schema().tables.find(({ id }) => id === relationship.sourceTableId);
       const targetTable = this.schema().tables.find(({ id }) => id === relationship.targetTableId);
-      const sourceIndex =
-        sourceTable?.columns.findIndex(({ id }) => id === relationship.sourceColumnId) ?? -1;
-      const targetIndex =
-        targetTable?.columns.findIndex(({ id }) => id === relationship.targetColumnId) ?? -1;
+      const sourceIndex = sourceTable
+        ? this.visualColumnIndex(sourceTable, relationship.sourceColumnId)
+        : -1;
+      const targetIndex = targetTable
+        ? this.visualColumnIndex(targetTable, relationship.targetColumnId)
+        : -1;
       if (!sourceTable || !targetTable || sourceIndex < 0 || targetIndex < 0) return [];
       const sourceArea = this.collapsedAreaForTable(sourceTable.id);
       const targetArea = this.collapsedAreaForTable(targetTable.id);
@@ -227,10 +231,10 @@ export class DiagramCanvas {
       const targetSide = routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left');
       const source = sourceArea
         ? collapsedAreaAnchor(sourceArea, sourceSide)
-        : columnAnchor(sourceLayout, sourceIndex, sourceSide);
+        : this.visualAnchor(sourceLayout, sourceIndex, sourceSide);
       const target = targetArea
         ? collapsedAreaAnchor(targetArea, targetSide)
-        : columnAnchor(targetLayout, targetIndex, targetSide);
+        : this.visualAnchor(targetLayout, targetIndex, targetSide);
       const routePreview = this.routePreview();
       const previewLayout =
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
@@ -263,10 +267,7 @@ export class DiagramCanvas {
             left: position.x,
             top: position.y,
             right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
-            bottom:
-              position.y +
-              DEFAULT_TABLE_METRICS.headerHeight +
-              table.columns.length * DEFAULT_TABLE_METRICS.rowHeight,
+            bottom: position.y + this.visualTableHeight(table),
           };
         });
       if (!manuallyRouted) {
@@ -304,10 +305,10 @@ export class DiagramCanvas {
           : orthogonalRoutePoints(source, target, route);
       const automaticSource = sourceArea
         ? collapsedAreaAnchor(sourceArea, sourceOnLeft ? 'left' : 'right')
-        : columnAnchor(sourceLayout, sourceIndex, sourceOnLeft ? 'left' : 'right');
+        : this.visualAnchor(sourceLayout, sourceIndex, sourceOnLeft ? 'left' : 'right');
       const automaticTarget = targetArea
         ? collapsedAreaAnchor(targetArea, sourceOnLeft ? 'right' : 'left')
-        : columnAnchor(targetLayout, targetIndex, sourceOnLeft ? 'right' : 'left');
+        : this.visualAnchor(targetLayout, targetIndex, sourceOnLeft ? 'right' : 'left');
       const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
       const automaticRoute = routeAroundObstacles(
         automaticSource,
@@ -388,7 +389,34 @@ export class DiagramCanvas {
 
   protected areaPosition(areaId: string, area: DiagramAreaLayout): DiagramAreaLayout {
     const preview = this.areaPreview();
-    return preview?.areaId === areaId ? preview.area : area;
+    if (preview?.areaId === areaId) return preview.area;
+    const tablePreview = this.tablePreview();
+    if (!tablePreview || !area.tableIds?.includes(tablePreview.tableId)) return area;
+    const bounds = area.tableIds.flatMap((tableId) => {
+      const table = this.schema().tables.find(({ id }) => id === tableId);
+      if (!table) return [];
+      const position = this.tablePosition(tableId);
+      return [
+        {
+          left: position.x,
+          top: position.y,
+          right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
+          bottom: position.y + this.visualTableHeight(table),
+        },
+      ];
+    });
+    if (!bounds.length) return area;
+    const left = Math.min(...bounds.map(({ left }) => left)) - 24;
+    const top = Math.min(...bounds.map(({ top }) => top)) - 42;
+    const right = Math.max(...bounds.map(({ right }) => right)) + 24;
+    const bottom = Math.max(...bounds.map(({ bottom }) => bottom)) + 24;
+    return {
+      ...area,
+      x: left,
+      y: top,
+      width: Math.max(240, right - left),
+      height: Math.max(160, bottom - top),
+    };
   }
 
   protected areaEntries(): [string, DiagramAreaLayout][] {
@@ -404,6 +432,46 @@ export class DiagramCanvas {
 
   protected tableVisible(tableId: string): boolean {
     return !this.collapsedAreaForTable(tableId);
+  }
+
+  private visibleColumns(table: TableSchema): ColumnSchema[] {
+    const level = this.layout().detailLevel ?? 'all';
+    if (level === 'names') return [];
+    if (level === 'all') return table.columns;
+    const relationshipColumnIds = new Set(
+      this.schema().relationships.flatMap(({ sourceColumnId, targetColumnId }) => [
+        sourceColumnId,
+        targetColumnId,
+      ]),
+    );
+    return table.columns.filter(
+      ({ id, primaryKey }) =>
+        primaryKey ||
+        table.indexes.some((index) => index.primaryKey && index.columns.includes(id)) ||
+        relationshipColumnIds.has(id),
+    );
+  }
+
+  private visualColumnIndex(table: TableSchema, columnId: string): number {
+    if ((this.layout().detailLevel ?? 'all') === 'names') return 0;
+    return this.visibleColumns(table).findIndex(({ id }) => id === columnId);
+  }
+
+  private visualAnchor(layout: TableLayout, columnIndex: number, side: 'left' | 'right'): Point {
+    if ((this.layout().detailLevel ?? 'all') === 'names') {
+      return {
+        x: layout.x + (side === 'right' ? (layout.width ?? DEFAULT_TABLE_METRICS.width) : 0),
+        y: layout.y + DEFAULT_TABLE_METRICS.headerHeight / 2,
+      };
+    }
+    return columnAnchor(layout, columnIndex, side);
+  }
+
+  private visualTableHeight(table: TableSchema): number {
+    return (
+      DEFAULT_TABLE_METRICS.headerHeight +
+      this.visibleColumns(table).length * DEFAULT_TABLE_METRICS.rowHeight
+    );
   }
 
   private collapsedAreaForTable(tableId: string): DiagramAreaLayout | undefined {
@@ -485,9 +553,9 @@ export class DiagramCanvas {
     event: PointerEvent;
   }): void {
     const table = this.schema().tables.find(({ id }) => id === tableId);
-    const columnIndex = table?.columns.findIndex(({ id }) => id === columnId) ?? -1;
+    const columnIndex = table ? this.visualColumnIndex(table, columnId) : -1;
     if (!table || columnIndex < 0) return;
-    const source = columnAnchor(tableLayout(this.layout(), tableId), columnIndex, sourceSide);
+    const source = this.visualAnchor(tableLayout(this.layout(), tableId), columnIndex, sourceSide);
     this.interaction = {
       kind: 'relationship',
       pointerId: event.pointerId,
@@ -882,8 +950,7 @@ export class DiagramCanvas {
     const position = tableLayout(this.layout(), tableId);
     const from = this.layout().viewport;
     const width = position.width ?? DEFAULT_TABLE_METRICS.width;
-    const height =
-      DEFAULT_TABLE_METRICS.headerHeight + table.columns.length * DEFAULT_TABLE_METRICS.rowHeight;
+    const height = this.visualTableHeight(table);
     const to: ViewportState = {
       ...from,
       x: element.clientWidth / 2 - (position.x + width / 2) * from.zoom,
@@ -923,8 +990,7 @@ export class DiagramCanvas {
     return this.schema().tables.flatMap((table) => {
       const position = tableLayout(this.layout(), table.id);
       const width = position.width ?? DEFAULT_TABLE_METRICS.width;
-      const height =
-        DEFAULT_TABLE_METRICS.headerHeight + table.columns.length * DEFAULT_TABLE_METRICS.rowHeight;
+      const height = this.visualTableHeight(table);
       const centerX = position.x + width / 2;
       const centerY = position.y + height / 2;
       return centerX >= area.x &&
@@ -1090,7 +1156,7 @@ function keepSegmentOutsideTables(
     const bottom =
       position.y +
       DEFAULT_TABLE_METRICS.headerHeight +
-      table.columns.length * DEFAULT_TABLE_METRICS.rowHeight +
+      visibleColumnCount(schema, layout, table) * DEFAULT_TABLE_METRICS.rowHeight +
       ENDPOINT_LANE_DISTANCE;
 
     if (orientation === 'vertical') {
@@ -1108,4 +1174,22 @@ function keepSegmentOutsideTables(
     }
   }
   return coordinate;
+}
+
+function visibleColumnCount(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  table: TableSchema,
+): number {
+  const level = layout.detailLevel ?? 'all';
+  if (level === 'names') return 0;
+  if (level === 'all') return table.columns.length;
+  return table.columns.filter(
+    ({ id, primaryKey }) =>
+      primaryKey ||
+      table.indexes.some((index) => index.primaryKey && index.columns.includes(id)) ||
+      schema.relationships.some(
+        ({ sourceColumnId, targetColumnId }) => sourceColumnId === id || targetColumnId === id,
+      ),
+  ).length;
 }

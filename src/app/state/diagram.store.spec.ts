@@ -12,7 +12,7 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.schema().tableGroups?.[0]?.id).toBe(areaId);
   });
 
-  it('keeps explicitly assigned tables inside their area and compacts its bounds', () => {
+  it('keeps explicitly assigned tables inside an automatically fitted area', () => {
     const store = new DiagramStore();
     const table = store.schema().tables[0]!;
     const areaId = store.createArea();
@@ -31,10 +31,22 @@ describe('DiagramStore DBML synchronization', () => {
     expect(expanded.x + expanded.width).toBeGreaterThan(1200);
     expect(store.dbml()).toMatch(/TableGroup "New area"[^]*users/);
 
-    store.compactArea(areaId);
-    const compact = store.layout().areas?.[areaId]!;
-    expect(compact.width).toBeLessThan(expanded.width);
-    expect(compact.tableIds).toContain(table.id);
+    expect(expanded.width).toBe(268);
+    expect(expanded.tableIds).toContain(table.id);
+  });
+
+  it('persists the canvas detail level and refits areas to visible rows', () => {
+    const store = new DiagramStore();
+    const posts = store.schema().tables.find(({ name }) => name === 'posts')!;
+    const areaId = store.createArea();
+    store.assignTableToArea(posts.id, areaId);
+    const fullHeight = store.layout().areas?.[areaId]?.height ?? 0;
+
+    store.setDetailLevel('keys');
+
+    expect(store.layout().detailLevel).toBe('keys');
+    expect(store.layout().areas?.[areaId]?.height).toBeLessThan(fullHeight);
+    expect(store.dbml()).toContain('TableGroup');
   });
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());

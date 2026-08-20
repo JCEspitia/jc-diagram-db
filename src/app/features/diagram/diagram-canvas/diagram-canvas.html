@@ -15,7 +15,6 @@
         [area]="areaPosition(entry[0], entry[1])"
         [tableNames]="areaTableNames(entry[1])"
         (moveStarted)="startAreaMove($event)"
-        (resizeStarted)="startAreaResize($event)"
         (editRequested)="areaEditRequested.emit($event)"
         (collapsedChanged)="areaCollapsedChanged.emit($event)"
       />
@@ -330,6 +329,7 @@
           [relationshipTargetColumnId]="relationshipTarget()?.columnId"
           [showRelationshipHandles]="relationshipMode()"
           [areas]="areaEntries()"
+          [detailLevel]="layout().detailLevel ?? 'all'"
           (tableSelected)="tableSelected.emit($event)"
           (tableEditRequested)="tableEditRequested.emit($event)"
           (tableColorChanged)="tableColorChanged.emit($event)"
