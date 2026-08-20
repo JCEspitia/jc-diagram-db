@@ -52,7 +52,7 @@
         [class.relationship-target]="relationshipTargetColumnId() === column.id"
         [attr.data-table-id]="table().id"
         [attr.data-column-id]="column.id"
-        appTooltip="Column details"
+        [appTooltip]="hasAdditionalInfo(column) ? 'Column details' : null"
         [appTooltipDetails]="columnTooltip(column)"
         appTooltipPosition="side"
         (pointerdown)="interactWithColumn($event, column.id)"
@@ -95,6 +95,15 @@
               size="12"
               class="unique-icon"
               aria-label="Unique"
+            ></svg>
+          }
+          @if (hasAdditionalInfo(column)) {
+            <svg
+              appTooltip="Additional information"
+              lucideInfo
+              size="12"
+              class="info-icon"
+              aria-label="Additional information"
             ></svg>
           }
         </span>

@@ -1026,7 +1026,9 @@ main {
     box-shadow 140ms ease;
 }
 .managed-table:hover {
-  border-color: #4d5864;
+  border-top-color: #4d5864;
+  border-right-color: #4d5864;
+  border-bottom-color: #4d5864;
   box-shadow: 0 3px 12px rgb(0 0 0 / 18%);
 }
 .managed-table.dragging,

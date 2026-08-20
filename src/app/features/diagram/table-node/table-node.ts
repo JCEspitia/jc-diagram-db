@@ -19,6 +19,7 @@ import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from '../../../shared/table-colors'
 import {
   LucideEllipsis,
   LucideFingerprint,
+  LucideInfo,
   LucideKeyRound,
   LucideLink2,
   LucideMessageSquareText,
@@ -30,6 +31,7 @@ import {
   imports: [
     LucideEllipsis,
     LucideFingerprint,
+    LucideInfo,
     LucideKeyRound,
     LucideLink2,
     LucideMessageSquareText,
@@ -119,11 +121,12 @@ export class TableNode {
     this.tableColorChanged.emit({ tableId: this.table().id, color });
   }
 
-  protected columnTooltip(column: ColumnSchema): TooltipDetails {
+  protected columnTooltip(column: ColumnSchema): TooltipDetails | undefined {
     const enumType = column.type.replace(/\[\]$/, '').split('.').at(-1)?.replaceAll('"', '');
     const enumSchema = this.enums().find(
       ({ name }) => name.toLocaleLowerCase() === enumType?.toLocaleLowerCase(),
     );
+    if (!column.note && column.defaultValue === undefined && !enumSchema) return undefined;
     return {
       title: column.name,
       type: column.type,
@@ -131,6 +134,10 @@ export class TableNode {
       ...(column.defaultValue !== undefined ? { defaultValue: column.defaultValue } : {}),
       ...(enumSchema ? { enumName: enumSchema.name, enumValues: enumSchema.values } : {}),
     };
+  }
+
+  protected hasAdditionalInfo(column: ColumnSchema): boolean {
+    return this.columnTooltip(column) !== undefined;
   }
 
   @HostListener('document:pointerdown', ['$event'])
