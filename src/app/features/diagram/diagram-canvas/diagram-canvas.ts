@@ -36,7 +36,13 @@ import {
   ViewportState,
 } from '../../../core/schema';
 import { TableNode } from '../table-node/table-node';
-import { LucideRotateCcw, LucideSettings, LucideTrash2 } from '@lucide/angular';
+import {
+  LucideArrowLeftFromLine,
+  LucideArrowRightFromLine,
+  LucideRotateCcw,
+  LucideSettings,
+  LucideTrash2,
+} from '@lucide/angular';
 
 interface RenderedRelationship {
   relationship: RelationshipSchema;
@@ -49,6 +55,8 @@ interface RenderedRelationship {
   pullCandidates: RouteSegmentHandle[];
   resetPoint: Point;
   canReset: boolean;
+  sourceSide: 'left' | 'right';
+  targetSide: 'left' | 'right';
   sourceCardinality: 'zero' | 'one' | 'many';
   targetCardinality: 'zero' | 'one' | 'many';
   connected: boolean;
@@ -72,7 +80,14 @@ const ENDPOINT_LANE_DISTANCE = 44;
 
 @Component({
   selector: 'app-diagram-canvas',
-  imports: [TableNode, LucideRotateCcw, LucideSettings, LucideTrash2],
+  imports: [
+    TableNode,
+    LucideArrowLeftFromLine,
+    LucideArrowRightFromLine,
+    LucideRotateCcw,
+    LucideSettings,
+    LucideTrash2,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diagram-canvas.html',
   styleUrl: './diagram-canvas.scss',
@@ -286,6 +301,8 @@ export class DiagramCanvas {
           pullCandidates: routePullCandidates(points),
           resetPoint: routeActionPoint(points),
           canReset: manuallyRouted && !samePolyline(points, automaticPoints),
+          sourceSide,
+          targetSide,
           sourceCardinality:
             relationship.sourceCardinality ??
             (relationship.type === 'many-to-one' ? 'many' : 'one'),
@@ -578,6 +595,27 @@ export class DiagramCanvas {
     this.relationshipToolboxId.update((current) =>
       current === relationshipId ? null : relationshipId,
     );
+  }
+
+  protected toggleRelationshipSide(
+    event: PointerEvent,
+    relationshipId: string,
+    endpoint: 'sourceSide' | 'targetSide',
+    currentSide: 'left' | 'right',
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const from = this.layout().relationships?.[relationshipId];
+    this.diagramOperation.emit({
+      type: 'CHANGE_RELATIONSHIP_ROUTE',
+      relationshipId,
+      from,
+      to: {
+        sourceSide: from?.sourceSide,
+        targetSide: from?.targetSide,
+        [endpoint]: currentSide === 'left' ? 'right' : 'left',
+      },
+    });
   }
 
   @HostListener('document:pointerdown', ['$event'])

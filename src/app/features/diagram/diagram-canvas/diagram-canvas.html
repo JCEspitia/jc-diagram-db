@@ -99,9 +99,9 @@
           @if (relationshipToolboxId() === edge.relationship.id) {
             <foreignObject
               class="relationship-toolbox"
-              [attr.x]="edge.resetPoint.x - 175"
+              [attr.x]="edge.resetPoint.x - 220"
               [attr.y]="edge.resetPoint.y + 12"
-              width="350"
+              width="440"
               height="42"
             >
               <div>
@@ -198,6 +198,50 @@
                   "
                 >
                   N:N
+                </button>
+                <button
+                  type="button"
+                  [title]="
+                    'Move source port to the ' + (edge.sourceSide === 'left' ? 'right' : 'left')
+                  "
+                  [attr.aria-label]="'Source port: ' + edge.sourceSide"
+                  (pointerdown)="
+                    toggleRelationshipSide(
+                      $event,
+                      edge.relationship.id,
+                      'sourceSide',
+                      edge.sourceSide
+                    )
+                  "
+                >
+                  S
+                  @if (edge.sourceSide === 'left') {
+                    <svg lucideArrowLeftFromLine size="14"></svg>
+                  } @else {
+                    <svg lucideArrowRightFromLine size="14"></svg>
+                  }
+                </button>
+                <button
+                  type="button"
+                  [title]="
+                    'Move target port to the ' + (edge.targetSide === 'left' ? 'right' : 'left')
+                  "
+                  [attr.aria-label]="'Target port: ' + edge.targetSide"
+                  (pointerdown)="
+                    toggleRelationshipSide(
+                      $event,
+                      edge.relationship.id,
+                      'targetSide',
+                      edge.targetSide
+                    )
+                  "
+                >
+                  T
+                  @if (edge.targetSide === 'left') {
+                    <svg lucideArrowLeftFromLine size="14"></svg>
+                  } @else {
+                    <svg lucideArrowRightFromLine size="14"></svg>
+                  }
                 </button>
                 <button
                   type="button"

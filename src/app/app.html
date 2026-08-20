@@ -194,6 +194,25 @@
           <svg lucidePlus size="15"></svg> Table
         </button>
       </div>
+      <datalist id="common-column-types">
+        <option value="uuid"></option>
+        <option value="integer"></option>
+        <option value="bigint"></option>
+        <option value="smallint"></option>
+        <option value="varchar"></option>
+        <option value="varchar(255)"></option>
+        <option value="text"></option>
+        <option value="boolean"></option>
+        <option value="decimal"></option>
+        <option value="numeric"></option>
+        <option value="date"></option>
+        <option value="time"></option>
+        <option value="timestamp"></option>
+        <option value="timestamptz"></option>
+        <option value="json"></option>
+        <option value="jsonb"></option>
+        <option value="bytea"></option>
+      </datalist>
       <div class="managed-tables">
         @for (table of filteredTables(); track table.id) {
           <article
@@ -299,6 +318,7 @@
                     />
                     <input
                       [value]="column.type"
+                      list="common-column-types"
                       aria-label="Column type"
                       (change)="updateColumnText(table.id, column.id, 'type', $event)"
                     />

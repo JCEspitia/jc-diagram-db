@@ -13,6 +13,8 @@
   background-size: 20px 20px;
   cursor: grab;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .viewport:active {
   cursor: grabbing;
