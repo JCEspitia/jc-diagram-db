@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/schema';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
+import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from '../../../shared/table-colors';
 import {
   LucideEllipsis,
   LucideFingerprint,
@@ -49,6 +50,7 @@ export class TableNode {
   readonly showRelationshipHandles = input(false);
   readonly tableSelected = output<string>();
   readonly tableEditRequested = output<string>();
+  readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly columnHovered = output<{ tableId: string; columnId: string } | null>();
   readonly relationshipStarted = output<{
@@ -59,6 +61,8 @@ export class TableNode {
   }>();
   readonly dragStarted = output<{ tableId: string; event: PointerEvent }>();
   protected readonly optionsOpen = signal(false);
+  protected readonly tableColors = TABLE_COLORS;
+  protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
 
   protected readonly foreignKeyColumnIds = computed(() => {
     const tableId = this.table().id;
@@ -100,6 +104,12 @@ export class TableNode {
     event.stopPropagation();
     this.optionsOpen.set(false);
     this.tableEditRequested.emit(this.table().id);
+  }
+
+  protected changeColor(event: PointerEvent, color: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.tableColorChanged.emit({ tableId: this.table().id, color });
   }
 
   @HostListener('document:pointerdown', ['$event'])

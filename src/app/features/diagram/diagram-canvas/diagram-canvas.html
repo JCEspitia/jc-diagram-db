@@ -305,6 +305,7 @@
         [showRelationshipHandles]="relationshipMode()"
         (tableSelected)="tableSelected.emit($event)"
         (tableEditRequested)="tableEditRequested.emit($event)"
+        (tableColorChanged)="tableColorChanged.emit($event)"
         (columnSelected)="columnSelected.emit($event)"
         (dragStarted)="startTableDrag($event)"
         (relationshipStarted)="startRelationship($event)"

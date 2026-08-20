@@ -12,6 +12,7 @@ import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas'
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { DiagramStore } from './state/diagram.store';
 import { TooltipDirective } from './shared/tooltip/tooltip.directive';
+import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
 import {
   LucideChevronRight,
   LucideCode2,
@@ -76,6 +77,8 @@ import {
 })
 export class App {
   protected readonly store = inject(DiagramStore);
+  protected readonly tableColors = TABLE_COLORS;
+  protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
   protected readonly activeSidebar = signal<'dbml' | 'inspector'>('dbml');

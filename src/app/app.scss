@@ -1016,7 +1016,7 @@ main {
   position: relative;
   overflow: visible;
   border: 1px solid #39414b;
-  border-left: 4px solid #3a8ed0;
+  border-left: 4px solid var(--table-color, #3479a8);
   border-radius: 5px;
   background: #171c22;
   transition:
@@ -1189,6 +1189,32 @@ main {
 .table-comment {
   min-height: 66px;
   padding: 8px;
+}
+.table-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 2px 0 4px;
+}
+.table-color-picker button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: var(--swatch-color);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 12%);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+.table-color-picker button:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+.table-color-picker button.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--swatch-color);
 }
 .managed-table-body {
   padding: 0 9px 10px;

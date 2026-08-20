@@ -70,16 +70,22 @@ export class SimpleDbmlParser implements DbmlParser {
       }
 
       const tableMatch = line.match(
-        /^Table\s+((?:"[^"]+"|[\w-]+)(?:\.(?:"[^"]+"|[\w-]+))?)\s*\{$/i,
+        /^Table\s+((?:"[^"]+"|[\w-]+)(?:\.(?:"[^"]+"|[\w-]+))?)(?:\s*\[(.*)\])?\s*\{$/i,
       );
       if (tableMatch?.[1]) {
         const qualifiedName = splitQualifiedName(tableMatch[1]);
+        const tableSettings = splitSettings(tableMatch[2] ?? '');
+        const headerColor = tableSettings
+          .find((setting) => setting.toLowerCase().startsWith('headercolor:'))
+          ?.slice('headercolor:'.length)
+          .trim();
         block = {
           kind: 'table',
           value: {
             id: createEntityId('tbl'),
             name: qualifiedName.name,
             ...(qualifiedName.schema ? { schema: qualifiedName.schema } : {}),
+            ...(headerColor && /^#[0-9a-f]{6}$/i.test(headerColor) ? { headerColor } : {}),
             columns: [],
             indexes: [],
           },

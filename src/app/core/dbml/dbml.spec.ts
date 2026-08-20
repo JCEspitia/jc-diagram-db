@@ -102,6 +102,18 @@ Table service_units {
       columns: [expect.objectContaining({ note: 'Public\nidentifier' })],
     });
   });
+
+  it('round trips table header colors', () => {
+    const result = parser.parse(`Table users [headercolor: #db4f72] {
+  id uuid [pk]
+}`);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.tables[0]?.headerColor).toBe('#db4f72');
+    const generated = generator.generate(result.schema!);
+    expect(generated).toContain('Table users [headercolor: #db4f72] {');
+    expect(parser.parse(generated).schema?.tables[0]?.headerColor).toBe('#db4f72');
+  });
 });
 
 describe('Schema reconciliation', () => {

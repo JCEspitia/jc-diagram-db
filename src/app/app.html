@@ -167,6 +167,7 @@
         (diagramOperation)="store.applyDiagramOperation($event)"
         (tableSelected)="store.selectTable($event)"
         (tableEditRequested)="editManagedTable($event)"
+        (tableColorChanged)="store.updateTableColor($event.tableId, $event.color)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
         (relationshipTypeChanged)="
@@ -256,6 +257,7 @@
         @for (table of filteredTables(); track table.id) {
           <article
             class="managed-table"
+            [style.--table-color]="table.headerColor ?? defaultTableColor"
             [class.expanded]="expandedTableIds().has(table.id)"
             [class.dragging]="draggedTableId() === table.id"
             [class.drop-target]="tableDropTargetId() === table.id"
@@ -459,6 +461,20 @@
                   [value]="table.note ?? ''"
                   (change)="updateTableNote(table.id, $event)"
                 ></textarea>
+                <div class="manager-section-title"><strong>Table color</strong></div>
+                <div class="table-color-picker" aria-label="Table color">
+                  @for (color of tableColors; track color) {
+                    <button
+                      type="button"
+                      appTooltip="Change table color"
+                      [class.selected]="(table.headerColor ?? defaultTableColor) === color"
+                      [style.--swatch-color]="color"
+                      [attr.aria-label]="'Set table color to ' + color"
+                      [attr.aria-pressed]="(table.headerColor ?? defaultTableColor) === color"
+                      (click)="store.updateTableColor(table.id, color)"
+                    ></button>
+                  }
+                </div>
               </div>
             }
           </article>

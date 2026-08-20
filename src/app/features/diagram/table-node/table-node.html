@@ -1,5 +1,9 @@
 <article class="table-card" (pointerdown)="select()">
-  <header [appTooltip]="table().note" (pointerdown)="startDrag($event)">
+  <header
+    [appTooltip]="table().note"
+    [style.background]="table().headerColor ?? defaultTableColor"
+    (pointerdown)="startDrag($event)"
+  >
     <svg lucideTable2 size="14"></svg>
     <strong>{{ table().name }}</strong>
     @if (table().note) {
@@ -21,6 +25,20 @@
             <svg lucideTable2 size="14"></svg>
             Edit in Tables
           </button>
+          <span>Header color</span>
+          <div class="canvas-color-picker">
+            @for (color of tableColors; track color) {
+              <button
+                type="button"
+                appTooltip="Change table color"
+                [class.selected]="(table().headerColor ?? defaultTableColor) === color"
+                [style.--swatch-color]="color"
+                [attr.aria-label]="'Set table color to ' + color"
+                [attr.aria-pressed]="(table().headerColor ?? defaultTableColor) === color"
+                (pointerdown)="changeColor($event, color)"
+              ></button>
+            }
+          </div>
         </div>
       }
     </div>

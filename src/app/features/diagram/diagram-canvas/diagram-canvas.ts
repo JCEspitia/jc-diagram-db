@@ -104,6 +104,7 @@ export class DiagramCanvas {
   readonly diagramOperation = output<DiagramOperation>();
   readonly tableSelected = output<string>();
   readonly tableEditRequested = output<string>();
+  readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly relationshipSelected = output<string>();
   readonly relationshipTypeChanged = output<{
