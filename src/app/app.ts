@@ -10,7 +10,7 @@ import { ReferentialAction, RelationshipSchema, TableSchema } from './core/schem
 import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
-import { DiagramStore } from './state/diagram.store';
+import { DiagramStore, supportsAutoIncrement } from './state/diagram.store';
 import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
 import {
@@ -206,6 +206,10 @@ export class App {
     event: Event,
   ): void {
     this.store.updateColumn(tableId, columnId, { [property]: checkboxValue(event) });
+  }
+
+  protected canAutoIncrement(type: string): boolean {
+    return supportsAutoIncrement(type);
   }
 
   protected updateNotNull(tableId: string, columnId: string, event: Event): void {

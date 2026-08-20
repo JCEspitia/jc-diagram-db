@@ -1150,6 +1150,14 @@ main {
 .column-menu .danger {
   color: #ff777f;
 }
+.column-menu label.disabled {
+  color: #68727c;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.column-menu label.disabled:hover {
+  background: transparent;
+}
 .column-menu .column-comment {
   display: grid;
   grid-template-columns: 1fr;

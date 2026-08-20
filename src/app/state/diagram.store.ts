@@ -131,7 +131,7 @@ export class DiagramStore {
           name: 'id',
           type: 'integer',
           primaryKey: true,
-          nullable: false,
+          nullable: true,
         }),
       ],
     });
@@ -184,6 +184,10 @@ export class DiagramStore {
     columnId: string,
     changes: Extract<SchemaOperation, { type: 'UPDATE_COLUMN' }>['changes'],
   ): void {
+    const column = this.schema()
+      .tables.find(({ id }) => id === tableId)
+      ?.columns.find(({ id }) => id === columnId);
+    if (!column) return;
     if (
       changes.name &&
       this.schema()
@@ -191,7 +195,21 @@ export class DiagramStore {
         ?.columns.some(({ id, name }) => id !== columnId && name === changes.name)
     )
       return;
-    this.applySchemaOperation({ type: 'UPDATE_COLUMN', tableId, columnId, changes });
+    const normalized = { ...changes };
+    if (normalized.primaryKey === true) {
+      normalized.nullable = true;
+      normalized.unique = false;
+    }
+    if (normalized.nullable === false) normalized.primaryKey = false;
+    if (normalized.unique === true && column.primaryKey && normalized.primaryKey !== false) return;
+    const resultingType = normalized.type ?? column.type;
+    if (normalized.increment === true) {
+      if (!supportsAutoIncrement(resultingType)) return;
+      normalized.defaultValue = undefined;
+    } else if (normalized.type && !supportsAutoIncrement(normalized.type)) {
+      normalized.increment = false;
+    }
+    this.applySchemaOperation({ type: 'UPDATE_COLUMN', tableId, columnId, changes: normalized });
   }
 
   deleteColumn(tableId: string, columnId: string): void {
@@ -413,6 +431,16 @@ function nextName(base: string, existingNames: string[]): string {
   let suffix = 2;
   while (names.has(`${base}_${suffix}`)) suffix += 1;
   return `${base}_${suffix}`;
+}
+
+export function supportsAutoIncrement(type: string): boolean {
+  const normalized = type
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/\([^)]*\)$/, '');
+  return ['smallint', 'integer', 'int', 'bigint', 'smallserial', 'serial', 'bigserial'].includes(
+    normalized,
+  );
 }
 
 function synchronizeLayout(layout: DiagramLayout, schema: DatabaseSchema): DiagramLayout {

@@ -151,7 +151,7 @@ function parseColumn(
       name: unquote(match[1]),
       type: match[2],
       primaryKey,
-      nullable: !primaryKey && !has('not null'),
+      nullable: primaryKey || !has('not null'),
       unique: has('unique'),
       increment: has('increment'),
       ...(valueOf('default') ? { defaultValue: valueOf('default') } : {}),

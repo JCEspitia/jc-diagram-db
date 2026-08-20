@@ -368,7 +368,9 @@
                       type="button"
                       class="field-flag not-null"
                       [class.active]="!column.nullable"
-                      appTooltip="Not null"
+                      [appTooltip]="
+                        column.primaryKey ? 'Set Not null and remove Primary key' : 'Not null'
+                      "
                       [attr.aria-pressed]="!column.nullable"
                       (click)="toggleColumnFlag(table.id, column.id, 'nullable', column.nullable)"
                     >
@@ -378,7 +380,9 @@
                       type="button"
                       class="field-flag primary-key"
                       [class.active]="column.primaryKey"
-                      appTooltip="Primary key"
+                      [appTooltip]="
+                        !column.nullable ? 'Set Primary key and remove Not null' : 'Primary key'
+                      "
                       [attr.aria-pressed]="column.primaryKey"
                       (click)="
                         toggleColumnFlag(table.id, column.id, 'primaryKey', column.primaryKey)
@@ -398,16 +402,28 @@
                     @if (columnMenuId() === column.id) {
                       <div class="column-menu">
                         <label
+                          [class.disabled]="column.primaryKey"
+                          [appTooltip]="
+                            column.primaryKey ? 'Primary keys are already unique' : 'Unique'
+                          "
                           ><input
                             type="checkbox"
                             [checked]="column.unique"
+                            [disabled]="column.primaryKey"
                             (change)="updateColumnFlag(table.id, column.id, 'unique', $event)"
                           />Unique</label
                         >
                         <label
+                          [class.disabled]="!canAutoIncrement(column.type)"
+                          [appTooltip]="
+                            canAutoIncrement(column.type)
+                              ? 'Auto increment'
+                              : 'Auto increment requires an integer or serial type'
+                          "
                           ><input
                             type="checkbox"
                             [checked]="column.increment"
+                            [disabled]="!canAutoIncrement(column.type)"
                             (change)="updateColumnFlag(table.id, column.id, 'increment', $event)"
                           />Auto increment</label
                         >

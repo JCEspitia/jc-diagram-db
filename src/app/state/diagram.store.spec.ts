@@ -83,6 +83,44 @@ describe('DiagramStore DBML synchronization', () => {
     expect(store.selection()).toBeNull();
   });
 
+  it('enforces compatible column options during visual edits', () => {
+    const store = new DiagramStore();
+    const users = store.schema().tables.find(({ name }) => name === 'users')!;
+    const email = users.columns.find(({ name }) => name === 'email')!;
+
+    store.updateColumn(users.id, email.id, { primaryKey: true });
+    expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]).toMatchObject({
+      primaryKey: true,
+      nullable: true,
+      unique: false,
+    });
+
+    store.updateColumn(users.id, email.id, { nullable: false });
+    expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]).toMatchObject({
+      primaryKey: false,
+      nullable: false,
+    });
+
+    store.updateColumn(users.id, email.id, { increment: true });
+    expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]?.increment).toBe(
+      false,
+    );
+    store.updateColumn(users.id, email.id, {
+      type: 'integer',
+      defaultValue: '1',
+      increment: true,
+    });
+    expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]).toMatchObject({
+      type: 'integer',
+      increment: true,
+      defaultValue: undefined,
+    });
+    store.updateColumn(users.id, email.id, { type: 'text' });
+    expect(store.schema().tables.find(({ id }) => id === users.id)?.columns[1]?.increment).toBe(
+      false,
+    );
+  });
+
   it('deleting a column also removes its relationships and updates DBML', () => {
     const store = new DiagramStore();
     const posts = store.schema().tables.find(({ name }) => name === 'posts')!;
