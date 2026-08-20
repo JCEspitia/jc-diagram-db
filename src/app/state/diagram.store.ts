@@ -185,6 +185,32 @@ export class DiagramStore {
     this.applySchemaOperation({ type: 'DELETE_COLUMN', tableId, columnId });
   }
 
+  addIndex(tableId: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    const firstColumn = table?.columns[0];
+    if (!table || !firstColumn) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_TABLE',
+      tableId,
+      changes: {
+        indexes: [
+          ...table.indexes,
+          { id: createEntityId('idx'), columns: [firstColumn.id], unique: false },
+        ],
+      },
+    });
+  }
+
+  deleteIndex(tableId: string, indexId: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    if (!table) return;
+    this.applySchemaOperation({
+      type: 'UPDATE_TABLE',
+      tableId,
+      changes: { indexes: table.indexes.filter(({ id }) => id !== indexId) },
+    });
+  }
+
   createRelationship(
     sourceTableId: string,
     sourceColumnId: string,

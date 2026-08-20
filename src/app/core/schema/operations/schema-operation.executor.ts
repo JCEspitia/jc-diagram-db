@@ -72,7 +72,16 @@ export function executeSchemaOperation(
         ...schema,
         tables: schema.tables.map((table) =>
           table.id === operation.tableId
-            ? { ...table, columns: table.columns.filter(({ id }) => id !== operation.columnId) }
+            ? {
+                ...table,
+                columns: table.columns.filter(({ id }) => id !== operation.columnId),
+                indexes: table.indexes
+                  .map((index) => ({
+                    ...index,
+                    columns: index.columns.filter((columnId) => columnId !== operation.columnId),
+                  }))
+                  .filter(({ columns }) => columns.length > 0),
+              }
             : table,
         ),
         relationships: schema.relationships.filter(

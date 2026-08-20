@@ -6,7 +6,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ReferentialAction, RelationshipSchema } from './core/schema';
+import { ReferentialAction, RelationshipSchema, TableSchema } from './core/schema';
 import { AutoLayoutMode } from './core/diagram/auto-layout/auto-layout';
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
@@ -24,6 +24,11 @@ export class App {
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
   protected readonly activeSidebar = signal<'dbml' | 'inspector'>('dbml');
+  protected readonly tableFilter = signal('');
+  protected readonly expandedTableIds = signal<Set<string>>(new Set());
+  protected readonly tableMenuId = signal<string | null>(null);
+  protected readonly columnMenuId = signal<string | null>(null);
+  protected readonly editingTableId = signal<string | null>(null);
   protected readonly relationshipMode = signal(false);
   protected readonly autoLayoutMenu = signal(false);
   protected readonly editorTheme = signal<'dark' | 'light'>('light');
@@ -31,7 +36,39 @@ export class App {
   private panelResize?: { startX: number; startWidth: number };
 
   constructor() {
-    this.store.selectTable(this.store.schema().tables[0]!.id);
+    const firstTable = this.store.schema().tables[0]!;
+    this.store.selectTable(firstTable.id);
+    this.expandedTableIds.set(new Set([firstTable.id]));
+  }
+
+  protected filteredTables() {
+    const filter = this.tableFilter().trim().toLocaleLowerCase();
+    return filter
+      ? this.store.schema().tables.filter(({ name }) => name.toLocaleLowerCase().includes(filter))
+      : this.store.schema().tables;
+  }
+
+  protected toggleTable(tableId: string): void {
+    this.expandedTableIds.update((current) => {
+      const next = new Set(current);
+      next.has(tableId) ? next.delete(tableId) : next.add(tableId);
+      return next;
+    });
+  }
+
+  protected createManagedTable(): void {
+    this.store.createTable();
+    const tableId = this.store.selection()?.tableId;
+    if (tableId) this.expandedTableIds.update((ids) => new Set([...ids, tableId]));
+  }
+
+  protected selectManagedTable(tableId: string): void {
+    this.store.selectTable(tableId);
+    this.tableMenuId.set(null);
+  }
+
+  protected columnName(table: TableSchema, columnId: string): string {
+    return table.columns.find(({ id }) => id === columnId)?.name ?? 'Unknown field';
   }
 
   protected renameTable(tableId: string, event: Event): void {

@@ -157,153 +157,153 @@
     </main>
     <aside class="inspector">
       <div class="panel-heading">
-        <span>Inspector</span>
+        <span>Tables</span>
         <button type="button" aria-label="Collapse sidebar" (click)="dbmlCollapsed.set(true)">
           ‹
         </button>
       </div>
-      @if (store.selectedRelationship(); as relationship) {
-        <section class="relationship-inspector">
-          <label>RELATIONSHIP</label>
-          <div>
-            <span>From</span><strong>{{ endpointLabel(relationship, 'source') }}</strong>
-          </div>
-          <div>
-            <span>To</span><strong>{{ endpointLabel(relationship, 'target') }}</strong>
-          </div>
-          <div>
-            <span>Type</span><strong>{{ relationship.type }}</strong>
-          </div>
-          <label for="relationship-type">TYPE</label>
-          <select
-            id="relationship-type"
-            [value]="relationship.type"
-            (change)="updateRelationshipType(relationship.id, $event)"
-          >
-            <option value="many-to-one">Many to one</option>
-            <option value="one-to-many">One to many</option>
-            <option value="one-to-one">One to one</option>
-          </select>
-          <label for="relationship-source-side">SOURCE PORT</label>
-          <select
-            id="relationship-source-side"
-            [value]="store.layout().relationships?.[relationship.id]?.sourceSide ?? ''"
-            (change)="updateRelationshipSide(relationship.id, 'sourceSide', $event)"
-          >
-            <option value="">Automatic</option>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-          </select>
-          <label for="relationship-target-side">TARGET PORT</label>
-          <select
-            id="relationship-target-side"
-            [value]="store.layout().relationships?.[relationship.id]?.targetSide ?? ''"
-            (change)="updateRelationshipSide(relationship.id, 'targetSide', $event)"
-          >
-            <option value="">Automatic</option>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-          </select>
-          <label for="relationship-delete">ON DELETE</label>
-          <select
-            id="relationship-delete"
-            [value]="relationship.onDelete ?? ''"
-            (change)="updateReferentialAction(relationship.id, 'onDelete', $event)"
-          >
-            <option value="">Unspecified</option>
-            <option value="NO ACTION">No action</option>
-            <option value="RESTRICT">Restrict</option>
-            <option value="CASCADE">Cascade</option>
-            <option value="SET NULL">Set null</option>
-            <option value="SET DEFAULT">Set default</option>
-          </select>
-          <label for="relationship-update">ON UPDATE</label>
-          <select
-            id="relationship-update"
-            [value]="relationship.onUpdate ?? ''"
-            (change)="updateReferentialAction(relationship.id, 'onUpdate', $event)"
-          >
-            <option value="">Unspecified</option>
-            <option value="NO ACTION">No action</option>
-            <option value="RESTRICT">Restrict</option>
-            <option value="CASCADE">Cascade</option>
-            <option value="SET NULL">Set null</option>
-            <option value="SET DEFAULT">Set default</option>
-          </select>
-        </section>
-        <button class="delete" type="button" (click)="store.deleteSelection()">
-          Delete relationship
-        </button>
-      } @else if (store.selectedTable(); as selectedTable) {
-        <section>
-          <label>TABLE NAME</label
-          ><input
-            [value]="selectedTable.name"
-            aria-label="Table name"
-            (change)="renameTable(selectedTable.id, $event)"
-          />
-        </section>
-        <section>
-          <div class="section-title">
-            <label>COLUMNS</label
-            ><button type="button" (click)="store.addColumn(selectedTable.id)">＋ Add</button>
-          </div>
-          @for (column of selectedTable.columns; track column.id) {
-            <article class="column-editor">
-              <div>
+      <div class="tables-manager-toolbar">
+        <input
+          type="search"
+          placeholder="Filter tables"
+          aria-label="Filter tables"
+          [value]="tableFilter()"
+          (input)="tableFilter.set($any($event.target).value)"
+        />
+        <button type="button" (click)="createManagedTable()">＋ Table</button>
+      </div>
+      <div class="managed-tables">
+        @for (table of filteredTables(); track table.id) {
+          <article class="managed-table" [class.expanded]="expandedTableIds().has(table.id)">
+            <header class="managed-table-header">
+              <button type="button" class="disclosure" (click)="toggleTable(table.id)">
+                {{ expandedTableIds().has(table.id) ? '⌄' : '›' }}
+              </button>
+              @if (editingTableId() === table.id) {
                 <input
-                  class="column-name-input"
-                  [value]="column.name"
-                  aria-label="Column name"
-                  (change)="updateColumnText(selectedTable.id, column.id, 'name', $event)"
+                  class="table-name-editor"
+                  [value]="table.name"
+                  aria-label="Table name"
+                  (change)="renameTable(table.id, $event); editingTableId.set(null)"
+                  (blur)="editingTableId.set(null)"
                 />
-                <button
-                  class="remove-column"
-                  type="button"
-                  aria-label="Delete column"
-                  (click)="store.deleteColumn(selectedTable.id, column.id)"
-                >
-                  ×
+              } @else {
+                <strong>{{ table.name }}</strong>
+              }
+              <button
+                type="button"
+                class="more"
+                aria-label="Table options"
+                (click)="tableMenuId.set(tableMenuId() === table.id ? null : table.id)"
+              >
+                •••
+              </button>
+              @if (tableMenuId() === table.id) {
+                <div class="table-menu">
+                  <button
+                    type="button"
+                    (click)="editingTableId.set(table.id); tableMenuId.set(null)"
+                  >
+                    Rename table
+                  </button>
+                  <button type="button" (click)="selectManagedTable(table.id)">
+                    Select on canvas
+                  </button>
+                  <button class="danger" type="button" (click)="store.deleteTable(table.id)">
+                    Delete table
+                  </button>
+                </div>
+              }
+            </header>
+            @if (expandedTableIds().has(table.id)) {
+              <div class="managed-table-body">
+                <div class="manager-section-title"><strong>Fields</strong></div>
+                @for (column of table.columns; track column.id) {
+                  <div class="managed-column">
+                    <input
+                      [value]="column.name"
+                      aria-label="Column name"
+                      (change)="updateColumnText(table.id, column.id, 'name', $event)"
+                    />
+                    <input
+                      [value]="column.type"
+                      aria-label="Column type"
+                      (change)="updateColumnText(table.id, column.id, 'type', $event)"
+                    />
+                    <label title="Not null"
+                      >NN<input
+                        type="checkbox"
+                        [checked]="!column.nullable"
+                        (change)="updateNotNull(table.id, column.id, $event)"
+                    /></label>
+                    <label title="Primary key"
+                      >PK<input
+                        type="checkbox"
+                        [checked]="column.primaryKey"
+                        (change)="updateColumnFlag(table.id, column.id, 'primaryKey', $event)"
+                    /></label>
+                    <button
+                      type="button"
+                      class="more"
+                      aria-label="More column options"
+                      (click)="columnMenuId.set(columnMenuId() === column.id ? null : column.id)"
+                    >
+                      •••
+                    </button>
+                    @if (columnMenuId() === column.id) {
+                      <div class="column-menu">
+                        <label
+                          ><input
+                            type="checkbox"
+                            [checked]="column.unique"
+                            (change)="updateColumnFlag(table.id, column.id, 'unique', $event)"
+                          />Unique</label
+                        >
+                        <label
+                          ><input
+                            type="checkbox"
+                            [checked]="column.increment"
+                            (change)="updateColumnFlag(table.id, column.id, 'increment', $event)"
+                          />Auto increment</label
+                        >
+                        <button
+                          class="danger"
+                          type="button"
+                          (click)="store.deleteColumn(table.id, column.id)"
+                        >
+                          Delete field
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+                <button class="manager-add" type="button" (click)="store.addColumn(table.id)">
+                  ＋ Add field
+                </button>
+                <div class="manager-section-title"><strong>Indexes</strong></div>
+                @for (index of table.indexes; track index.id) {
+                  <div class="managed-index">
+                    <span>
+                      @for (columnId of index.columns; track columnId) {
+                        <b>{{ columnName(table, columnId) }}</b>
+                      }
+                    </span>
+                    @if (index.unique) {
+                      <em>U</em>
+                    }
+                    <button type="button" (click)="store.deleteIndex(table.id, index.id)">×</button>
+                  </div>
+                }
+                <button class="manager-add" type="button" (click)="store.addIndex(table.id)">
+                  ＋ Add index
                 </button>
               </div>
-              <input
-                [value]="column.type"
-                aria-label="Column type"
-                (change)="updateColumnText(selectedTable.id, column.id, 'type', $event)"
-              />
-              <label class="check"
-                ><input
-                  type="checkbox"
-                  [checked]="column.primaryKey"
-                  (change)="updateColumnFlag(selectedTable.id, column.id, 'primaryKey', $event)"
-                />
-                Primary key</label
-              >
-              <label class="check"
-                ><input
-                  type="checkbox"
-                  [checked]="!column.nullable"
-                  (change)="updateNotNull(selectedTable.id, column.id, $event)"
-                />
-                Not null</label
-              >
-              <label class="check"
-                ><input
-                  type="checkbox"
-                  [checked]="column.unique"
-                  (change)="updateColumnFlag(selectedTable.id, column.id, 'unique', $event)"
-                />
-                Unique</label
-              >
-            </article>
-          }
-        </section>
-        <button class="delete" type="button" (click)="store.deleteTable(selectedTable.id)">
-          Delete table
-        </button>
-      } @else {
-        <p class="empty-inspector">Select a table, column, or relationship to inspect it.</p>
-      }
+            }
+          </article>
+        } @empty {
+          <p class="empty-inspector">No tables match this filter.</p>
+        }
+      </div>
     </aside>
   </div>
   <footer class="statusbar">

@@ -941,3 +941,213 @@ main {
   border-color: #399ce8;
   background: #147fcf;
 }
+
+/* ChartDB-style table manager. */
+.tables-manager-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 10px;
+  border-bottom: 1px solid #343a42;
+}
+.tables-manager-toolbar input {
+  min-width: 0;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid #444c56;
+  border-radius: 5px;
+  background: #171c22;
+  color: #e7eaed;
+}
+.tables-manager-toolbar button,
+.manager-add {
+  border: 1px solid #46515e;
+  border-radius: 5px;
+  background: #2b3541;
+  color: #f0f3f5;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tables-manager-toolbar button {
+  padding: 0 10px;
+}
+.tables-manager-toolbar button:hover,
+.manager-add:hover {
+  border-color: #1689e5;
+  background: #273f54;
+}
+.managed-tables {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+.managed-table {
+  position: relative;
+  overflow: visible;
+  border: 1px solid #39414b;
+  border-left: 4px solid #3a8ed0;
+  border-radius: 5px;
+  background: #171c22;
+}
+.managed-table-header {
+  position: relative;
+  height: 42px;
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) 34px;
+  align-items: center;
+  padding: 0 5px;
+}
+.managed-table-header strong {
+  overflow: hidden;
+  color: #f0f3f6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.managed-table-header button,
+.managed-column button,
+.managed-index button {
+  border: 0;
+  background: transparent;
+  color: #aeb6bf;
+  cursor: pointer;
+}
+.managed-table-header button:hover,
+.managed-column button:hover,
+.managed-index button:hover {
+  color: #ffffff;
+  background: #2c343d;
+}
+.disclosure,
+.more {
+  height: 28px;
+  border-radius: 4px !important;
+}
+.table-name-editor {
+  height: 29px !important;
+  padding: 0 7px !important;
+  font-weight: 700;
+}
+.table-menu,
+.column-menu {
+  position: absolute;
+  z-index: 30;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid #46505c;
+  border-radius: 6px;
+  background: #252c34;
+  box-shadow: 0 10px 26px rgb(0 0 0 / 38%);
+}
+.table-menu {
+  top: 35px;
+  right: 6px;
+  width: 150px;
+}
+.column-menu {
+  top: 34px;
+  right: 0;
+  width: 165px;
+}
+.table-menu button,
+.column-menu button,
+.column-menu label {
+  min-height: 31px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #d9dee3;
+  text-align: left;
+  cursor: pointer;
+}
+.table-menu button:hover,
+.column-menu button:hover,
+.column-menu label:hover {
+  background: #343d47;
+}
+.table-menu .danger,
+.column-menu .danger {
+  color: #ff777f;
+}
+.managed-table-body {
+  padding: 0 9px 10px;
+  border-top: 1px solid #343b44;
+}
+.manager-section-title {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  color: #cbd2d9;
+  font-size: 11px;
+}
+.managed-column {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(72px, 1.1fr) minmax(68px, 0.9fr) 31px 31px 27px;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.managed-column > input {
+  min-width: 0;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid #404956;
+  border-radius: 5px;
+  background: #11171d;
+  color: #edf0f3;
+  font-size: 11px;
+}
+.managed-column > label {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  margin: 0;
+  color: #a8b1bb;
+  font-size: 8px;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.managed-column > label input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: #1689e5;
+}
+.manager-add {
+  min-height: 29px;
+  padding: 0 9px;
+  font-size: 10px;
+}
+.managed-index {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25px 25px;
+  gap: 5px;
+  align-items: center;
+  min-height: 31px;
+  margin-bottom: 5px;
+  padding: 0 5px 0 8px;
+  border: 1px solid #404956;
+  border-radius: 5px;
+  color: #dfe4e8;
+}
+.managed-index span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.managed-index em {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #324153;
+  color: #9fcbef;
+  font-style: normal;
+  font-size: 9px;
+}
