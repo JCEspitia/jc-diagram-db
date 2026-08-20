@@ -8,6 +8,15 @@ export interface DatabaseSchema {
   tables: TableSchema[];
   relationships: RelationshipSchema[];
   enums: EnumSchema[];
+  tableGroups?: TableGroupSchema[];
+}
+
+export interface TableGroupSchema {
+  id: EntityId;
+  name: string;
+  tableIds: EntityId[];
+  color?: string;
+  note?: string;
 }
 
 export interface TableSchema {

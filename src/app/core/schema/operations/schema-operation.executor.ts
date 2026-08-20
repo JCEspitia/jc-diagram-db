@@ -31,6 +31,10 @@ export function executeSchemaOperation(
           ({ sourceTableId, targetTableId }) =>
             sourceTableId !== operation.tableId && targetTableId !== operation.tableId,
         ),
+        tableGroups: (schema.tableGroups ?? []).map((group) => ({
+          ...group,
+          tableIds: group.tableIds.filter((tableId) => tableId !== operation.tableId),
+        })),
       };
 
     case 'MOVE_TABLE':

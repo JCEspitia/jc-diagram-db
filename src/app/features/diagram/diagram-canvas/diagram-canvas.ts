@@ -108,6 +108,7 @@ export class DiagramCanvas {
   readonly tableSelected = output<string>();
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
+  readonly areaEditRequested = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly relationshipSelected = output<string>();
   readonly relationshipTypeChanged = output<{
@@ -380,6 +381,13 @@ export class DiagramCanvas {
 
   protected areaEntries(): [string, DiagramAreaLayout][] {
     return Object.entries(this.layout().areas ?? {});
+  }
+
+  protected areaTableNames(area: DiagramAreaLayout): string[] {
+    const ids = new Set(this.tablesInArea(area));
+    return this.schema()
+      .tables.filter(({ id }) => ids.has(id))
+      .map(({ name }) => name);
   }
 
   protected startAreaMove({ areaId, event }: { areaId: string; event: PointerEvent }): void {
@@ -887,6 +895,7 @@ export class DiagramCanvas {
   }
 
   private tablesInArea(area: DiagramAreaLayout): string[] {
+    if (area.tableIds) return area.tableIds;
     return this.schema().tables.flatMap((table) => {
       const position = tableLayout(this.layout(), table.id);
       const width = position.width ?? DEFAULT_TABLE_METRICS.width;

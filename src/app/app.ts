@@ -155,6 +155,18 @@ export class App {
     requestAnimationFrame(() => this.canvas()?.focusArea(areaId));
   }
 
+  protected editManagedArea(areaId: string): void {
+    this.activeSidebar.set('areas');
+    this.dbmlCollapsed.set(false);
+    this.expandedAreaId.set(areaId);
+    this.focusArea(areaId);
+  }
+
+  protected updateAreaNote(areaId: string, event: Event): void {
+    const note = inputValue(event).trim();
+    this.store.updateArea(areaId, { note: note || undefined });
+  }
+
   protected renameEnum(enumId: string, event: Event): void {
     this.store.renameEnum(enumId, inputValue(event));
   }

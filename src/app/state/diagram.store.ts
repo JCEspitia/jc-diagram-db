@@ -6,6 +6,7 @@ import {
   SimpleDbmlParser,
 } from '../core/dbml';
 import { zoomAtPoint } from '../core/diagram/diagram-geometry';
+import { DEFAULT_TABLE_METRICS } from '../core/diagram/diagram-geometry';
 import { AutoLayoutMode, calculateAutoLayout } from '../core/diagram/auto-layout/auto-layout';
 import { executeDiagramOperation } from '../core/diagram/operations/diagram-operation.executor';
 import { DiagramOperation } from '../core/diagram/operations/diagram.operations';
@@ -69,9 +70,26 @@ export class DiagramStore {
   applyDiagramOperation(operation: DiagramOperation): void {
     this.changeOrigin.set('canvas');
     const project = this.project();
+    const rawLayout = executeDiagramOperation(project.layout, operation);
+    const schema = synchroniseTableGroups(
+      project.schema,
+      rawLayout,
+      operation.type === 'MOVE_AREA',
+    );
+    const layout = synchronizeLayout(rawLayout, schema);
+    const changesDbml =
+      operation.type === 'ADD_AREA' ||
+      operation.type === 'UPDATE_AREA' ||
+      operation.type === 'DELETE_AREA' ||
+      ((operation.type === 'MOVE_TABLE' || operation.type === 'RESIZE_AREA') &&
+        !sameTableGroups(project.schema.tableGroups ?? [], schema.tableGroups ?? []));
     const next = {
       ...project,
-      layout: executeDiagramOperation(project.layout, operation),
+      schema,
+      layout,
+      ...(changesDbml
+        ? { dbml: preserveDbmlComments(project.dbml, this.generator.generate(schema)) }
+        : {}),
       updatedAt: new Date().toISOString(),
     };
     this.commit(next, operation.type !== 'CHANGE_VIEWPORT');
@@ -572,6 +590,13 @@ export class DiagramStore {
   }
 }
 
+function sameTableGroups(
+  left: NonNullable<DatabaseSchema['tableGroups']>,
+  right: NonNullable<DatabaseSchema['tableGroups']>,
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function nextName(base: string, existingNames: string[]): string {
   const names = new Set(existingNames);
   if (!names.has(base)) return base;
@@ -607,7 +632,67 @@ function synchronizeLayout(layout: DiagramLayout, schema: DatabaseSchema): Diagr
       relationshipIds.has(relationshipId),
     ),
   );
-  return { ...layout, tables, relationships };
+  const existingAreas = layout.areas ?? {};
+  const areas = Object.fromEntries(
+    (schema.tableGroups ?? []).map((group, index) => {
+      const existing = existingAreas[group.id];
+      return [
+        group.id,
+        {
+          name: group.name,
+          note: group.note,
+          color: group.color ?? '#6d8cff',
+          x: existing?.x ?? 50 + index * 35,
+          y: existing?.y ?? 50 + index * 35,
+          width: existing?.width ?? 520,
+          height: existing?.height ?? 360,
+          tableIds: group.tableIds,
+        },
+      ];
+    }),
+  );
+  return { ...layout, tables, relationships, areas };
+}
+
+function synchroniseTableGroups(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  preserveMembership: boolean,
+): DatabaseSchema {
+  const previous = new Map((schema.tableGroups ?? []).map((group) => [group.id, group]));
+  const tableGroups = Object.entries(layout.areas ?? {}).map(([id, area]) => ({
+    id,
+    name: area.name,
+    color: area.color,
+    ...(area.note ? { note: area.note } : {}),
+    tableIds: preserveMembership
+      ? (previous.get(id)?.tableIds ?? area.tableIds ?? [])
+      : tableIdsInsideArea(schema, layout, area),
+  }));
+  return { ...schema, tableGroups };
+}
+
+function tableIdsInsideArea(
+  schema: DatabaseSchema,
+  layout: DiagramLayout,
+  area: DiagramAreaLayout,
+): string[] {
+  return schema.tables.flatMap((table) => {
+    const position = layout.tables[table.id];
+    if (!position) return [];
+    const centerX = position.x + (position.width ?? DEFAULT_TABLE_METRICS.width) / 2;
+    const centerY =
+      position.y +
+      (DEFAULT_TABLE_METRICS.headerHeight +
+        table.columns.length * DEFAULT_TABLE_METRICS.rowHeight) /
+        2;
+    return centerX >= area.x &&
+      centerX <= area.x + area.width &&
+      centerY >= area.y &&
+      centerY <= area.y + area.height
+      ? [table.id]
+      : [];
+  });
 }
 
 function createExampleProject(): DiagramProject {

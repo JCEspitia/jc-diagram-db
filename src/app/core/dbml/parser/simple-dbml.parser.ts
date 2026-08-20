@@ -6,12 +6,15 @@ import {
   EnumSchema,
   RelationshipSchema,
   TableSchema,
+  TableGroupSchema,
 } from '../../schema';
 import { DbmlParseError, DbmlParseResult, DbmlParser } from '../dbml.models';
 
 type Block =
   | { kind: 'table'; value: TableSchema; section: 'columns' | 'indexes' | 'checks' }
-  | { kind: 'enum'; value: EnumSchema };
+  | { kind: 'enum'; value: EnumSchema }
+  | { kind: 'tableGroup'; value: TableGroupSchema; tableNames: string[] }
+  | { kind: 'reference'; expression?: string; line: number };
 
 export class SimpleDbmlParser implements DbmlParser {
   parse(source: string): DbmlParseResult {
@@ -32,12 +35,26 @@ export class SimpleDbmlParser implements DbmlParser {
             continue;
           }
           if (block.kind === 'table') schema.tables.push(block.value);
-          else schema.enums.push(block.value);
+          else if (block.kind === 'enum') schema.enums.push(block.value);
+          else if (block.kind === 'tableGroup') (schema.tableGroups ??= []).push(block.value);
+          else if (block.expression)
+            references.push({ expression: block.expression, line: block.line });
+          else errors.push({ message: 'Empty Ref block', line: block.line });
           block = undefined;
           continue;
         }
 
-        if (block.kind === 'table') {
+        if (block.kind === 'reference') {
+          if (block.expression) {
+            errors.push({
+              message: 'A Ref block can only contain one relationship',
+              line: lineNumber,
+            });
+          } else {
+            block.expression = line;
+            block.line = lineNumber;
+          }
+        } else if (block.kind === 'table') {
           const noteMatch = line.match(/^Note\s*:\s*('(?:\\.|[^'])*'|"(?:\\.|[^"])*")\s*$/i);
           if (noteMatch?.[1]) {
             block.value.note = unquote(noteMatch[1]);
@@ -79,9 +96,16 @@ export class SimpleDbmlParser implements DbmlParser {
               });
             }
           }
-        } else {
+        } else if (block.kind === 'enum') {
           const enumValue = unquote(line.replace(/,$/, '').trim());
           if (enumValue) block.value.values.push(enumValue);
+        } else {
+          const noteMatch = line.match(/^Note\s*:\s*('(?:\\.|[^'])*'|"(?:\\.|[^"])*")\s*$/i);
+          if (noteMatch?.[1]) {
+            block.value.note = unquote(noteMatch[1]);
+            continue;
+          }
+          block.tableNames.push(unquote(line.replace(/,$/, '').trim()));
         }
         continue;
       }
@@ -120,9 +144,38 @@ export class SimpleDbmlParser implements DbmlParser {
         continue;
       }
 
+      const tableGroupMatch = line.match(/^TableGroup\s+("[^"]+"|[\w-]+)(?:\s*\[(.*)\])?\s*\{$/i);
+      if (tableGroupMatch?.[1]) {
+        const settings = splitSettings(tableGroupMatch[2] ?? '');
+        const valueOf = (setting: string): string | undefined =>
+          settings
+            .find((value) => value.toLowerCase().startsWith(`${setting}:`))
+            ?.slice(setting.length + 1)
+            .trim();
+        const color = valueOf('color');
+        const note = valueOf('note');
+        block = {
+          kind: 'tableGroup',
+          value: {
+            id: createEntityId('area'),
+            name: unquote(tableGroupMatch[1]),
+            tableIds: [],
+            ...(color && /^#[0-9a-f]{6}$/i.test(color) ? { color } : {}),
+            ...(note ? { note: unquote(note) } : {}),
+          },
+          tableNames: [],
+        };
+        continue;
+      }
+
       const refMatch = line.match(/^Ref(?:\s+[^:]+)?\s*:\s*(.+)$/i);
       if (refMatch?.[1]) {
         references.push({ expression: refMatch[1], line: lineNumber });
+        continue;
+      }
+
+      if (/^Ref(?:\s+(?:"[^"]+"|[\w-]+))?\s*\{$/i.test(line)) {
+        block = { kind: 'reference', line: lineNumber };
         continue;
       }
 
@@ -137,8 +190,42 @@ export class SimpleDbmlParser implements DbmlParser {
       if (relationship) schema.relationships.push(relationship);
     }
 
+    // Table groups are parsed after tables so their members can use stable table IDs.
+    // Re-scan the compact blocks to resolve names without coupling groups to declaration order.
+    const groupBlocks = parseTableGroupMembers(source);
+    for (const [index, group] of (schema.tableGroups ?? []).entries()) {
+      const names = groupBlocks[index] ?? [];
+      group.tableIds = names.flatMap((name) => {
+        const table = schema.tables.find(
+          (candidate) => qualifiedTableName(candidate) === name || candidate.name === name,
+        );
+        if (!table) {
+          errors.push({ message: `TableGroup ${group.name} references unknown table ${name}` });
+          return [];
+        }
+        return [table.id];
+      });
+    }
+
     return errors.length ? { errors } : { schema, errors: [] };
   }
+}
+
+function parseTableGroupMembers(source: string): string[][] {
+  const groups: string[][] = [];
+  let current: string[] | undefined;
+  for (const rawLine of source.split(/\r?\n/)) {
+    const line = stripComment(rawLine).trim();
+    if (!current && /^TableGroup\s+/i.test(line) && /\{$/.test(line)) {
+      current = [];
+    } else if (current && line === '}') {
+      groups.push(current);
+      current = undefined;
+    } else if (current && line && !/^Note\s*:/i.test(line)) {
+      current.push(unquote(line.replace(/,$/, '').trim()));
+    }
+  }
+  return groups;
 }
 
 function parseColumn(

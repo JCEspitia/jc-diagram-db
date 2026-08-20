@@ -13,8 +13,10 @@
       <app-diagram-area
         [areaId]="entry[0]"
         [area]="areaPosition(entry[0], entry[1])"
+        [tableNames]="areaTableNames(entry[1])"
         (moveStarted)="startAreaMove($event)"
         (resizeStarted)="startAreaResize($event)"
+        (editRequested)="areaEditRequested.emit($event)"
       />
     }
     <svg

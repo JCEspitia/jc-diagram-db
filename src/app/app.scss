@@ -1450,8 +1450,7 @@ main {
 }
 .enums-manager {
   display: none;
-  margin: 4px 8px 12px;
-  border-top: 1px solid #343d47;
+  margin: 0;
 }
 .workspace.show-enums .enums-manager {
   display: block;
@@ -1461,8 +1460,7 @@ main {
 }
 .areas-manager {
   display: none;
-  margin: 4px 8px 12px;
-  border-top: 1px solid #343d47;
+  margin: 0;
 }
 .workspace.show-areas .areas-manager {
   display: block;
@@ -1499,6 +1497,55 @@ main {
   padding: 5px 2px;
   color: #77838e;
   font-size: 9px;
+}
+.manager-view-toolbar {
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 9px;
+  border-bottom: 1px solid #343d47;
+  color: #86939f;
+  font-size: 10px;
+}
+.manager-view-toolbar button {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid #46515c;
+  border-radius: 5px;
+  background: #242c34;
+  color: #eef1f3;
+  font-weight: 600;
+  cursor: pointer;
+}
+.manager-view-toolbar button:hover {
+  border-color: #1689e5;
+  background: #273f54;
+}
+.enums-manager .managed-enums,
+.areas-manager .managed-enums {
+  padding: 8px;
+}
+.managed-enum-body textarea {
+  width: 100%;
+  min-height: 62px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid #404956;
+  border-radius: 5px;
+  background: #11171d;
+  color: #edf0f3;
+  font:
+    11px/1.4 'Segoe UI Variable Text',
+    sans-serif;
+}
+.managed-enum-body textarea:focus {
+  border-color: #1689e5;
+  outline: 2px solid rgb(22 137 229 / 14%);
 }
 .enums-heading {
   height: 42px;

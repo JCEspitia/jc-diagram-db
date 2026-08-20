@@ -7,9 +7,30 @@ export class SimpleDbmlGenerator implements DbmlGenerator {
       ...schema.enums.map(generateEnum),
       ...schema.tables.map(generateTable),
       ...schema.relationships.map((relationship) => generateRelationship(schema, relationship)),
+      ...(schema.tableGroups ?? []).map((group) => generateTableGroup(schema, group)),
     ];
     return `${sections.join('\n\n')}\n`;
   }
+}
+
+function generateTableGroup(
+  schema: DatabaseSchema,
+  group: NonNullable<DatabaseSchema['tableGroups']>[number],
+): string {
+  const settings: string[] = [];
+  if (group.color) settings.push(`color: ${group.color}`);
+  if (group.note) settings.push(`note: '${escapeNote(group.note)}'`);
+  const suffix = settings.length ? ` [${settings.join(', ')}]` : '';
+  const members = group.tableIds.flatMap((tableId) => {
+    const table = schema.tables.find(({ id }) => id === tableId);
+    if (!table) return [];
+    return [
+      table.schema
+        ? `${escapeIdentifier(table.schema)}.${escapeIdentifier(table.name)}`
+        : escapeIdentifier(table.name),
+    ];
+  });
+  return `TableGroup ${escapeIdentifier(group.name)}${suffix} {\n${members.map((name) => `  ${name}`).join('\n')}\n}`;
 }
 
 function generateTable(table: TableSchema): string {

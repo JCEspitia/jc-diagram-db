@@ -29,6 +29,27 @@ header span {
   border: 1px solid currentColor;
   border-radius: 2px;
 }
+header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+header button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  place-items: center;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+}
+header button:hover {
+  background: color-mix(in srgb, var(--area-color) 16%, transparent);
+}
 .resize-handle {
   position: absolute;
   right: -5px;

@@ -81,6 +81,25 @@ Table service_units {
     expect(parser.parse(generated).errors).toEqual([]);
   });
 
+  it('parses relationships declared with Ref blocks', () => {
+    const result = parser.parse(`Table orders {
+  id int [primary key]
+  user_id int [not null, unique]
+}
+
+Table users {
+  id int [primary key]
+}
+
+Ref {
+  orders.user_id > users.id
+}`);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.relationships).toHaveLength(1);
+    expect(result.schema?.relationships[0]).toMatchObject({ type: 'many-to-one' });
+  });
+
   it('parses single-column indexes without parentheses', () => {
     const result = parser.parse(`Table products {
   codigo varchar
@@ -151,6 +170,38 @@ Table service_units {
     const generated = generator.generate(result.schema!);
     expect(generated).toContain('checks {');
     expect(parser.parse(generated).schema?.tables[0]?.checks).toHaveLength(2);
+  });
+
+  it('round trips table groups with color, note, and members', () => {
+    const source = `Table products {
+  id uuid [pk]
+}
+
+Table order_items {
+  id uuid [pk]
+}
+
+TableGroup product_group [color: #d35400, note: 'Product catalog'] {
+  products
+  order_items
+}`;
+    const result = parser.parse(source);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.tableGroups?.[0]).toMatchObject({
+      name: 'product_group',
+      color: '#d35400',
+      note: 'Product catalog',
+    });
+    expect(result.schema?.tableGroups?.[0]?.tableIds).toEqual(
+      result.schema?.tables.map(({ id }) => id),
+    );
+
+    const generated = generator.generate(result.schema!);
+    expect(generated).toContain(
+      "TableGroup product_group [color: #d35400, note: 'Product catalog'] {",
+    );
+    expect(parser.parse(generated).errors).toEqual([]);
   });
 });
 

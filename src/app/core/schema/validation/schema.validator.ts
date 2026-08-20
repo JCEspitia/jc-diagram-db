@@ -5,6 +5,8 @@ export type SchemaValidationCode =
   | 'DUPLICATE_TABLE_NAME'
   | 'DUPLICATE_COLUMN_NAME'
   | 'DUPLICATE_ENUM_NAME'
+  | 'DUPLICATE_TABLE_GROUP_NAME'
+  | 'INVALID_TABLE_GROUP_MEMBER'
   | 'INVALID_INDEX_COLUMN'
   | 'INVALID_RELATIONSHIP_ENDPOINT';
 
@@ -80,6 +82,26 @@ export function validateSchema(schema: DatabaseSchema): SchemaValidationError[] 
         code: 'INVALID_RELATIONSHIP_ENDPOINT',
         message: `Relationship ${relationship.id} references a missing table or column`,
         entityId: relationship.id,
+      });
+    }
+  }
+
+  const groupNames = new Set<string>();
+  for (const group of schema.tableGroups ?? []) {
+    registerId(group.id, 'table group', ids, errors);
+    if (groupNames.has(group.name)) {
+      errors.push({
+        code: 'DUPLICATE_TABLE_GROUP_NAME',
+        message: `Duplicate table group name: ${group.name}`,
+        entityId: group.id,
+      });
+    }
+    groupNames.add(group.name);
+    if (group.tableIds.some((tableId) => !schema.tables.some(({ id }) => id === tableId))) {
+      errors.push({
+        code: 'INVALID_TABLE_GROUP_MEMBER',
+        message: `Table group ${group.name} references a missing table`,
+        entityId: group.id,
       });
     }
   }

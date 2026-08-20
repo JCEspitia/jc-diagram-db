@@ -6,9 +6,22 @@
   [style.height.px]="area().height"
   [style.--area-color]="area().color"
 >
-  <header (pointerdown)="startMove($event)">
+  <header
+    [appTooltip]="tooltipDetails() ? 'Area details' : null"
+    [appTooltipDetails]="tooltipDetails()"
+    appTooltipPosition="side"
+    (pointerdown)="startMove($event)"
+  >
     <span></span>
     <strong>{{ area().name }}</strong>
+    <button
+      type="button"
+      appTooltip="Configure area"
+      aria-label="Configure area"
+      (pointerdown)="edit($event)"
+    >
+      <svg lucideSettings size="14"></svg>
+    </button>
   </header>
   <button
     type="button"

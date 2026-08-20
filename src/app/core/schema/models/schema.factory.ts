@@ -13,6 +13,7 @@ export function createEmptySchema(name: string): DatabaseSchema {
     tables: [],
     relationships: [],
     enums: [],
+    tableGroups: [],
   };
 }
 

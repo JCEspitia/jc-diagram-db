@@ -3,6 +3,14 @@ import { createColumn } from '../core/schema';
 import { DiagramStore } from './diagram.store';
 
 describe('DiagramStore DBML synchronization', () => {
+  it('writes visually created areas as DBML table groups', () => {
+    const store = new DiagramStore();
+    const areaId = store.createArea();
+    store.updateArea(areaId, { name: 'product_group', color: '#d35400', note: 'Catalog' });
+
+    expect(store.dbml()).toContain("TableGroup product_group [color: #d35400, note: 'Catalog'] {");
+    expect(store.schema().tableGroups?.[0]?.id).toBe(areaId);
+  });
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 

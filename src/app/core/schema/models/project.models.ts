@@ -9,11 +9,13 @@ export interface DiagramLayout {
 
 export interface DiagramAreaLayout {
   name: string;
+  note?: string;
   color: string;
   x: number;
   y: number;
   width: number;
   height: number;
+  tableIds?: EntityId[];
 }
 
 export interface RelationshipLayout {

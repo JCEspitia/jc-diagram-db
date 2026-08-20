@@ -129,6 +129,8 @@
         }
         <button class="primary" type="button" (click)="store.createTable()">
           <svg lucidePlus size="15"></svg> Table</button
+        ><button class="primary" type="button" (click)="createManagedArea()">
+          <svg lucidePlus size="15"></svg> Area</button
         ><span></span>
         <div class="auto-layout-control">
           <button type="button" (click)="autoLayoutMenu.update((open) => !open)">
@@ -188,6 +190,7 @@
         (tableSelected)="store.selectTable($event)"
         (tableEditRequested)="editManagedTable($event)"
         (tableColorChanged)="store.updateTableColor($event.tableId, $event.color)"
+        (areaEditRequested)="editManagedArea($event)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
         (relationshipTypeChanged)="
@@ -584,11 +587,10 @@
         }
       </div>
       <section class="enums-manager">
-        <div class="enums-heading">
-          <div><svg lucideCode2 size="15"></svg><strong>Enums</strong></div>
-          <span>{{ store.schema().enums.length }}</span>
+        <div class="manager-view-toolbar">
+          <span>{{ store.schema().enums.length }} enums</span>
           <button type="button" appTooltip="Add enum" (click)="createManagedEnum()">
-            <svg lucidePlus size="15"></svg>
+            <svg lucidePlus size="15"></svg> Enum
           </button>
         </div>
         <div class="managed-enums">
@@ -659,11 +661,10 @@
         </div>
       </section>
       <section class="areas-manager">
-        <div class="enums-heading">
-          <div><svg lucideGrid2x2 size="15"></svg><strong>Areas</strong></div>
-          <span>{{ areaEntries().length }}</span>
+        <div class="manager-view-toolbar">
+          <span>{{ areaEntries().length }} areas</span>
           <button type="button" appTooltip="Add area" (click)="createManagedArea()">
-            <svg lucidePlus size="15"></svg>
+            <svg lucidePlus size="15"></svg> Area
           </button>
         </div>
         <div class="managed-enums">
@@ -686,6 +687,15 @@
                   <label>
                     <span>Area name</span>
                     <input [value]="entry[1].name" (change)="updateAreaName(entry[0], $event)" />
+                  </label>
+                  <label>
+                    <span>Comment</span>
+                    <textarea
+                      rows="3"
+                      placeholder="Describe this area"
+                      [value]="entry[1].note ?? ''"
+                      (change)="updateAreaNote(entry[0], $event)"
+                    ></textarea>
                   </label>
                   <div class="enum-values-title">Color</div>
                   <div class="table-color-picker">

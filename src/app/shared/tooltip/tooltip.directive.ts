@@ -19,6 +19,7 @@ export interface TooltipDetails {
   enumName?: string;
   enumValues?: string[];
   checks?: string[];
+  tables?: string[];
 }
 
 @Directive({
@@ -126,6 +127,16 @@ export class TooltipDirective implements OnDestroy {
       checks.className = 'app-tooltip-checks';
       for (const check of details.checks) this.appendText(checks, 'code', check);
       this.renderer.appendChild(section, checks);
+      this.renderer.appendChild(tooltip, section);
+    }
+    if (details.tables?.length) {
+      const section = this.renderer.createElement('div') as HTMLElement;
+      section.className = 'app-tooltip-section';
+      this.appendText(section, 'span', 'Tables inside');
+      const values = this.renderer.createElement('div') as HTMLElement;
+      values.className = 'app-tooltip-values';
+      for (const table of details.tables) this.appendText(values, 'code', table);
+      this.renderer.appendChild(section, values);
       this.renderer.appendChild(tooltip, section);
     }
   }

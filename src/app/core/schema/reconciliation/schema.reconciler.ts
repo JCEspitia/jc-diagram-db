@@ -72,6 +72,14 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
         );
         return existing ? { ...parsedEnum, id: existing.id } : parsedEnum;
       }),
+      tableGroups: (parsed.tableGroups ?? []).map((parsedGroup) => {
+        const existing = (current.tableGroups ?? []).find(({ name }) => name === parsedGroup.name);
+        return {
+          ...parsedGroup,
+          id: existing?.id ?? parsedGroup.id,
+          tableIds: parsedGroup.tableIds.map((tableId) => tableIdMap.get(tableId) ?? tableId),
+        };
+      }),
     };
   }
 }
