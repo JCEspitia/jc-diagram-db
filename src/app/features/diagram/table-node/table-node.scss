@@ -55,6 +55,10 @@ header button {
   color: #d6e6f2;
   cursor: pointer;
 }
+header > .note-icon {
+  flex: 0 0 auto;
+  color: #d5e7f3;
+}
 
 .column-row {
   height: 29px;
@@ -109,6 +113,9 @@ header button {
 }
 .constraints svg.link-icon {
   color: #6f8194;
+}
+.constraints svg.note-icon {
+  color: #8493a3;
 }
 .key-icon::before {
   content: '';

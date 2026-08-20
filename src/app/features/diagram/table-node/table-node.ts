@@ -1,10 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/schema';
-import { LucideEllipsis, LucideKeyRound, LucideLink2, LucideTable2 } from '@lucide/angular';
+import {
+  LucideEllipsis,
+  LucideKeyRound,
+  LucideLink2,
+  LucideMessageSquareText,
+  LucideTable2,
+} from '@lucide/angular';
 
 @Component({
   selector: 'app-table-node',
-  imports: [LucideEllipsis, LucideKeyRound, LucideLink2, LucideTable2],
+  imports: [LucideEllipsis, LucideKeyRound, LucideLink2, LucideMessageSquareText, LucideTable2],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './table-node.html',
   styleUrl: './table-node.scss',

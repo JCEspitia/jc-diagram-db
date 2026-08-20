@@ -38,6 +38,11 @@ export class SimpleDbmlParser implements DbmlParser {
         }
 
         if (block.kind === 'table') {
+          const noteMatch = line.match(/^Note\s*:\s*('(?:\\.|[^'])*'|"(?:\\.|[^"])*")\s*$/i);
+          if (noteMatch?.[1]) {
+            block.value.note = unquote(noteMatch[1]);
+            continue;
+          }
           if (/^indexes\s*\{$/i.test(line)) {
             block.parsingIndexes = true;
             continue;
@@ -275,7 +280,10 @@ function stripComment(line: string): string {
 }
 
 function unquote(value: string): string {
-  return value.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
+  const unwrapped = value.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, '$1$2');
+  return unwrapped.replace(/\\([\\'"n])/g, (_match, escaped: string) =>
+    escaped === 'n' ? '\n' : escaped,
+  );
 }
 
 function error(message: string, line: number, sourceLine: string): DbmlParseError {

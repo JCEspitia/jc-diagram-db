@@ -147,6 +147,14 @@ export class DiagramStore {
     this.applySchemaOperation({ type: 'UPDATE_TABLE', tableId, changes: { name: normalized } });
   }
 
+  updateTableNote(tableId: string, note: string): void {
+    this.applySchemaOperation({
+      type: 'UPDATE_TABLE',
+      tableId,
+      changes: { note: note.trim() || undefined },
+    });
+  }
+
   deleteTable(tableId: string): void {
     this.applySchemaOperation({ type: 'DELETE_TABLE', tableId });
   }

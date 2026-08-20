@@ -80,6 +80,28 @@ Table service_units {
     expect(generated).toContain('(site_id, external_id) [unique]');
     expect(parser.parse(generated).errors).toEqual([]);
   });
+
+  it('round trips table and multiline column comments', () => {
+    const result = parser.parse(`Table users {
+  id uuid [pk, note: 'Public\\nidentifier']
+
+  Note: 'Application users'
+}`);
+
+    expect(result.errors).toEqual([]);
+    expect(result.schema?.tables[0]).toMatchObject({
+      note: 'Application users',
+      columns: [expect.objectContaining({ note: 'Public\nidentifier' })],
+    });
+
+    const generated = generator.generate(result.schema!);
+    expect(generated).toContain("Note: 'Application users'");
+    expect(generated).toContain("note: 'Public\\nidentifier'");
+    expect(parser.parse(generated).schema?.tables[0]).toMatchObject({
+      note: 'Application users',
+      columns: [expect.objectContaining({ note: 'Public\nidentifier' })],
+    });
+  });
 });
 
 describe('Schema reconciliation', () => {

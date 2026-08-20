@@ -368,6 +368,15 @@
                             (change)="updateColumnFlag(table.id, column.id, 'increment', $event)"
                           />Auto increment</label
                         >
+                        <label class="column-comment">
+                          <span>Comment</span>
+                          <textarea
+                            rows="3"
+                            placeholder="Describe this field"
+                            [value]="column.note ?? ''"
+                            (change)="updateColumnNote(table.id, column.id, $event)"
+                          ></textarea>
+                        </label>
                         <button
                           class="danger"
                           type="button"
@@ -401,6 +410,14 @@
                 <button class="manager-add" type="button" (click)="store.addIndex(table.id)">
                   <svg lucidePlus size="14"></svg> Add index
                 </button>
+                <div class="manager-section-title"><strong>Table comment</strong></div>
+                <textarea
+                  class="table-comment"
+                  rows="3"
+                  placeholder="Describe this table"
+                  [value]="table.note ?? ''"
+                  (change)="updateTableNote(table.id, $event)"
+                ></textarea>
               </div>
             }
           </article>

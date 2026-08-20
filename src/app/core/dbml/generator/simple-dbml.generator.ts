@@ -17,10 +17,11 @@ function generateTable(table: TableSchema): string {
     ? `${escapeIdentifier(table.schema)}.${escapeIdentifier(table.name)}`
     : escapeIdentifier(table.name);
   const columns = table.columns.map((column) => `  ${generateColumn(column)}`).join('\n');
+  const note = table.note ? `\n\n  Note: '${escapeNote(table.note)}'` : '';
   const indexes = table.indexes.length
     ? `\n\n  indexes {\n${table.indexes.map((index) => `    ${generateIndex(table, index)}`).join('\n')}\n  }`
     : '';
-  return `Table ${name} {\n${columns}${indexes}\n}`;
+  return `Table ${name} {\n${columns}${note}${indexes}\n}`;
 }
 
 function generateIndex(table: TableSchema, index: TableSchema['indexes'][number]): string {
@@ -43,7 +44,7 @@ function generateColumn(column: ColumnSchema): string {
   if (column.unique) settings.push('unique');
   if (column.increment) settings.push('increment');
   if (column.defaultValue !== undefined) settings.push(`default: ${column.defaultValue}`);
-  if (column.note !== undefined) settings.push(`note: '${column.note.replaceAll("'", "\\'")}'`);
+  if (column.note !== undefined) settings.push(`note: '${escapeNote(column.note)}'`);
   const suffix = settings.length ? ` [${settings.join(', ')}]` : '';
   return `${escapeIdentifier(column.name)} ${column.type}${suffix}`;
 }
@@ -76,4 +77,13 @@ function generateEnum(enumSchema: DatabaseSchema['enums'][number]): string {
 
 function escapeIdentifier(value: string): string {
   return /^[A-Za-z_][\w-]*$/.test(value) ? value : `"${value.replaceAll('"', '\\"')}"`;
+}
+
+function escapeNote(value: string): string {
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll("'", "\\'")
+    .replaceAll('\r\n', '\\n')
+    .replaceAll('\n', '\\n')
+    .replaceAll('\r', '\\n');
 }

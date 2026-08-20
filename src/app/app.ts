@@ -177,6 +177,15 @@ export class App {
     if (value) this.store.updateColumn(tableId, columnId, { [property]: value });
   }
 
+  protected updateColumnNote(tableId: string, columnId: string, event: Event): void {
+    const note = inputValue(event).trim();
+    this.store.updateColumn(tableId, columnId, { note: note || undefined });
+  }
+
+  protected updateTableNote(tableId: string, event: Event): void {
+    this.store.updateTableNote(tableId, inputValue(event));
+  }
+
   protected updateColumnFlag(
     tableId: string,
     columnId: string,

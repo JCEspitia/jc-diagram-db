@@ -1,7 +1,10 @@
-<article class="table-card" (pointerdown)="select()">
+<article class="table-card" [attr.title]="table().note || null" (pointerdown)="select()">
   <header (pointerdown)="startDrag($event)">
     <svg lucideTable2 size="14"></svg>
     <strong>{{ table().name }}</strong>
+    @if (table().note) {
+      <svg lucideMessageSquareText class="note-icon" size="13" aria-label="Table comment"></svg>
+    }
     <button type="button" aria-label="Table options"><svg lucideEllipsis size="16"></svg></button>
   </header>
 
@@ -13,6 +16,7 @@
         [class.relationship-target]="relationshipTargetColumnId() === column.id"
         [attr.data-table-id]="table().id"
         [attr.data-column-id]="column.id"
+        [attr.title]="column.note || null"
         (pointerdown)="interactWithColumn($event, column.id)"
         (pointerenter)="hoverColumn(column.id)"
         (pointerleave)="columnHovered.emit(null)"
@@ -23,6 +27,14 @@
           }
           @if (foreignKeyColumnIds().has(column.id)) {
             <svg lucideLink2 size="12" class="link-icon" aria-label="Foreign key"></svg>
+          }
+          @if (column.note) {
+            <svg
+              lucideMessageSquareText
+              size="11"
+              class="note-icon"
+              aria-label="Column comment"
+            ></svg>
           }
         </span>
         <span class="column-name">{{ column.name }}</span>
