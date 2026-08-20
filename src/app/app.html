@@ -166,6 +166,7 @@
         [relationshipMode]="relationshipMode()"
         (diagramOperation)="store.applyDiagramOperation($event)"
         (tableSelected)="store.selectTable($event)"
+        (tableEditRequested)="editManagedTable($event)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
         (relationshipTypeChanged)="

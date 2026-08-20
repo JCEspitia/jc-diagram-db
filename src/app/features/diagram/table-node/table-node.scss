@@ -13,7 +13,7 @@
 }
 
 .table-card {
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #d8dadd;
   border-radius: 4px;
   background: #ffffff;
@@ -48,12 +48,50 @@ header:active {
     inset 0 3px 0 #d5e7f3;
 }
 
-header button {
+header > .table-options {
+  position: relative;
   margin-left: auto;
+}
+header button {
   border: 0;
   background: transparent;
   color: #d6e6f2;
   cursor: pointer;
+}
+.table-options > button.active,
+.table-options > button:hover {
+  color: #ffffff;
+}
+.table-options-menu {
+  position: absolute;
+  z-index: 10;
+  top: 27px;
+  right: -4px;
+  width: 142px;
+  padding: 4px;
+  border: 1px solid #3e4854;
+  border-radius: 6px;
+  background: #202832;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 26%);
+}
+.table-options-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 4px;
+  color: #e7ebef;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.table-options-menu button:hover {
+  background: #303b47;
+}
+.columns {
+  overflow: hidden;
+  border-radius: 0 0 4px 4px;
 }
 header > .note-icon {
   flex: 0 0 auto;

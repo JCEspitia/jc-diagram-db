@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 let nextTooltipId = 0;
+let activeTooltip: TooltipDirective | undefined;
 
 @Directive({
   selector: '[appTooltip]',
@@ -40,6 +41,7 @@ export class TooltipDirective implements OnDestroy {
     this.renderer.removeChild(document.body, this.tooltip);
     this.tooltip = undefined;
     this.renderer.removeAttribute(this.host.nativeElement, 'aria-describedby');
+    if (activeTooltip === this) activeTooltip = undefined;
   }
 
   ngOnDestroy(): void {
@@ -49,6 +51,8 @@ export class TooltipDirective implements OnDestroy {
   private show(): void {
     const text = this.appTooltip()?.trim();
     if (!text || this.tooltip) return;
+    activeTooltip?.hide();
+    activeTooltip = this;
 
     const tooltip = this.renderer.createElement('div') as HTMLElement;
     const id = `app-tooltip-${nextTooltipId++}`;

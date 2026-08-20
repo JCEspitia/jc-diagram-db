@@ -122,6 +122,14 @@ export class App {
   protected selectManagedTable(tableId: string): void {
     this.store.selectTable(tableId);
     this.tableMenuId.set(null);
+    requestAnimationFrame(() => this.canvas()?.focusTable(tableId));
+  }
+
+  protected editManagedTable(tableId: string): void {
+    this.activeSidebar.set('inspector');
+    this.dbmlCollapsed.set(false);
+    this.expandedTableIds.set(new Set([tableId]));
+    this.selectManagedTable(tableId);
   }
 
   protected columnName(table: TableSchema, columnId: string): string {

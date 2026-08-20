@@ -103,6 +103,7 @@ export class DiagramCanvas {
   readonly relationshipMode = input(false);
   readonly diagramOperation = output<DiagramOperation>();
   readonly tableSelected = output<string>();
+  readonly tableEditRequested = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly relationshipSelected = output<string>();
   readonly relationshipTypeChanged = output<{
@@ -718,6 +719,23 @@ export class DiagramCanvas {
       width: element.clientWidth,
       height: element.clientHeight,
     });
+    this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from, to });
+  }
+
+  focusTable(tableId: string): void {
+    const table = this.schema().tables.find(({ id }) => id === tableId);
+    if (!table) return;
+    const element = this.viewportElement().nativeElement;
+    const position = tableLayout(this.layout(), tableId);
+    const from = this.layout().viewport;
+    const width = position.width ?? DEFAULT_TABLE_METRICS.width;
+    const height =
+      DEFAULT_TABLE_METRICS.headerHeight + table.columns.length * DEFAULT_TABLE_METRICS.rowHeight;
+    const to: ViewportState = {
+      ...from,
+      x: element.clientWidth / 2 - (position.x + width / 2) * from.zoom,
+      y: element.clientHeight / 2 - (position.y + height / 2) * from.zoom,
+    };
     this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from, to });
   }
 

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  computed,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { RelationshipSchema, TableLayout, TableSchema } from '../../../core/schema';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import {
@@ -40,6 +48,7 @@ export class TableNode {
   readonly relationshipTargetColumnId = input<string>();
   readonly showRelationshipHandles = input(false);
   readonly tableSelected = output<string>();
+  readonly tableEditRequested = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly columnHovered = output<{ tableId: string; columnId: string } | null>();
   readonly relationshipStarted = output<{
@@ -49,6 +58,7 @@ export class TableNode {
     event: PointerEvent;
   }>();
   readonly dragStarted = output<{ tableId: string; event: PointerEvent }>();
+  protected readonly optionsOpen = signal(false);
 
   protected readonly foreignKeyColumnIds = computed(() => {
     const tableId = this.table().id;
@@ -77,6 +87,26 @@ export class TableNode {
 
   protected select(): void {
     this.tableSelected.emit(this.table().id);
+  }
+
+  protected toggleOptions(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.optionsOpen.update((open) => !open);
+  }
+
+  protected editTable(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.optionsOpen.set(false);
+    this.tableEditRequested.emit(this.table().id);
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  protected closeOptions(event: PointerEvent): void {
+    if (!(event.target as Element | null)?.closest('app-table-node .table-options')) {
+      this.optionsOpen.set(false);
+    }
   }
 
   protected startDrag(event: PointerEvent): void {

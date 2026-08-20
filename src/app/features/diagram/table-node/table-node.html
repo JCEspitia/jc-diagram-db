@@ -5,9 +5,25 @@
     @if (table().note) {
       <svg lucideMessageSquareText class="note-icon" size="13" aria-label="Table comment"></svg>
     }
-    <button appTooltip="Table options" type="button" aria-label="Table options">
-      <svg lucideEllipsis size="16"></svg>
-    </button>
+    <div class="table-options">
+      <button
+        appTooltip="Table options"
+        type="button"
+        aria-label="Table options"
+        [class.active]="optionsOpen()"
+        (pointerdown)="toggleOptions($event)"
+      >
+        <svg lucideEllipsis size="16"></svg>
+      </button>
+      @if (optionsOpen()) {
+        <div class="table-options-menu" (pointerdown)="$event.stopPropagation()">
+          <button type="button" (pointerdown)="editTable($event)">
+            <svg lucideTable2 size="14"></svg>
+            Edit in Tables
+          </button>
+        </div>
+      }
+    </div>
   </header>
 
   <div class="columns">
@@ -27,21 +43,40 @@
         <span class="column-name">{{ column.name }}</span>
         <span class="constraints">
           @if (column.primaryKey) {
-            <svg lucideKeyRound size="12" class="key-icon" aria-label="Primary key"></svg>
+            <svg
+              appTooltip="Primary key"
+              lucideKeyRound
+              size="12"
+              class="key-icon"
+              aria-label="Primary key"
+            ></svg>
           }
           @if (foreignKeyColumnIds().has(column.id)) {
-            <svg lucideLink2 size="12" class="link-icon" aria-label="Foreign key"></svg>
+            <svg
+              appTooltip="Foreign key"
+              lucideLink2
+              size="12"
+              class="link-icon"
+              aria-label="Foreign key"
+            ></svg>
           }
           @if (column.note) {
             <svg
               lucideMessageSquareText
+              appTooltip="Comment"
               size="11"
               class="note-icon"
               aria-label="Column comment"
             ></svg>
           }
           @if (column.unique) {
-            <svg lucideFingerprint size="12" class="unique-icon" aria-label="Unique"></svg>
+            <svg
+              appTooltip="Unique"
+              lucideFingerprint
+              size="12"
+              class="unique-icon"
+              aria-label="Unique"
+            ></svg>
           }
         </span>
         <span class="column-type">{{ column.type }}</span>
