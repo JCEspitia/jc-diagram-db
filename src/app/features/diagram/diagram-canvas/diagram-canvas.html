@@ -37,7 +37,15 @@
           [attr.transform]="symbolTransform(edge.source, edge.points[1]!.x)"
         >
           <circle r="10" />
-          <text x="0" y="0">{{ edge.sourceCardinality === 'many' ? 'N' : '1' }}</text>
+          <text x="0" y="0">
+            {{
+              edge.sourceCardinality === 'many'
+                ? 'N'
+                : edge.sourceCardinality === 'zero'
+                  ? '0'
+                  : '1'
+            }}
+          </text>
         </g>
         <g
           class="cardinality-symbol"
@@ -83,15 +91,17 @@
           @if (relationshipToolboxId() === edge.relationship.id) {
             <foreignObject
               class="relationship-toolbox"
-              [attr.x]="edge.resetPoint.x - 105"
+              [attr.x]="edge.resetPoint.x - 130"
               [attr.y]="edge.resetPoint.y + 12"
-              width="210"
+              width="260"
               height="42"
             >
               <div>
                 <button
                   type="button"
-                  [class.active]="edge.relationship.type === 'one-to-one'"
+                  [class.active]="
+                    edge.relationship.type === 'one-to-one' && !edge.relationship.sourceOptional
+                  "
                   title="One to one"
                   (pointerdown)="changeRelationshipType($event, edge.relationship.id, 'one-to-one')"
                 >
@@ -99,13 +109,39 @@
                 </button>
                 <button
                   type="button"
-                  [class.active]="edge.relationship.type !== 'one-to-one'"
+                  [class.active]="
+                    edge.relationship.type !== 'one-to-one' && !edge.relationship.sourceOptional
+                  "
                   title="One to many"
                   (pointerdown)="
                     changeRelationshipType($event, edge.relationship.id, 'one-to-many')
                   "
                 >
                   1:N
+                </button>
+                <button
+                  type="button"
+                  [class.active]="
+                    edge.relationship.type === 'one-to-one' && edge.relationship.sourceOptional
+                  "
+                  title="Zero to one"
+                  (pointerdown)="
+                    changeRelationshipType($event, edge.relationship.id, 'one-to-one', true)
+                  "
+                >
+                  0:1
+                </button>
+                <button
+                  type="button"
+                  [class.active]="
+                    edge.relationship.type !== 'one-to-one' && edge.relationship.sourceOptional
+                  "
+                  title="Zero to many"
+                  (pointerdown)="
+                    changeRelationshipType($event, edge.relationship.id, 'one-to-many', true)
+                  "
+                >
+                  0:N
                 </button>
                 <button
                   type="button"

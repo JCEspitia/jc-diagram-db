@@ -42,7 +42,9 @@ export class DefaultSchemaReconciler implements SchemaReconciler {
       const existing = current.relationships.find((candidate) =>
         sameRelationship(candidate, remapped),
       );
-      return existing ? { ...remapped, id: existing.id } : remapped;
+      return existing
+        ? { ...remapped, id: existing.id, sourceOptional: existing.sourceOptional }
+        : remapped;
     });
 
     return {

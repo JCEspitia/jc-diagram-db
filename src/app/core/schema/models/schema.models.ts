@@ -38,6 +38,7 @@ export interface RelationshipSchema {
   targetTableId: EntityId;
   targetColumnId: EntityId;
   type: 'one-to-one' | 'one-to-many' | 'many-to-one';
+  sourceOptional?: boolean;
   onDelete?: ReferentialAction;
   onUpdate?: ReferentialAction;
 }

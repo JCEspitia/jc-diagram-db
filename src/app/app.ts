@@ -107,16 +107,14 @@ export class App {
 
   protected toggleTable(tableId: string): void {
     this.expandedTableIds.update((current) => {
-      const next = new Set(current);
-      next.has(tableId) ? next.delete(tableId) : next.add(tableId);
-      return next;
+      return current.has(tableId) ? new Set() : new Set([tableId]);
     });
   }
 
   protected createManagedTable(): void {
     this.store.createTable();
     const tableId = this.store.selection()?.tableId;
-    if (tableId) this.expandedTableIds.update((ids) => new Set([...ids, tableId]));
+    if (tableId) this.expandedTableIds.set(new Set([tableId]));
   }
 
   protected selectManagedTable(tableId: string): void {

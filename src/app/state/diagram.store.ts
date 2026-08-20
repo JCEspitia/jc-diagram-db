@@ -302,12 +302,6 @@ export class DiagramStore {
     const project = this.project();
     const relationship = project.schema.relationships.find(({ id }) => id === relationshipId);
     if (!relationship) return;
-    const type =
-      relationship.type === 'one-to-many'
-        ? 'many-to-one'
-        : relationship.type === 'many-to-one'
-          ? 'one-to-many'
-          : 'one-to-one';
     const schema = executeSchemaOperation(project.schema, {
       type: 'UPDATE_RELATIONSHIP',
       relationshipId,
@@ -316,7 +310,7 @@ export class DiagramStore {
         sourceColumnId: relationship.targetColumnId,
         targetTableId: relationship.sourceTableId,
         targetColumnId: relationship.sourceColumnId,
-        type,
+        type: relationship.type,
       },
     });
     const currentRoute = project.layout.relationships?.[relationshipId];

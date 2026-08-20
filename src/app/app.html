@@ -151,7 +151,10 @@
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"
         (relationshipSelected)="store.selectRelationship($event)"
         (relationshipTypeChanged)="
-          store.updateRelationship($event.relationshipId, { type: $event.type })
+          store.updateRelationship($event.relationshipId, {
+            type: $event.type,
+            sourceOptional: $event.sourceOptional,
+          })
         "
         (relationshipInverted)="store.invertRelationship($event)"
         (relationshipDeleted)="store.deleteRelationship($event)"

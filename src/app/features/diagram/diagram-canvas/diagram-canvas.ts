@@ -54,7 +54,7 @@ interface RenderedRelationship {
   pullCandidates: RouteSegmentHandle[];
   resetPoint: Point;
   canReset: boolean;
-  sourceCardinality: 'one' | 'many';
+  sourceCardinality: 'zero' | 'one' | 'many';
   targetCardinality: 'one' | 'many';
   connected: boolean;
   flow: 'forward' | 'reverse' | null;
@@ -96,6 +96,7 @@ export class DiagramCanvas {
   readonly relationshipTypeChanged = output<{
     relationshipId: string;
     type: RelationshipSchema['type'];
+    sourceOptional: boolean;
   }>();
   readonly relationshipInverted = output<string>();
   readonly relationshipDeleted = output<string>();
@@ -290,7 +291,11 @@ export class DiagramCanvas {
           pullCandidates: routePullCandidates(points),
           resetPoint: routeActionPoint(points),
           canReset: manuallyRouted && !samePolyline(points, automaticPoints),
-          sourceCardinality: relationship.type === 'many-to-one' ? 'many' : 'one',
+          sourceCardinality: relationship.sourceOptional
+            ? 'zero'
+            : relationship.type === 'many-to-one'
+              ? 'many'
+              : 'one',
           targetCardinality: relationship.type === 'one-to-many' ? 'many' : 'one',
           connected: columnFocus
             ? sourceFocused || targetFocused
@@ -547,10 +552,11 @@ export class DiagramCanvas {
     event: PointerEvent,
     relationshipId: string,
     type: RelationshipSchema['type'],
+    sourceOptional = false,
   ): void {
     event.preventDefault();
     event.stopPropagation();
-    this.relationshipTypeChanged.emit({ relationshipId, type });
+    this.relationshipTypeChanged.emit({ relationshipId, type, sourceOptional });
   }
 
   protected invertRelationship(event: PointerEvent, relationshipId: string): void {
