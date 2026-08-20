@@ -15,6 +15,7 @@ import {
   createEntityId,
   createTable,
   DatabaseSchema,
+  DiagramAreaLayout,
   DiagramLayout,
   DiagramProject,
   DiagramSelection,
@@ -275,6 +276,38 @@ export class DiagramStore {
 
   deleteEnum(enumId: string): void {
     this.applySchemaOperation({ type: 'DELETE_ENUM', enumId });
+  }
+
+  createArea(): string {
+    const areaId = createEntityId('area');
+    const index = Object.keys(this.layout().areas ?? {}).length;
+    this.applyDiagramOperation({
+      type: 'ADD_AREA',
+      areaId,
+      area: {
+        name: nextName(
+          'New area',
+          Object.values(this.layout().areas ?? {}).map(({ name }) => name),
+        ),
+        color: '#6d8cff',
+        x: 60 + index * 30,
+        y: 60 + index * 30,
+        width: 520,
+        height: 360,
+      },
+    });
+    return areaId;
+  }
+
+  updateArea(areaId: string, changes: Partial<DiagramAreaLayout>): void {
+    const from = this.layout().areas?.[areaId];
+    if (!from) return;
+    this.applyDiagramOperation({ type: 'UPDATE_AREA', areaId, from, to: { ...from, ...changes } });
+  }
+
+  deleteArea(areaId: string): void {
+    const area = this.layout().areas?.[areaId];
+    if (area) this.applyDiagramOperation({ type: 'DELETE_AREA', areaId, area });
   }
 
   addColumn(tableId: string): void {

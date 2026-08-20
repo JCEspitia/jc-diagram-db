@@ -46,6 +46,7 @@
     [class.dbml-collapsed]="dbmlCollapsed()"
     [class.show-inspector]="activeSidebar() !== 'dbml'"
     [class.show-enums]="activeSidebar() === 'enums'"
+    [class.show-areas]="activeSidebar() === 'areas'"
     [style.--dbml-width.px]="dbmlPanelWidth()"
   >
     <nav class="sidebar-rail" aria-label="Sidebar views">
@@ -75,6 +76,15 @@
         (click)="activeSidebar.set('enums'); dbmlCollapsed.set(false)"
       >
         <svg lucideBraces size="18"></svg>
+      </button>
+      <button
+        type="button"
+        appTooltip="Areas"
+        aria-label="Show areas"
+        [class.active]="activeSidebar() === 'areas'"
+        (click)="activeSidebar.set('areas'); dbmlCollapsed.set(false)"
+      >
+        <svg lucideGrid2x2 size="18"></svg>
       </button>
     </nav>
     <aside class="dbml-panel">
@@ -219,7 +229,9 @@
     </main>
     <aside class="inspector">
       <div class="panel-heading">
-        <span>{{ activeSidebar() === 'enums' ? 'Enums' : 'Tables' }}</span>
+        <span>{{
+          activeSidebar() === 'enums' ? 'Enums' : activeSidebar() === 'areas' ? 'Areas' : 'Tables'
+        }}</span>
         <button
           appTooltip="Collapse sidebar"
           type="button"
@@ -643,6 +655,70 @@
             </article>
           } @empty {
             <p class="empty-enums">No enums defined.</p>
+          }
+        </div>
+      </section>
+      <section class="areas-manager">
+        <div class="enums-heading">
+          <div><svg lucideGrid2x2 size="15"></svg><strong>Areas</strong></div>
+          <span>{{ areaEntries().length }}</span>
+          <button type="button" appTooltip="Add area" (click)="createManagedArea()">
+            <svg lucidePlus size="15"></svg>
+          </button>
+        </div>
+        <div class="managed-enums">
+          @for (entry of areaEntries(); track entry[0]) {
+            <article class="managed-enum" [style.--area-color]="entry[1].color">
+              <header
+                class="managed-enum-header area-list-header"
+                (click)="expandedAreaId.set(expandedAreaId() === entry[0] ? null : entry[0])"
+              >
+                <svg
+                  lucideChevronRight
+                  size="15"
+                  [class.rotated]="expandedAreaId() === entry[0]"
+                ></svg>
+                <strong>{{ entry[1].name }}</strong>
+                <small>{{ tablesForArea(entry[0]).length }} tables</small>
+              </header>
+              @if (expandedAreaId() === entry[0]) {
+                <div class="managed-enum-body">
+                  <label>
+                    <span>Area name</span>
+                    <input [value]="entry[1].name" (change)="updateAreaName(entry[0], $event)" />
+                  </label>
+                  <div class="enum-values-title">Color</div>
+                  <div class="table-color-picker">
+                    @for (color of tableColors; track color) {
+                      <button
+                        type="button"
+                        [class.selected]="entry[1].color === color"
+                        [style.--swatch-color]="color"
+                        (click)="store.updateArea(entry[0], { color })"
+                      ></button>
+                    }
+                  </div>
+                  <div class="enum-values-title">Tables inside</div>
+                  <div class="area-tables">
+                    @for (table of tablesForArea(entry[0]); track table.id) {
+                      <button type="button" (click)="selectManagedTable(table.id)">
+                        <svg lucideTable2 size="13"></svg>{{ table.name }}
+                      </button>
+                    } @empty {
+                      <small>Drag tables into the area on the canvas.</small>
+                    }
+                  </div>
+                  <button class="enum-add" type="button" (click)="focusArea(entry[0])">
+                    <svg lucideLocateFixed size="14"></svg> Focus on canvas
+                  </button>
+                  <button class="enum-delete" type="button" (click)="store.deleteArea(entry[0])">
+                    <svg lucideTrash2 size="14"></svg> Delete area
+                  </button>
+                </div>
+              }
+            </article>
+          } @empty {
+            <p class="empty-enums">No areas defined.</p>
           }
         </div>
       </section>

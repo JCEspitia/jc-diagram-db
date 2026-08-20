@@ -9,6 +9,14 @@
   (wheel)="zoom($event)"
 >
   <div class="world" [style.transform]="transform()">
+    @for (entry of areaEntries(); track entry[0]) {
+      <app-diagram-area
+        [areaId]="entry[0]"
+        [area]="areaPosition(entry[0], entry[1])"
+        (moveStarted)="startAreaMove($event)"
+        (resizeStarted)="startAreaResize($event)"
+      />
+    }
     <svg
       class="relationships"
       [class.editing]="selectedRelationshipId()"

@@ -29,6 +29,7 @@ import {
 import { DiagramOperation } from '../../../core/diagram/operations/diagram.operations';
 import {
   DatabaseSchema,
+  DiagramAreaLayout,
   DiagramLayout,
   RelationshipLayout,
   RelationshipSchema,
@@ -36,6 +37,7 @@ import {
   ViewportState,
 } from '../../../core/schema';
 import { TableNode } from '../table-node/table-node';
+import { DiagramArea } from '../diagram-area/diagram-area';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import {
   LucideArrowLeftFromLine,
@@ -83,6 +85,7 @@ const ENDPOINT_LANE_DISTANCE = 44;
   selector: 'app-diagram-canvas',
   imports: [
     TableNode,
+    DiagramArea,
     LucideArrowLeftFromLine,
     LucideArrowRightFromLine,
     LucideRotateCcw,
@@ -148,8 +151,30 @@ export class DiagramCanvas {
         orientation: 'horizontal' | 'vertical';
         points: Point[];
       }
+    | {
+        kind: 'area';
+        pointerId: number;
+        areaId: string;
+        startX: number;
+        startY: number;
+        from: DiagramAreaLayout;
+        tables: { tableId: string; from: TableLayout }[];
+      }
+    | {
+        kind: 'area-resize';
+        pointerId: number;
+        areaId: string;
+        startX: number;
+        startY: number;
+        from: DiagramAreaLayout;
+      }
     | undefined;
   private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
+  protected readonly areaPreview = signal<{
+    areaId: string;
+    area: DiagramAreaLayout;
+    tables: Record<string, TableLayout>;
+  } | null>(null);
   private readonly viewportPreview = signal<ViewportState | null>(null);
   protected readonly relationshipTarget = signal<RelationshipEndpoint | null>(null);
   private readonly temporaryRelationship = signal<{
@@ -177,7 +202,6 @@ export class DiagramCanvas {
 
   protected readonly edges = computed<RenderedRelationship[]>(() =>
     this.schema().relationships.flatMap((relationship, relationshipIndex) => {
-      const preview = this.tablePreview();
       const sourceTable = this.schema().tables.find(({ id }) => id === relationship.sourceTableId);
       const targetTable = this.schema().tables.find(({ id }) => id === relationship.targetTableId);
       const sourceIndex =
@@ -185,14 +209,8 @@ export class DiagramCanvas {
       const targetIndex =
         targetTable?.columns.findIndex(({ id }) => id === relationship.targetColumnId) ?? -1;
       if (!sourceTable || !targetTable || sourceIndex < 0 || targetIndex < 0) return [];
-      const sourceLayout =
-        preview?.tableId === sourceTable.id
-          ? preview.layout
-          : tableLayout(this.layout(), sourceTable.id);
-      const targetLayout =
-        preview?.tableId === targetTable.id
-          ? preview.layout
-          : tableLayout(this.layout(), targetTable.id);
+      const sourceLayout = this.tablePosition(sourceTable.id);
+      const targetLayout = this.tablePosition(targetTable.id);
       const sourceOnLeft = sourceLayout.x > targetLayout.x;
       const routeLayout = this.layout().relationships?.[relationship.id];
       const sourceSide = routeLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right');
@@ -223,8 +241,7 @@ export class DiagramCanvas {
       const obstacles = this.schema()
         .tables.filter(({ id }) => id !== sourceTable.id && id !== targetTable.id)
         .map((table) => {
-          const position =
-            preview?.tableId === table.id ? preview.layout : tableLayout(this.layout(), table.id);
+          const position = this.tablePosition(table.id);
           return {
             left: position.x,
             top: position.y,
@@ -350,8 +367,52 @@ export class DiagramCanvas {
   });
 
   protected tablePosition(tableId: string) {
+    const areaTable = this.areaPreview()?.tables[tableId];
+    if (areaTable) return areaTable;
     const preview = this.tablePreview();
     return preview?.tableId === tableId ? preview.layout : tableLayout(this.layout(), tableId);
+  }
+
+  protected areaPosition(areaId: string, area: DiagramAreaLayout): DiagramAreaLayout {
+    const preview = this.areaPreview();
+    return preview?.areaId === areaId ? preview.area : area;
+  }
+
+  protected areaEntries(): [string, DiagramAreaLayout][] {
+    return Object.entries(this.layout().areas ?? {});
+  }
+
+  protected startAreaMove({ areaId, event }: { areaId: string; event: PointerEvent }): void {
+    const from = this.layout().areas?.[areaId];
+    if (!from) return;
+    const tables = this.tablesInArea(from).map((tableId) => ({
+      tableId,
+      from: tableLayout(this.layout(), tableId),
+    }));
+    this.interaction = {
+      kind: 'area',
+      pointerId: event.pointerId,
+      areaId,
+      startX: event.clientX,
+      startY: event.clientY,
+      from,
+      tables,
+    };
+    (event.target as Element).setPointerCapture(event.pointerId);
+  }
+
+  protected startAreaResize({ areaId, event }: { areaId: string; event: PointerEvent }): void {
+    const from = this.layout().areas?.[areaId];
+    if (!from) return;
+    this.interaction = {
+      kind: 'area-resize',
+      pointerId: event.pointerId,
+      areaId,
+      startX: event.clientX,
+      startY: event.clientY,
+      from,
+    };
+    (event.target as Element).setPointerCapture(event.pointerId);
   }
 
   protected startTableDrag({ tableId, event }: { tableId: string; event: PointerEvent }): void {
@@ -369,7 +430,7 @@ export class DiagramCanvas {
 
   protected startPan(event: PointerEvent): void {
     if (event.button !== 0 && event.button !== 1) return;
-    if ((event.target as Element).closest('app-table-node')) return;
+    if ((event.target as Element).closest('app-table-node, app-diagram-area')) return;
     event.preventDefault();
     if (event.button === 0) this.selectionCleared.emit();
     this.interaction = {
@@ -466,6 +527,41 @@ export class DiagramCanvas {
         relationshipId: interaction.relationshipId,
         layout: { ...interaction.from, waypoints: points.slice(1, -1) },
       });
+    } else if (interaction.kind === 'area') {
+      const zoom = this.layout().viewport.zoom;
+      const deltaX = (event.clientX - interaction.startX) / zoom;
+      const deltaY = (event.clientY - interaction.startY) / zoom;
+      this.areaPreview.set({
+        areaId: interaction.areaId,
+        area: {
+          ...interaction.from,
+          x: interaction.from.x + deltaX,
+          y: interaction.from.y + deltaY,
+        },
+        tables: Object.fromEntries(
+          interaction.tables.map(({ tableId, from }) => [
+            tableId,
+            { ...from, x: from.x + deltaX, y: from.y + deltaY },
+          ]),
+        ),
+      });
+    } else if (interaction.kind === 'area-resize') {
+      const zoom = this.layout().viewport.zoom;
+      this.areaPreview.set({
+        areaId: interaction.areaId,
+        area: {
+          ...interaction.from,
+          width: Math.max(
+            240,
+            interaction.from.width + (event.clientX - interaction.startX) / zoom,
+          ),
+          height: Math.max(
+            160,
+            interaction.from.height + (event.clientY - interaction.startY) / zoom,
+          ),
+        },
+        tables: {},
+      });
     }
   }
 
@@ -504,7 +600,7 @@ export class DiagramCanvas {
         });
       }
       this.clearTemporaryRelationship();
-    } else {
+    } else if (interaction.kind === 'segment') {
       const preview = this.routePreview();
       if (preview) {
         const normalized = normalizeOrthogonalPolyline([
@@ -520,6 +616,31 @@ export class DiagramCanvas {
         });
       }
       this.routePreview.set(null);
+    } else if (interaction.kind === 'area') {
+      const preview = this.areaPreview();
+      if (preview)
+        this.diagramOperation.emit({
+          type: 'MOVE_AREA',
+          areaId: interaction.areaId,
+          from: interaction.from,
+          to: preview.area,
+          tables: interaction.tables.map(({ tableId, from }) => ({
+            tableId,
+            from,
+            to: preview.tables[tableId]!,
+          })),
+        });
+      this.areaPreview.set(null);
+    } else {
+      const preview = this.areaPreview();
+      if (preview)
+        this.diagramOperation.emit({
+          type: 'RESIZE_AREA',
+          areaId: interaction.areaId,
+          from: interaction.from,
+          to: preview.area,
+        });
+      this.areaPreview.set(null);
     }
     this.interaction = undefined;
   }
@@ -529,6 +650,7 @@ export class DiagramCanvas {
     this.tablePreview.set(null);
     this.viewportPreview.set(null);
     this.routePreview.set(null);
+    this.areaPreview.set(null);
     this.clearTemporaryRelationship();
     this.interaction = undefined;
   }
@@ -738,6 +860,47 @@ export class DiagramCanvas {
       y: element.clientHeight / 2 - (position.y + height / 2) * from.zoom,
     };
     this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from, to });
+  }
+
+  focusArea(areaId: string): void {
+    const area = this.layout().areas?.[areaId];
+    if (!area) return;
+    const element = this.viewportElement().nativeElement;
+    const from = this.layout().viewport;
+    const zoom = Math.min(
+      from.zoom,
+      1,
+      (element.clientWidth - 80) / area.width,
+      (element.clientHeight - 80) / area.height,
+    );
+    const to: ViewportState = {
+      x: element.clientWidth / 2 - (area.x + area.width / 2) * zoom,
+      y: element.clientHeight / 2 - (area.y + area.height / 2) * zoom,
+      zoom,
+    };
+    this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from, to });
+  }
+
+  tableIdsInArea(areaId: string): string[] {
+    const area = this.layout().areas?.[areaId];
+    return area ? this.tablesInArea(area) : [];
+  }
+
+  private tablesInArea(area: DiagramAreaLayout): string[] {
+    return this.schema().tables.flatMap((table) => {
+      const position = tableLayout(this.layout(), table.id);
+      const width = position.width ?? DEFAULT_TABLE_METRICS.width;
+      const height =
+        DEFAULT_TABLE_METRICS.headerHeight + table.columns.length * DEFAULT_TABLE_METRICS.rowHeight;
+      const centerX = position.x + width / 2;
+      const centerY = position.y + height / 2;
+      return centerX >= area.x &&
+        centerX <= area.x + area.width &&
+        centerY >= area.y &&
+        centerY <= area.y + area.height
+        ? [table.id]
+        : [];
+    });
   }
 
   private endpointAt(

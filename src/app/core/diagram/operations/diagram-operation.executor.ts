@@ -22,5 +22,24 @@ export function executeDiagramOperation(
           [operation.relationshipId]: operation.to,
         },
       };
+    case 'ADD_AREA':
+      return { ...layout, areas: { ...layout.areas, [operation.areaId]: operation.area } };
+    case 'UPDATE_AREA':
+    case 'RESIZE_AREA':
+      return { ...layout, areas: { ...layout.areas, [operation.areaId]: operation.to } };
+    case 'MOVE_AREA':
+      return {
+        ...layout,
+        areas: { ...layout.areas, [operation.areaId]: operation.to },
+        tables: {
+          ...layout.tables,
+          ...Object.fromEntries(operation.tables.map(({ tableId, to }) => [tableId, to])),
+        },
+      };
+    case 'DELETE_AREA': {
+      const areas = { ...layout.areas };
+      delete areas[operation.areaId];
+      return { ...layout, areas };
+    }
   }
 }

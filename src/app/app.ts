@@ -84,10 +84,11 @@ export class App {
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
-  protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums'>('dbml');
+  protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums' | 'areas'>('dbml');
   protected readonly tableFilter = signal('');
   protected readonly expandedTableIds = signal<Set<string>>(new Set());
   protected readonly expandedEnumId = signal<string | null>(null);
+  protected readonly expandedAreaId = signal<string | null>(null);
   protected readonly tableMenuId = signal<string | null>(null);
   protected readonly columnMenuId = signal<string | null>(null);
   protected readonly editingTableId = signal<string | null>(null);
@@ -128,6 +129,30 @@ export class App {
 
   protected createManagedEnum(): void {
     this.expandedEnumId.set(this.store.createEnum());
+  }
+
+  protected createManagedArea(): void {
+    const areaId = this.store.createArea();
+    this.expandedAreaId.set(areaId);
+    requestAnimationFrame(() => this.canvas()?.focusArea(areaId));
+  }
+
+  protected areaEntries() {
+    return Object.entries(this.store.layout().areas ?? {});
+  }
+
+  protected tablesForArea(areaId: string): TableSchema[] {
+    const ids = new Set(this.canvas()?.tableIdsInArea(areaId) ?? []);
+    return this.store.schema().tables.filter(({ id }) => ids.has(id));
+  }
+
+  protected updateAreaName(areaId: string, event: Event): void {
+    const name = inputValue(event).trim();
+    if (name) this.store.updateArea(areaId, { name });
+  }
+
+  protected focusArea(areaId: string): void {
+    requestAnimationFrame(() => this.canvas()?.focusArea(areaId));
   }
 
   protected renameEnum(enumId: string, event: Event): void {

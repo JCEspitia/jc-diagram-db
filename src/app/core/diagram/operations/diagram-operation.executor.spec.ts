@@ -38,4 +38,27 @@ describe('executeDiagramOperation', () => {
     expect(result.relationships?.['rel_1']).toEqual({ routeX: 320 });
     expect(result.tables).toBe(layout.tables);
   });
+
+  it('moves an area and its contained tables atomically', () => {
+    const area = { name: 'Core', color: '#6d8cff', x: 0, y: 0, width: 400, height: 300 };
+    const result = executeDiagramOperation(
+      { ...layout, areas: { area_core: area } },
+      {
+        type: 'MOVE_AREA',
+        areaId: 'area_core',
+        from: area,
+        to: { ...area, x: 100, y: 80 },
+        tables: [
+          {
+            tableId: 'tbl_users',
+            from: { x: 10, y: 20 },
+            to: { x: 110, y: 100 },
+          },
+        ],
+      },
+    );
+
+    expect(result.areas?.['area_core']).toMatchObject({ x: 100, y: 80 });
+    expect(result.tables['tbl_users']).toEqual({ x: 110, y: 100 });
+  });
 });

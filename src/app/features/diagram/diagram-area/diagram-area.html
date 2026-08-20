@@ -1,0 +1,19 @@
+<section
+  class="area"
+  [style.left.px]="area().x"
+  [style.top.px]="area().y"
+  [style.width.px]="area().width"
+  [style.height.px]="area().height"
+  [style.--area-color]="area().color"
+>
+  <header (pointerdown)="startMove($event)">
+    <span></span>
+    <strong>{{ area().name }}</strong>
+  </header>
+  <button
+    type="button"
+    class="resize-handle"
+    aria-label="Resize area"
+    (pointerdown)="startResize($event)"
+  ></button>
+</section>

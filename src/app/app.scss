@@ -1459,6 +1459,47 @@ main {
 .workspace.show-enums .tables-only {
   display: none;
 }
+.areas-manager {
+  display: none;
+  margin: 4px 8px 12px;
+  border-top: 1px solid #343d47;
+}
+.workspace.show-areas .areas-manager {
+  display: block;
+}
+.workspace.show-areas .tables-only {
+  display: none;
+}
+.area-list-header {
+  border-left: 4px solid var(--area-color);
+  padding-left: 5px;
+}
+.area-tables {
+  display: grid;
+  gap: 4px;
+}
+.area-tables button {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  background: #20272f;
+  color: #cfd6dc;
+  font-size: 10px;
+  cursor: pointer;
+}
+.area-tables button:hover {
+  background: #2c3640;
+  color: #ffffff;
+}
+.area-tables small {
+  padding: 5px 2px;
+  color: #77838e;
+  font-size: 9px;
+}
 .enums-heading {
   height: 42px;
   display: grid;

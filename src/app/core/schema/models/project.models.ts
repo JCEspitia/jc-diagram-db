@@ -3,7 +3,17 @@ import { DatabaseSchema, EntityId } from './schema.models';
 export interface DiagramLayout {
   tables: Record<EntityId, TableLayout>;
   relationships?: Record<EntityId, RelationshipLayout>;
+  areas?: Record<EntityId, DiagramAreaLayout>;
   viewport: ViewportState;
+}
+
+export interface DiagramAreaLayout {
+  name: string;
+  color: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface RelationshipLayout {
