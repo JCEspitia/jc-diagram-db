@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">JC Diagram DB</title>
+  <desc id="description">A database connected to diagram nodes</desc>
+  <defs>
+    <linearGradient id="background" x1="64" y1="40" x2="448" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172554"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="116" y1="118" x2="411" y2="393" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset=".52" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#background)"/>
+  <path d="M116 157c0-31 49-57 110-57s110 26 110 57v194c0 32-49 58-110 58s-110-26-110-58V157Z" fill="#0f172a" stroke="url(#accent)" stroke-width="22"/>
+  <ellipse cx="226" cy="157" rx="110" ry="57" fill="#172554" stroke="url(#accent)" stroke-width="22"/>
+  <path d="M116 253c0 32 49 58 110 58s110-26 110-58M116 350c0 32 49 58 110 58s110-26 110-58" fill="none" stroke="url(#accent)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M336 157h52v194h-52M388 254h35" fill="none" stroke="#a5b4fc" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="408" cy="157" r="25" fill="#38bdf8" stroke="#e0f2fe" stroke-width="10"/>
+  <circle cx="443" cy="254" r="25" fill="#6366f1" stroke="#e0e7ff" stroke-width="10"/>
+  <circle cx="408" cy="351" r="25" fill="#8b5cf6" stroke="#ede9fe" stroke-width="10"/>
+</svg>

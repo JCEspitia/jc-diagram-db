@@ -20,9 +20,6 @@
   background: #1d2229;
   color: #f5f6f7;
 }
-.brand-mark {
-  background: #1677e8;
-}
 .brand > span:last-child span {
   color: #6cb5ff;
 }
@@ -164,13 +161,9 @@ button {
   color: #8b7cf6;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
   width: 27px;
   height: 27px;
   border-radius: 7px;
-  background: #7868e8;
-  color: white;
 }
 .divider {
   width: 1px;

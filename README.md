@@ -1,124 +1,99 @@
-# DiagramDB
+<p align="center">
+  <img src="public/icons/jc-diagram-db.svg" width="88" alt="Logo de JC Diagram DB" />
+</p>
 
-Aplicación web para diseñar esquemas de bases de datos relacionales mediante DBML y un
-canvas visual. Funciona como SPA local, sin backend.
+<h1 align="center">JC Diagram DB</h1>
 
-El núcleo sigue un flujo deliberadamente desacoplado:
+<p align="center">
+  Diseña, documenta y comparte esquemas de bases de datos desde el navegador.
+</p>
 
-```text
-DBML ⇄ Canonical Schema Model ⇄ Canvas
+<p align="center">
+  <a href="https://jcespitia.github.io/jc-diagram-db/"><strong>Abrir JC Diagram DB</strong></a>
+  ·
+  <a href="https://github.com/JCEspitia/jc-diagram-db/issues">Reportar un problema</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/JCEspitia/jc-diagram-db/actions/workflows/pages.yml">
+    <img src="https://github.com/JCEspitia/jc-diagram-db/actions/workflows/pages.yml/badge.svg" alt="Estado del despliegue" />
+  </a>
+</p>
+
+JC Diagram DB es un editor visual de esquemas relacionales compatible con DBML. Puedes trabajar
+mediante código o directamente sobre el diagrama y mantener ambas representaciones sincronizadas.
+No requiere cuenta, servidor ni instalación obligatoria.
+
+## Funciones principales
+
+- Editor DBML con resaltado, autocompletado, validación y sincronización visual.
+- Creación y edición de tablas, columnas, índices, enums y relaciones.
+- Relaciones con cardinalidad, acciones referenciales y rutas ajustables.
+- Áreas para organizar grupos de tablas, asignar colores y enfocar secciones del modelo.
+- Comentarios, valores por defecto, checks, claves e índices compuestos.
+- Varios niveles de detalle y algoritmos de distribución automática.
+- Historial de cambios con undo y redo.
+- Exportación del diagrama completo o por áreas a PNG, SVG y PDF.
+- Importación y exportación de archivos `.dbml` y proyectos `.diagramdb`.
+- Proyectos guardados automáticamente en el navegador.
+- Temas claro y oscuro.
+- Instalación como PWA y funcionamiento sin conexión después de la primera carga.
+
+## Empezar a usarlo
+
+Abre [JC Diagram DB](https://jcespitia.github.io/jc-diagram-db/) y crea un proyecto. Puedes comenzar
+agregando tablas desde la interfaz o escribiendo DBML:
+
+```dbml
+Table users {
+  id integer [primary key, increment]
+  email varchar [not null, unique]
+  created_at timestamp [default: `now()`]
+}
+
+Table posts {
+  id integer [primary key, increment]
+  author_id integer [not null]
+  title varchar [not null]
+}
+
+Ref: posts.author_id > users.id
 ```
 
-El modelo canónico es la fuente de verdad. El texto DBML, el layout y los componentes
-visuales son representaciones independientes.
+Los cambios realizados en el editor actualizan el canvas. Las modificaciones visuales también
+regeneran el DBML sin perder los comentarios existentes.
 
-## Estado actual
+## Instalar la aplicación
 
-- Workspace Angular 21 con TypeScript estricto y Vitest.
-- Modelo canónico, layout y formato serializable de proyecto.
-- Motor inmutable de operaciones sobre tablas, columnas y relaciones.
-- Validación de IDs, nombres y extremos de relaciones.
-- Parser y generador DBML desacoplados de Angular.
-- Reconciliación de esquemas para conservar IDs internos tras editar DBML.
-- Canvas estático con tablas HTML y relaciones SVG Bézier.
-- Geometría y transformaciones de coordenadas independientes de los componentes.
-- Store principal con Angular Signals y operaciones de layout inmutables.
-- Selección, drag de tablas, pan y zoom centrado en el cursor.
-- Monaco Editor local con resaltado DBML, diagnostics y parseo con debounce.
-- Tema Monaco propio, compacto y alineado visualmente con DiagramDB.
-- CSS base de Monaco cargado globalmente para posicionar correctamente su área de entrada.
-- Autocompletado DBML, snippets, autoindent y cierre automático de pares.
-- Sincronización DBML hacia el modelo conservando el último esquema válido ante errores.
-- Referencias inline (`ref: > table.column`) e índices compuestos `indexes { ... }`.
-- Creación y eliminación visual de tablas y columnas desde toolbar e inspector.
-- Edición visual de nombres, tipos, PK, nulabilidad y unicidad con regeneración DBML.
-- Undo/redo de operaciones significativas, shortcuts y fit-to-screen real.
-- Selección y eliminación contextual de tablas, columnas y relaciones.
-- Auto layout en cuadrícula, panel DBML colapsable e IDs de índices/enums reconciliados.
-- Creación visual de relaciones con handles, curva temporal y destino resaltado.
-- Inspector de relaciones con cardinalidad y acciones `ON DELETE` / `ON UPDATE`.
-- Panel DBML redimensionable y Monaco con temas claro/oscuro.
-- Actualizaciones externas de Monaco conservando su pila de undo.
-- Rutas ortogonales editables con punto de desvío y puertos laterales configurables.
-- Cardinalidades visibles, badges `PK/FK/NN/UQ/AI` y flujo animado al seleccionar tablas.
-- Routing automático con carriles paralelos y evasión básica de tablas intermedias.
-- Conexiones suavizadas con controles por tramo que solo se desplazan horizontal o verticalmente.
-- Controles discretos sobre tramos internos: todos los puntos de un mismo tramo desplazan la línea completa.
-- Separación mínima entre controles y esquinas para evitar interacciones demasiado estrechas.
-- Acción `Reset line` para descartar ajustes manuales y calcular nuevamente la mejor ruta automática.
-- Edición temporal sobre las tablas para acceder a tramos ocultos y `Reset line` visible solo en rutas desviadas.
-- Foco por columna: al pasar el cursor se resaltan sus relaciones y se anima su dirección.
-- Auto layout `Left to right`, `Pipeline`, `Snowflake` y `Compact`.
-- Sidebar de gestión para tablas, columnas, índices, enums y áreas.
-- Comentarios, valores por defecto, checks, índices compuestos y colores de tabla.
-- Áreas persistidas como `tablegroup`, con asignación explícita y ajuste automático.
-- Niveles de detalle para mostrar todas las columnas, solo llaves o solo tablas.
-- Exportación a PNG, SVG y PDF, completa o por área; el PDF incluye documentación.
-- Tooltips enriquecidos e iconos para metadatos de tablas y columnas.
-- Compatibilidad con contextos HTTP que no exponen `crypto.randomUUID`.
-- Persistencia automática del proyecto y restauración de la última sesión mediante IndexedDB.
-- Navegador de proyectos locales con creación, apertura, renombrado, duplicado y eliminación.
-- Importación y exportación de `.dbml` y del formato completo `.diagramdb`.
-- PWA instalable con caché offline del editor, los recursos y el shell de la aplicación.
-- Indicador de conexión y activación controlada de nuevas versiones disponibles.
+JC Diagram DB es una Progressive Web App. En un navegador compatible:
 
-## Pendiente para completar el MVP
+1. Abre la aplicación.
+2. Busca **Instalar JC Diagram DB** en la barra de direcciones o en el menú del navegador.
+3. Confirma la instalación.
 
-- Cobertura end-to-end para las interacciones principales del canvas.
+La aplicación aparecerá como un programa independiente y podrá abrirse sin conexión. La primera
+visita y las actualizaciones sí requieren conexión a Internet.
 
-## Rendimiento y dependencias opcionales
+## Privacidad y almacenamiento
 
-Monaco se carga bajo demanda, pero su hoja de estilos base debe formar parte de los estilos
-iniciales para que el editor se renderice correctamente. El exportador también se carga bajo
-demanda; `jsPDF`, `canvg` y `html2canvas` solo se descargan al solicitar una exportación PDF.
-Las dependencias CommonJS transitivas de ese flujo están declaradas explícitamente en
-`angular.json`.
+JC Diagram DB no tiene backend y no envía tus esquemas a un servidor. Los proyectos se guardan en
+IndexedDB dentro del perfil del navegador que estés utilizando.
 
-El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
+Ten presente que limpiar los datos del sitio, usar navegación privada o cambiar de navegador
+puede hacer que pierdas el almacenamiento local. Exporta periódicamente los proyectos importantes
+como `.diagramdb` para conservar una copia portable con el esquema y el layout.
 
-## Desarrollo local
+## Formatos de exportación
 
-```bash
-npm install
-npm start
-```
+- `.diagramdb`: copia completa y editable del proyecto.
+- `.dbml`: esquema compatible con otros editores DBML.
+- `.png` y `.svg`: imagen del diagrama completo o de un área.
+- `.pdf`: diagrama acompañado de enums, comentarios y otra documentación del modelo.
 
-La aplicación estará disponible en `http://localhost:4200/`.
+## Soporte y contribuciones
 
-El service worker está deshabilitado durante `ng serve` para evitar caché obsoleta. Para probar
-la instalación y el funcionamiento offline debe servirse el contenido de `dist/diagramdb/browser`
-después de ejecutar un build de producción, usando `localhost` o HTTPS.
+Si encuentras un error o quieres proponer una mejora, abre un
+[issue](https://github.com/JCEspitia/jc-diagram-db/issues). Para ejecutar el proyecto, entender su
+arquitectura o preparar un cambio, consulta la [guía de desarrollo](docs/development.md).
 
-## Verificación
-
-```bash
-npm test -- --watch=false
-npm run build
-```
-
-## Despliegue web
-
-El workflow [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) ejecuta las pruebas,
-compila la aplicación con el prefijo `/jc-diagram-db/` y la publica en GitHub Pages después de
-cada push a `master`. En GitHub se debe seleccionar una sola vez **Settings → Pages → Source →
-GitHub Actions**.
-
-La URL esperada es:
-
-```text
-https://jcespitia.github.io/jc-diagram-db/
-```
-
-También puede iniciarse manualmente desde **Actions → Deploy web app → Run workflow**.
-
-## Estructura del core
-
-```text
-src/app/core/
-├── dbml/                 Parser, generador y contratos DBML
-└── schema/
-    ├── models/           Modelo canónico y modelo de proyecto
-    ├── operations/       Operaciones inmutables
-    ├── reconciliation/   Conservación de identidades
-    └── validation/       Reglas de integridad del dominio
-```
+El alcance técnico y el roadmap detallado están disponibles en [PROJECT.md](PROJECT.md).

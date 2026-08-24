@@ -1,6 +1,6 @@
 {
-  "name": "DiagramDB",
-  "short_name": "DiagramDB",
+  "name": "JC Diagram DB",
+  "short_name": "JC Diagram DB",
   "description": "Design relational database schemas visually and with DBML.",
   "start_url": "./",
   "scope": "./",
@@ -11,13 +11,13 @@
   "categories": ["developer", "productivity", "utilities"],
   "icons": [
     {
-      "src": "icons/diagramdb.svg",
+      "src": "icons/jc-diagram-db.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "icons/diagramdb.svg",
+      "src": "icons/jc-diagram-db.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

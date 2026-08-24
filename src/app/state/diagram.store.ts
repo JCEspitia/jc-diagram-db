@@ -177,10 +177,10 @@ export class DiagramStore {
     try {
       candidate = JSON.parse(source);
     } catch {
-      throw new Error('The DiagramDB file is not valid JSON.');
+      throw new Error('The JC Diagram DB file is not valid JSON.');
     }
     if (!isDiagramProject(candidate)) {
-      throw new Error('The file is not a compatible DiagramDB project.');
+      throw new Error('The file is not a compatible JC Diagram DB project.');
     }
     const errors = validateSchema(candidate.schema);
     if (errors.length) throw new Error(errors.map(({ message }) => message).join('\n'));
