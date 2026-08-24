@@ -7,6 +7,7 @@ import {
   TableSchema,
 } from '../schema';
 import { DEFAULT_TABLE_COLOR } from '../../shared/table-colors';
+import { saveBlob } from '../import-export/save-file';
 
 export type DiagramExportFormat = 'svg' | 'png' | 'pdf';
 
@@ -36,12 +37,12 @@ export async function exportDiagram(
     `${model.projectName}${model.areaId ? `-${areaName(model, model.areaId)}` : ''}`,
   );
   if (format === 'svg') {
-    download(
+    await saveBlob(
       new Blob([renderDiagramSvg(model).source], { type: 'image/svg+xml;charset=utf-8' }),
       `${filename}.svg`,
     );
   } else if (format === 'png') {
-    download(await svgToPng(renderDiagramSvg(model)), `${filename}.png`);
+    await saveBlob(await svgToPng(renderDiagramSvg(model)), `${filename}.png`);
   } else {
     await exportPdf(model, filename);
   }
@@ -206,7 +207,7 @@ async function exportPdf(model: ExportModel, filename: string): Promise<void> {
     }
   }
   addDocumentationPages(pdf, model);
-  pdf.save(`${filename}.pdf`);
+  await saveBlob(pdf.output('blob'), `${filename}.pdf`);
 }
 
 async function addDiagramPage(pdf: JsPDF, svg: RenderedSvg, title: string): Promise<void> {
@@ -437,15 +438,6 @@ async function svgToPng(svg: RenderedSvg, scale = 2): Promise<Blob> {
   } finally {
     URL.revokeObjectURL(url);
   }
-}
-
-function download(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url));
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {

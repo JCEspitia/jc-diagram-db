@@ -1,4 +1,5 @@
 import { DiagramProject } from '../schema';
+import { saveBlob } from './save-file';
 
 export type ProjectFileFormat = 'dbml' | 'diagramdb';
 
@@ -15,14 +16,15 @@ export function projectFilename(project: DiagramProject, format: ProjectFileForm
   return `${base}.${format}`;
 }
 
-export function downloadProject(project: DiagramProject, format: ProjectFileFormat): void {
+export async function downloadProject(
+  project: DiagramProject,
+  format: ProjectFileFormat,
+): Promise<void> {
   const mime = format === 'dbml' ? 'text/plain;charset=utf-8' : 'application/json;charset=utf-8';
-  const url = URL.createObjectURL(new Blob([serializeProject(project, format)], { type: mime }));
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = projectFilename(project, format);
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url));
+  await saveBlob(
+    new Blob([serializeProject(project, format)], { type: mime }),
+    projectFilename(project, format),
+  );
 }
 
 export function projectNameFromFilename(filename: string): string {

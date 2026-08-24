@@ -107,7 +107,7 @@ export class ProjectBrowser {
 
   protected async export(projectId: string, format: ProjectFileFormat): Promise<void> {
     const project = await this.store.loadProject(projectId);
-    if (project) downloadProject(project, format);
+    if (project) await downloadProject(project, format);
   }
 
   private async importFile(file: File): Promise<void> {
