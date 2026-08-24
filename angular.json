@@ -101,6 +101,23 @@
                   "maximumError": "35kB"
                 }
               ]
+            },
+            "pages": {
+              "baseHref": "/jc-diagram-db/",
+              "serviceWorker": "ngsw-config.json",
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "935kB",
+                  "maximumError": "985kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "30kB",
+                  "maximumError": "35kB"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"

@@ -98,6 +98,21 @@ npm run build
 npm run build:desktop
 ```
 
+## Despliegue web
+
+El workflow [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) ejecuta las pruebas,
+compila la aplicación con el prefijo `/jc-diagram-db/` y la publica en GitHub Pages después de
+cada push a `master`. En GitHub se debe seleccionar una sola vez **Settings → Pages → Source →
+GitHub Actions**.
+
+La URL esperada es:
+
+```text
+https://jcespitia.github.io/jc-diagram-db/
+```
+
+También puede iniciarse manualmente desde **Actions → Deploy web app → Run workflow**.
+
 ## Aplicación de escritorio
 
 El frontend Angular también puede ejecutarse dentro de Tauri sin depender de un servidor web.
@@ -126,6 +141,19 @@ Generar los instaladores:
 ```bash
 npm run desktop:build
 ```
+
+GitHub también puede generar y publicar ambos instaladores automáticamente mediante
+`.github/workflows/release-desktop.yml`. Antes de crear una versión, actualiza el mismo número en
+`package.json`, `src-tauri/tauri.conf.json` y `src-tauri/Cargo.toml`, haz commit y crea la etiqueta:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+La etiqueta dispara una compilación en Windows y crea un GitHub Release con el `.exe` y el
+`.msi`. Los instaladores aún no están firmados digitalmente, por lo que SmartScreen puede mostrar
+una advertencia.
 
 Los instaladores quedan bajo `src-tauri/target/release/bundle/nsis` y
 `src-tauri/target/release/bundle/msi`. La configuración incluye el instalador offline de

@@ -1,11 +1,12 @@
 {
   "name": "diagramdb",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "start:desktop": "ng serve --host 127.0.0.1 --port 1420",
     "build": "ng build",
+    "build:pages": "ng build --configuration pages",
     "build:desktop": "ng build --configuration desktop",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
