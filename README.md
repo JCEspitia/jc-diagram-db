@@ -40,6 +40,7 @@ No requiere cuenta, servidor ni instalación obligatoria.
 - Importación y exportación de archivos `.dbml` y proyectos `.diagramdb`.
 - Proyectos guardados automáticamente en el navegador.
 - Temas claro y oscuro.
+- Tutorial guiado para conocer las herramientas principales en la primera visita.
 - Instalación como PWA y funcionamiento sin conexión después de la primera carga.
 
 ## Empezar a usarlo

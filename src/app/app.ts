@@ -18,6 +18,7 @@ import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas'
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { ExportMenu } from './features/export/export-menu/export-menu';
 import { ProjectBrowser } from './features/projects/project-browser/project-browser';
+import { GuidedTour, shouldShowGuidedTour } from './features/tutorial/guided-tour/guided-tour';
 import { DiagramStore, supportsAutoIncrement } from './state/diagram.store';
 import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
@@ -26,6 +27,7 @@ import {
   LucideChevronRight,
   LucideCheck,
   LucideBraces,
+  LucideCircleHelp,
   LucideCode2,
   LucideEllipsis,
   LucideGripVertical,
@@ -58,9 +60,11 @@ import {
     DbmlEditor,
     ExportMenu,
     ProjectBrowser,
+    GuidedTour,
     LucideChevronRight,
     LucideCheck,
     LucideBraces,
+    LucideCircleHelp,
     LucideCode2,
     LucideEllipsis,
     LucideGripVertical,
@@ -98,6 +102,7 @@ export class App {
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
   protected readonly projectBrowserOpen = signal(false);
+  protected readonly tutorialOpen = signal(shouldShowGuidedTour());
   protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums' | 'areas'>('dbml');
   protected readonly tableFilter = signal('');
   protected readonly expandedTableIds = signal<Set<string>>(new Set());

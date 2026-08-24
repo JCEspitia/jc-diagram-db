@@ -1,0 +1,52 @@
+<div class="tour-layer" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+  <div class="tour-click-guard"></div>
+  @if (targetRect(); as rect) {
+    <div
+      class="tour-spotlight"
+      [style.left.px]="rect.left"
+      [style.top.px]="rect.top"
+      [style.width.px]="rect.width"
+      [style.height.px]="rect.height"
+    ></div>
+  }
+  <section
+    class="tour-card"
+    [style.left.px]="cardPosition().left"
+    [style.top.px]="cardPosition().top"
+  >
+    <header>
+      <span class="tour-icon"><svg lucideSparkles size="17"></svg></span>
+      <span class="tour-eyebrow">{{ steps[stepIndex()].eyebrow }}</span>
+      <button type="button" aria-label="Skip tutorial" (click)="finish()">
+        <svg lucideX size="17"></svg>
+      </button>
+    </header>
+
+    <div class="tour-content">
+      <h2 id="tour-title">{{ steps[stepIndex()].title }}</h2>
+      <p>{{ steps[stepIndex()].description }}</p>
+    </div>
+
+    <footer>
+      <div class="tour-progress" aria-label="Tutorial progress">
+        @for (step of steps; track step.title; let index = $index) {
+          <span [class.active]="index === stepIndex()"></span>
+        }
+        <small>{{ stepIndex() + 1 }} / {{ steps.length }}</small>
+      </div>
+      <div class="tour-actions">
+        @if (stepIndex() > 0) {
+          <button type="button" class="secondary" (click)="previous()">
+            <svg lucideChevronLeft size="15"></svg> Back
+          </button>
+        }
+        <button type="button" class="primary" (click)="next()">
+          {{ stepIndex() === steps.length - 1 ? 'Start exploring' : 'Next' }}
+          @if (stepIndex() < steps.length - 1) {
+            <svg lucideChevronRight size="15"></svg>
+          }
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

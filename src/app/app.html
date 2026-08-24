@@ -1,6 +1,6 @@
 <div class="shell" [class.dark-theme]="editorTheme() === 'dark'">
   <header class="topbar">
-    <a class="brand" href="#" aria-label="JC Diagram DB home"
+    <a class="brand" href="#" aria-label="JC Diagram DB home" data-tour="brand"
       ><img class="brand-mark" src="icons/jc-diagram-db.svg" alt="" /><span
         >JC Diagram <span>DB</span></span
       ></a
@@ -8,6 +8,7 @@
     <span class="divider"></span>
     <button
       class="project-name"
+      data-tour="projects"
       type="button"
       appTooltip="Open projects"
       (click)="projectBrowserOpen.set(true)"
@@ -47,6 +48,14 @@
     <nav aria-label="Project actions">
       <button
         type="button"
+        appTooltip="Open guided tutorial"
+        aria-label="Open guided tutorial"
+        (click)="tutorialOpen.set(true)"
+      >
+        <svg lucideCircleHelp size="16"></svg>
+      </button>
+      <button
+        type="button"
         appTooltip="Change theme"
         aria-label="Toggle workspace theme"
         (click)="editorTheme.update((theme) => (theme === 'dark' ? 'light' : 'dark'))"
@@ -75,6 +84,7 @@
         <svg lucideRedo2 size="16"></svg>
       </button>
       <app-export-menu
+        data-tour="export"
         [schema]="store.schema()"
         [layout]="store.layout()"
         [projectName]="store.project().name"
@@ -94,7 +104,7 @@
     [class.show-areas]="activeSidebar() === 'areas'"
     [style.--dbml-width.px]="dbmlPanelWidth()"
   >
-    <nav class="sidebar-rail" aria-label="Sidebar views">
+    <nav class="sidebar-rail" aria-label="Sidebar views" data-tour="sidebar">
       <button
         type="button"
         appTooltip="DBML editor"
@@ -132,7 +142,7 @@
         <svg lucideGrid2x2 size="18"></svg>
       </button>
     </nav>
-    <aside class="dbml-panel">
+    <aside class="dbml-panel" data-tour="dbml">
       <div class="panel-heading">
         <span>DBML</span>
         <button
@@ -168,7 +178,7 @@
       (pointerdown)="startPanelResize($event)"
     ></div>
     <main>
-      <div class="toolbar">
+      <div class="toolbar" data-tour="toolbar">
         @if (dbmlCollapsed()) {
           <button type="button" (click)="dbmlCollapsed.set(false)">Sidebar</button>
         }
@@ -263,6 +273,7 @@
         </button>
       </div>
       <app-diagram-canvas
+        data-tour="canvas"
         [schema]="store.schema()"
         [layout]="store.layout()"
         [selectedTableId]="store.selection()?.tableId"
@@ -852,4 +863,9 @@
     ><span>{{ store.schema().relationships.length }} relationships</span><span class="spacer"></span
     ><span>JC Diagram DB v0.1</span>
   </footer>
+  @if (tutorialOpen()) {
+    @defer (on immediate) {
+      <app-guided-tour (closed)="tutorialOpen.set(false)" />
+    }
+  }
 </div>
