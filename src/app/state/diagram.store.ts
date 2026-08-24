@@ -69,6 +69,9 @@ export class DiagramStore {
   readonly schema = computed(() => this.project().schema);
   readonly layout = computed(() => this.project().layout);
   readonly dbml = computed(() => this.project().dbml);
+  readonly dbmlWarnings = computed(() =>
+    this.dbmlErrors().length ? [] : collectDbmlWarnings(this.schema(), this.dbml()),
+  );
   readonly zoomPercent = computed(() => Math.round(this.layout().viewport.zoom * 100));
   readonly canUndo = computed(() => this.undoStack().length > 0);
   readonly canRedo = computed(() => this.redoStack().length > 0);
@@ -1141,6 +1144,35 @@ function tableVisualHeight(schema: DatabaseSchema, layout: DiagramLayout, tableI
             ),
         ).length;
   return DEFAULT_TABLE_METRICS.headerHeight + count * DEFAULT_TABLE_METRICS.rowHeight;
+}
+
+function collectDbmlWarnings(schema: DatabaseSchema, source: string): DbmlParseError[] {
+  const lines = source.split(/\r?\n/);
+  return schema.tables.flatMap((table) => {
+    const hasPrimaryKey =
+      table.columns.some(({ primaryKey }) => primaryKey) ||
+      table.indexes.some(({ primaryKey }) => primaryKey);
+    if (hasPrimaryKey) return [];
+
+    let declarationName = '';
+    const lineIndex = lines.findIndex((line) => {
+      const match = line.match(/^\s*Table\s+(?:"([^"]+)"|([^\s{]+))/i);
+      declarationName = match?.[1] ?? match?.[2] ?? '';
+      return (
+        declarationName.split('.').at(-1)?.replaceAll('"', '').toLocaleLowerCase() ===
+        table.name.toLocaleLowerCase()
+      );
+    });
+    const declarationLine = lineIndex >= 0 ? lines[lineIndex]! : '';
+    return [
+      {
+        message: `Table ${table.name} has no primary key`,
+        line: lineIndex >= 0 ? lineIndex + 1 : undefined,
+        column: lineIndex >= 0 ? declarationLine.indexOf(declarationName) + 1 : 1,
+        length: Math.max(1, declarationName.length),
+      },
+    ];
+  });
 }
 
 function createExampleProject(): DiagramProject {

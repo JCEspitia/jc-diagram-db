@@ -1,0 +1,29 @@
+<div class="editor-shell" [class.has-problems]="diagnostics().length">
+  <div #host class="editor-host" aria-label="DBML editor"></div>
+
+  @if (diagnostics().length) {
+    <section class="problems" aria-label="DBML problems">
+      <header>
+        <strong>Problems</strong>
+        @if (errors().length) {
+          <span class="error-count">{{ errors().length }} errors</span>
+        } @else if (warnings().length) {
+          <span class="warning-count">{{ warnings().length }} warnings</span>
+        }
+      </header>
+      <div class="problem-list">
+        @for (diagnostic of diagnostics(); track $index) {
+          <button
+            type="button"
+            [class.warning]="diagnostic.severity === 'warning'"
+            (click)="goToDiagnostic(diagnostic.line, diagnostic.column)"
+          >
+            <i></i>
+            <span>{{ diagnostic.message }}</span>
+            <small>Ln {{ diagnostic.line ?? 1 }}, Col {{ diagnostic.column ?? 1 }}</small>
+          </button>
+        }
+      </div>
+    </section>
+  }
+</div>

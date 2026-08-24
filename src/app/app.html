@@ -167,13 +167,18 @@
       <app-dbml-editor
         [value]="store.dbml()"
         [errors]="store.dbmlErrors()"
+        [warnings]="store.dbmlWarnings()"
+        [tables]="store.schema().tables"
         theme="dark"
         (valueChange)="store.setDbml($event)"
+        (tableNavigationRequested)="navigateFromDbml($event)"
       />
       <footer [class.invalid]="store.dbmlErrors().length > 0">
         <i></i>
         @if (store.dbmlErrors().length) {
           {{ store.dbmlErrors().length }} DBML error(s)
+        } @else if (store.dbmlWarnings().length) {
+          {{ store.dbmlWarnings().length }} DBML warning(s)
         } @else {
           Valid DBML
         }
@@ -292,7 +297,7 @@
         [selectedRelationshipId]="store.selection()?.relationshipId"
         [relationshipMode]="relationshipMode()"
         (diagramOperation)="store.applyDiagramOperation($event)"
-        (tableSelected)="store.selectTable($event.tableId, $event.additive)"
+        (tableSelected)="selectTableFromCanvas($event.tableId, $event.additive)"
         (tablesSelected)="store.selectTables($event.tableIds, $event.additive)"
         (tableEditRequested)="editManagedTable($event)"
         (tableColorChanged)="store.updateTableColor($event.tableId, $event.color)"

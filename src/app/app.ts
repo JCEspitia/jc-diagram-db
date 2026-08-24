@@ -102,6 +102,7 @@ export class App {
   protected readonly tableColors = TABLE_COLORS;
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
   private readonly canvas = viewChild(DiagramCanvas);
+  private readonly dbmlEditor = viewChild(DbmlEditor);
   protected readonly dbmlCollapsed = signal(false);
   protected readonly projectBrowserOpen = signal(false);
   protected readonly tutorialOpen = signal(shouldShowGuidedTour());
@@ -208,6 +209,16 @@ export class App {
     this.store.selectTable(tableId);
     this.tableMenuId.set(null);
     requestAnimationFrame(() => this.canvas()?.focusTable(tableId));
+  }
+
+  protected navigateFromDbml(tableId: string): void {
+    this.store.selectTable(tableId);
+    requestAnimationFrame(() => this.canvas()?.focusTable(tableId));
+  }
+
+  protected selectTableFromCanvas(tableId: string, additive: boolean): void {
+    this.store.selectTable(tableId, additive);
+    requestAnimationFrame(() => this.dbmlEditor()?.revealTable(tableId));
   }
 
   protected editManagedTable(tableId: string): void {

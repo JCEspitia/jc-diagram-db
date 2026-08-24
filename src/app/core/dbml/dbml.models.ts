@@ -17,4 +17,5 @@ export interface DbmlParseError {
   message: string;
   line?: number;
   column?: number;
+  length?: number;
 }

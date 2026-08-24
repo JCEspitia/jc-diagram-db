@@ -4,12 +4,14 @@ import {
   Component,
   ElementRef,
   OnDestroy,
+  computed,
   effect,
   input,
   output,
   viewChild,
 } from '@angular/core';
 import { DbmlParseError } from '../../../core/dbml';
+import { TableSchema } from '../../../core/schema';
 
 type MonacoApi = typeof import('monaco-editor-api');
 type MonacoEditor = import('monaco-editor').editor.IStandaloneCodeEditor;
@@ -17,22 +19,22 @@ type MonacoEditor = import('monaco-editor').editor.IStandaloneCodeEditor;
 @Component({
   selector: 'app-dbml-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: '<div #host class="editor-host" aria-label="DBML editor"></div>',
-  styles: `
-    :host,
-    .editor-host {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-height: 0;
-    }
-  `,
+  templateUrl: './dbml-editor.html',
+  styleUrl: './dbml-editor.scss',
 })
 export class DbmlEditor implements AfterViewInit, OnDestroy {
   readonly value = input.required<string>();
   readonly errors = input<DbmlParseError[]>([]);
+  readonly warnings = input<DbmlParseError[]>([]);
+  readonly tables = input<TableSchema[]>([]);
   readonly theme = input<'dark' | 'light'>('dark');
   readonly valueChange = output<string>();
+  readonly tableNavigationRequested = output<string>();
+  protected readonly diagnostics = computed(() =>
+    this.errors().length
+      ? this.errors().map((diagnostic) => ({ ...diagnostic, severity: 'error' as const }))
+      : this.warnings().map((diagnostic) => ({ ...diagnostic, severity: 'warning' as const })),
+  );
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   private monaco?: MonacoApi;
   private editor?: MonacoEditor;
@@ -42,7 +44,7 @@ export class DbmlEditor implements AfterViewInit, OnDestroy {
 
   constructor() {
     effect(() => this.syncValue(this.value()));
-    effect(() => this.syncMarkers(this.errors()));
+    effect(() => this.syncMarkers(this.errors(), this.warnings()));
     effect(() => this.syncTheme(this.theme()));
   }
 
@@ -98,7 +100,24 @@ export class DbmlEditor implements AfterViewInit, OnDestroy {
     editor.onDidChangeModelContent(() => {
       if (!this.applyingExternalValue) this.valueChange.emit(editor.getValue());
     });
-    this.syncMarkers(this.errors());
+    editor.onMouseDown((event) => {
+      if ((!event.event.ctrlKey && !event.event.metaKey) || !event.target.position) return;
+      const model = editor.getModel();
+      if (!model) return;
+      const line = model.getLineContent(event.target.position.lineNumber);
+      const declaration = line.match(/^\s*Table\s+(?:"([^"]+)"|([^\s{]+))/i);
+      const declaredName = (declaration?.[1] ?? declaration?.[2])?.split('.').at(-1);
+      const requestedName = declaredName ?? model.getWordAtPosition(event.target.position)?.word;
+      const table = requestedName
+        ? this.tables().find(
+            ({ name }) => name.toLocaleLowerCase() === requestedName.toLocaleLowerCase(),
+          )
+        : undefined;
+      if (!table) return;
+      event.event.preventDefault();
+      this.tableNavigationRequested.emit(table.id);
+    });
+    this.syncMarkers(this.errors(), this.warnings());
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.editor?.layout());
       this.resizeObserver.observe(this.host().nativeElement);
@@ -132,22 +151,70 @@ export class DbmlEditor implements AfterViewInit, OnDestroy {
     }
   }
 
-  private syncMarkers(errors: DbmlParseError[]): void {
+  protected goToDiagnostic(line = 1, column = 1): void {
+    if (!this.editor) return;
+    this.editor.revealPositionInCenter({ lineNumber: line, column });
+    this.editor.setPosition({ lineNumber: line, column });
+    this.editor.focus();
+  }
+
+  revealTable(tableId: string): void {
+    const table = this.tables().find(({ id }) => id === tableId);
+    const model = this.editor?.getModel();
+    if (!table || !model || !this.editor) return;
+    const declaration = findTableDeclaration(model.getValue(), table.name);
+    if (!declaration) return;
+    this.editor.revealLineInCenterIfOutsideViewport(declaration.line);
+    this.editor.setSelection({
+      startLineNumber: declaration.line,
+      endLineNumber: declaration.line,
+      startColumn: declaration.column,
+      endColumn: declaration.column + declaration.length,
+    });
+  }
+
+  private syncMarkers(errors: DbmlParseError[], warnings: DbmlParseError[]): void {
     const model = this.editor?.getModel();
     if (!model || !this.monaco) return;
     this.monaco.editor.setModelMarkers(
       model,
       'diagramdb',
-      errors.map((error) => ({
-        severity: this.monaco!.MarkerSeverity.Error,
-        message: error.message,
-        startLineNumber: error.line ?? 1,
-        startColumn: error.column ?? 1,
-        endLineNumber: error.line ?? 1,
-        endColumn: (error.column ?? 1) + 1,
+      [
+        ...errors.map((diagnostic) => ({
+          diagnostic,
+          severity: this.monaco!.MarkerSeverity.Error,
+        })),
+        ...(errors.length ? [] : warnings).map((diagnostic) => ({
+          diagnostic,
+          severity: this.monaco!.MarkerSeverity.Warning,
+        })),
+      ].map(({ diagnostic, severity }) => ({
+        severity,
+        message: diagnostic.message,
+        startLineNumber: diagnostic.line ?? 1,
+        startColumn: diagnostic.column ?? 1,
+        endLineNumber: diagnostic.line ?? 1,
+        endColumn: (diagnostic.column ?? 1) + (diagnostic.length ?? 1),
       })),
     );
   }
+}
+
+function findTableDeclaration(
+  source: string,
+  tableName: string,
+): { line: number; column: number; length: number } | undefined {
+  const lines = source.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]!;
+    const match = line.match(/^\s*Table\s+(?:"([^"]+)"|([^\s{]+))/i);
+    const rawName = match?.[1] ?? match?.[2];
+    if (!rawName) continue;
+    const declaredName = rawName.split('.').at(-1)?.replaceAll('"', '');
+    if (declaredName?.toLocaleLowerCase() !== tableName.toLocaleLowerCase()) continue;
+    return { line: index + 1, column: line.indexOf(rawName) + 1, length: rawName.length };
+  }
+  return undefined;
 }
 
 function configureMonacoWorkers(): void {
