@@ -9,8 +9,12 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
+      enabled: !isDevMode() && !isTauriRuntime(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
   ],
 };
+
+function isTauriRuntime(): boolean {
+  return '__TAURI_INTERNALS__' in globalThis;
+}

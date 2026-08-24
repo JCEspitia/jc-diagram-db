@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DiagramDB",
+  "version": "0.1.0",
+  "identifier": "com.diagramdb.desktop",
+  "build": {
+    "beforeDevCommand": "npm run start:desktop",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../dist/diagramdb/browser"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "DiagramDB",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": ["../public/favicon.ico"],
+    "shortDescription": "Visual DBML database diagram editor",
+    "longDescription": "Design relational database schemas visually and with DBML, completely offline.",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "silent": true
+      }
+    }
+  }
+}
