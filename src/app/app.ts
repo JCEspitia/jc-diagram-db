@@ -17,6 +17,7 @@ import { checkExpressionError } from './core/schema/validation/check-expression.
 import { DiagramCanvas } from './features/diagram/diagram-canvas/diagram-canvas';
 import { DbmlEditor } from './features/editor/dbml-editor/dbml-editor';
 import { ExportMenu } from './features/export/export-menu/export-menu';
+import { ProjectBrowser } from './features/projects/project-browser/project-browser';
 import { DiagramStore, supportsAutoIncrement } from './state/diagram.store';
 import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
@@ -55,6 +56,7 @@ import {
     DiagramCanvas,
     DbmlEditor,
     ExportMenu,
+    ProjectBrowser,
     LucideChevronRight,
     LucideCheck,
     LucideBraces,
@@ -93,6 +95,7 @@ export class App {
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
   private readonly canvas = viewChild(DiagramCanvas);
   protected readonly dbmlCollapsed = signal(false);
+  protected readonly projectBrowserOpen = signal(false);
   protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums' | 'areas'>('dbml');
   protected readonly tableFilter = signal('');
   protected readonly expandedTableIds = signal<Set<string>>(new Set());

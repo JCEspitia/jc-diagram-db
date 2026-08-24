@@ -3,7 +3,10 @@ import { DiagramProject } from '../schema';
 
 export abstract class ProjectRepository {
   abstract loadLastProject(): Promise<DiagramProject | null>;
+  abstract loadProject(projectId: string): Promise<DiagramProject | null>;
+  abstract listProjects(): Promise<DiagramProject[]>;
   abstract saveProject(project: DiagramProject): Promise<void>;
+  abstract deleteProject(projectId: string): Promise<void>;
 }
 
 const DATABASE_NAME = 'diagramdb';
@@ -25,10 +28,32 @@ export class IndexedDbProjectRepository extends ProjectRepository {
           .get(LAST_PROJECT_KEY),
       );
       if (!projectId) return null;
-      const project = await requestResult<unknown>(
-        database.transaction(PROJECT_STORE, 'readonly').objectStore(PROJECT_STORE).get(projectId),
+      return await this.readProject(database, projectId);
+    } finally {
+      database.close();
+    }
+  }
+
+  async loadProject(projectId: string): Promise<DiagramProject | null> {
+    const database = await this.open();
+    if (!database) return null;
+    try {
+      return await this.readProject(database, projectId);
+    } finally {
+      database.close();
+    }
+  }
+
+  async listProjects(): Promise<DiagramProject[]> {
+    const database = await this.open();
+    if (!database) return [];
+    try {
+      const projects = await requestResult<unknown[]>(
+        database.transaction(PROJECT_STORE, 'readonly').objectStore(PROJECT_STORE).getAll(),
       );
-      return isDiagramProject(project) ? project : null;
+      return projects
+        .filter(isDiagramProject)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     } finally {
       database.close();
     }
@@ -45,6 +70,31 @@ export class IndexedDbProjectRepository extends ProjectRepository {
     } finally {
       database.close();
     }
+  }
+
+  async deleteProject(projectId: string): Promise<void> {
+    const database = await this.open();
+    if (!database) return;
+    try {
+      const transaction = database.transaction([PROJECT_STORE, SESSION_STORE], 'readwrite');
+      transaction.objectStore(PROJECT_STORE).delete(projectId);
+      const session = transaction.objectStore(SESSION_STORE);
+      const lastProjectId = await requestResult<string | undefined>(session.get(LAST_PROJECT_KEY));
+      if (lastProjectId === projectId) session.delete(LAST_PROJECT_KEY);
+      await transactionDone(transaction);
+    } finally {
+      database.close();
+    }
+  }
+
+  private async readProject(
+    database: IDBDatabase,
+    projectId: string,
+  ): Promise<DiagramProject | null> {
+    const project = await requestResult<unknown>(
+      database.transaction(PROJECT_STORE, 'readonly').objectStore(PROJECT_STORE).get(projectId),
+    );
+    return isDiagramProject(project) ? project : null;
   }
 
   private open(): Promise<IDBDatabase | null> {

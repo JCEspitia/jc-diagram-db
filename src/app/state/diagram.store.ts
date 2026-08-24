@@ -63,6 +63,7 @@ export class DiagramStore {
   readonly changeOrigin = signal<'editor' | 'canvas' | 'import' | 'system'>('system');
   readonly persistenceState = signal<'loading' | 'saving' | 'saved' | 'error'>('loading');
   readonly persistenceError = signal<string | null>(null);
+  readonly projects = signal<DiagramProject[]>([]);
   readonly schema = computed(() => this.project().schema);
   readonly layout = computed(() => this.project().layout);
   readonly dbml = computed(() => this.project().dbml);
@@ -77,6 +78,69 @@ export class DiagramStore {
     const relationshipId = this.selection()?.relationshipId;
     return this.schema().relationships.find(({ id }) => id === relationshipId) ?? null;
   });
+
+  async createProject(name = 'Untitled diagram'): Promise<void> {
+    await this.flushSave();
+    const project = createBlankProject(name);
+    await this.repository.saveProject(project);
+    this.activateProject(project);
+    await this.refreshProjects();
+  }
+
+  async openProject(projectId: string): Promise<void> {
+    if (projectId === this.project().id) return;
+    await this.flushSave();
+    const project = await this.repository.loadProject(projectId);
+    if (!project) return;
+    this.activateProject(project);
+    await this.repository.saveProject(project);
+    await this.refreshProjects();
+  }
+
+  async renameProject(projectId: string, name: string): Promise<void> {
+    const normalized = name.trim();
+    if (!normalized) return;
+    const source =
+      projectId === this.project().id
+        ? this.project()
+        : await this.repository.loadProject(projectId);
+    if (!source) return;
+    const project = { ...source, name: normalized, updatedAt: new Date().toISOString() };
+    await this.repository.saveProject(project);
+    if (projectId === this.project().id) this.project.set(project);
+    await this.refreshProjects();
+  }
+
+  async duplicateProject(projectId: string): Promise<void> {
+    await this.flushSave();
+    const source =
+      projectId === this.project().id
+        ? this.project()
+        : await this.repository.loadProject(projectId);
+    if (!source) return;
+    const now = new Date().toISOString();
+    const duplicate: DiagramProject = {
+      ...structuredClone(source),
+      id: createUuid(),
+      name: `${source.name} copy`,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await this.repository.saveProject(duplicate);
+    this.activateProject(duplicate);
+    await this.refreshProjects();
+  }
+
+  async deleteProject(projectId: string): Promise<void> {
+    await this.repository.deleteProject(projectId);
+    if (projectId === this.project().id) {
+      const remaining = await this.repository.listProjects();
+      const replacement = remaining[0] ?? createBlankProject();
+      this.activateProject(replacement);
+      await this.repository.saveProject(replacement);
+    }
+    await this.refreshProjects();
+  }
 
   constructor(repository: IndexedDbProjectRepository = new IndexedDbProjectRepository()) {
     this.repository = repository;
@@ -715,6 +779,7 @@ export class DiagramStore {
         return;
       }
       this.persistenceState.set('saved');
+      await this.refreshProjects();
     } catch (error) {
       this.persistenceReady = true;
       this.persistenceState.set('error');
@@ -732,11 +797,32 @@ export class DiagramStore {
   private async save(project: DiagramProject): Promise<void> {
     try {
       await this.repository.saveProject(project);
+      await this.refreshProjects();
       if (this.project().updatedAt === project.updatedAt) this.persistenceState.set('saved');
     } catch (error) {
       this.persistenceState.set('error');
       this.persistenceError.set(errorMessage(error));
     }
+  }
+
+  private async flushSave(): Promise<void> {
+    clearTimeout(this.saveTimer);
+    if (this.persistenceReady) await this.save(this.project());
+  }
+
+  private activateProject(project: DiagramProject): void {
+    clearTimeout(this.parseTimer);
+    clearTimeout(this.saveTimer);
+    this.project.set(project);
+    this.undoStack.set([]);
+    this.redoStack.set([]);
+    this.dbmlErrors.set([]);
+    this.clearSelection();
+    this.persistenceState.set('saved');
+  }
+
+  private async refreshProjects(): Promise<void> {
+    this.projects.set(await this.repository.listProjects());
   }
 }
 
@@ -977,6 +1063,26 @@ function createExampleProject(): DiagramProject {
       viewport: { x: 35, y: 20, zoom: 1 },
     },
     dbml: EXAMPLE_DBML,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function createBlankProject(name = 'Untitled diagram'): DiagramProject {
+  const dbml = `Table new_table {\n  id integer [pk]\n}`;
+  const schema = new SimpleDbmlParser().parse(dbml).schema!;
+  const now = new Date().toISOString();
+  return {
+    format: 'diagramdb',
+    formatVersion: 1,
+    id: createUuid(),
+    name,
+    schema,
+    layout: {
+      tables: { [schema.tables[0]!.id]: { x: 120, y: 100 } },
+      viewport: { x: 35, y: 20, zoom: 1 },
+    },
+    dbml,
     createdAt: now,
     updatedAt: now,
   };

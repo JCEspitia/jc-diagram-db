@@ -4,7 +4,14 @@
       ><span class="brand-mark">D</span><span>Diagram<span>DB</span></span></a
     >
     <span class="divider"></span>
-    <span class="project-name">{{ store.project().name }}</span>
+    <button
+      class="project-name"
+      type="button"
+      appTooltip="Open projects"
+      (click)="projectBrowserOpen.set(true)"
+    >
+      {{ store.project().name }} <svg lucideChevronRight size="13"></svg>
+    </button>
     <span
       class="saved"
       [class.saving]="store.persistenceState() === 'saving'"
@@ -64,6 +71,11 @@
       />
     </nav>
   </header>
+  @if (projectBrowserOpen()) {
+    @defer {
+      <app-project-browser (closed)="projectBrowserOpen.set(false)" />
+    }
+  }
   <div
     class="workspace"
     [class.dbml-collapsed]="dbmlCollapsed()"

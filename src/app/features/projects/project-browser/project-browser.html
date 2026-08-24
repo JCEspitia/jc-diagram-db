@@ -1,0 +1,107 @@
+<div class="backdrop" (pointerdown)="closed.emit()">
+  <section
+    class="browser"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="projects-title"
+    (pointerdown)="$event.stopPropagation()"
+  >
+    <header>
+      <div>
+        <span>Your workspace</span>
+        <h2 id="projects-title">Diagram projects</h2>
+        <p>Create a new diagram or continue working on a local project.</p>
+      </div>
+      <button
+        class="icon-button"
+        type="button"
+        appTooltip="Close"
+        aria-label="Close projects"
+        (click)="closed.emit()"
+      >
+        <svg lucideX size="18"></svg>
+      </button>
+    </header>
+    <form class="create-project" (submit)="$event.preventDefault(); create()">
+      <div>
+        <svg lucidePlus size="18"></svg
+        ><input
+          aria-label="New project name"
+          placeholder="New project name"
+          [value]="newProjectName()"
+          (input)="newProjectName.set($any($event.target).value)"
+        />
+      </div>
+      <button class="primary" type="submit" [disabled]="busy()">Create project</button>
+    </form>
+    <div class="project-list">
+      @for (project of store.projects(); track project.id) {
+        <article [class.current]="project.id === store.project().id">
+          <button class="project-main" type="button" (click)="open(project.id)">
+            <span class="project-icon"><svg lucideTable2 size="19"></svg></span>
+            <span class="project-details">
+              @if (editingId() === project.id) {
+                <span class="rename" (click)="$event.stopPropagation()">
+                  <input
+                    aria-label="Project name"
+                    [value]="editingName()"
+                    (input)="editingName.set($any($event.target).value)"
+                    (keydown.enter)="finishRename(project.id)"
+                    (keydown.escape)="editingId.set(null)"
+                  />
+                  <button type="button" appTooltip="Save name" (click)="finishRename(project.id)">
+                    <svg lucideCheck size="15"></svg>
+                  </button>
+                </span>
+              } @else {
+                <strong>{{ project.name }}</strong>
+              }
+              <small>{{ tableCount(project) }} · Updated {{ modifiedAt(project) }}</small>
+            </span>
+            @if (project.id === store.project().id) {
+              <em>Open</em>
+            }
+          </button>
+          <div class="project-actions">
+            <button
+              type="button"
+              appTooltip="Open project"
+              aria-label="Open project"
+              (click)="open(project.id)"
+            >
+              <svg lucideFolderOpen size="15"></svg>
+            </button>
+            <button
+              type="button"
+              appTooltip="Rename project"
+              aria-label="Rename project"
+              (click)="startRename(project)"
+            >
+              <svg lucidePencil size="15"></svg>
+            </button>
+            <button
+              type="button"
+              appTooltip="Duplicate project"
+              aria-label="Duplicate project"
+              (click)="duplicate(project.id)"
+            >
+              <svg lucideCopy size="15"></svg>
+            </button>
+            <button
+              class="danger"
+              type="button"
+              appTooltip="Delete project"
+              aria-label="Delete project"
+              (click)="remove(project)"
+            >
+              <svg lucideTrash2 size="15"></svg>
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty">No local projects yet. Create your first diagram above.</div>
+      }
+    </div>
+    <footer>Projects are stored only in this browser using IndexedDB.</footer>
+  </section>
+</div>
