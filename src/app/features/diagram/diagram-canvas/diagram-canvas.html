@@ -1,11 +1,13 @@
 <section
   #viewport
   class="viewport"
+  [class.panning]="panning()"
   aria-label="Database diagram"
   (pointerdown)="startPan($event)"
   (pointermove)="movePointer($event)"
   (pointerup)="endPointer($event)"
   (pointercancel)="cancelPointer($event)"
+  (contextmenu)="$event.preventDefault()"
   (wheel)="zoom($event)"
 >
   <div class="world" [style.transform]="transform()">
@@ -324,7 +326,7 @@
           [layout]="tablePosition(table.id)"
           [relationships]="schema().relationships"
           [enums]="schema().enums"
-          [selected]="selectedTableId() === table.id"
+          [selected]="selectedTableIds().includes(table.id)"
           [selectedColumnId]="selectedColumnId()"
           [relationshipTargetColumnId]="relationshipTarget()?.columnId"
           [showRelationshipHandles]="relationshipMode()"
@@ -341,5 +343,20 @@
         />
       }
     }
+  </div>
+  @if (selectionRect(); as rect) {
+    <div
+      class="selection-marquee"
+      [style.left.px]="rect.left"
+      [style.top.px]="rect.top"
+      [style.width.px]="rect.width"
+      [style.height.px]="rect.height"
+    ></div>
+  }
+  <div class="canvas-controls-guide" aria-label="Canvas controls">
+    <span><i class="control-symbol pointer">↖</i> Left: select or drag area</span>
+    <span><kbd>Ctrl</kbd> + click: add</span>
+    <span><i class="control-symbol move">✥</i> Right / middle: move canvas</span>
+    <span>Wheel: zoom</span>
   </div>
 </section>

@@ -60,6 +60,7 @@ export class DiagramStore {
   private readonly redoStack = signal<DiagramProject[]>([]);
   readonly project = signal<DiagramProject>(createExampleProject());
   readonly selection = signal<DiagramSelection | null>(null);
+  readonly selectedTableIds = signal<string[]>([]);
   readonly dbmlErrors = signal<DbmlParseError[]>([]);
   readonly changeOrigin = signal<'editor' | 'canvas' | 'import' | 'system'>('system');
   readonly persistenceState = signal<'loading' | 'saving' | 'saved' | 'error'>('loading');
@@ -219,6 +220,10 @@ export class DiagramStore {
       rawLayout = fitAllAreas(project.schema, rawLayout);
     } else if (operation.type === 'MOVE_TABLE') {
       rawLayout = expandMemberAreas(project.schema, rawLayout, operation.tableId);
+    } else if (operation.type === 'MOVE_TABLES') {
+      for (const { tableId } of operation.tables) {
+        rawLayout = expandMemberAreas(project.schema, rawLayout, tableId);
+      }
     } else if (operation.type === 'RESIZE_AREA') {
       rawLayout = fitAreaToMembers(project.schema, rawLayout, operation.areaId);
     }
@@ -718,19 +723,48 @@ export class DiagramStore {
     this.applySchemaOperation({ type: 'DELETE_RELATIONSHIP', relationshipId });
   }
 
-  selectTable(tableId: string): void {
-    this.selection.set({ tableId });
+  selectTable(tableId: string, additive = false): void {
+    if (!additive) {
+      this.selectedTableIds.set([tableId]);
+      this.selection.set({ tableId });
+      return;
+    }
+
+    const selected = this.selectedTableIds();
+    if (selected.includes(tableId)) {
+      const remaining = selected.filter((id) => id !== tableId);
+      this.selectedTableIds.set(remaining);
+      if (this.selection()?.tableId === tableId) {
+        this.selection.set(remaining.length ? { tableId: remaining.at(-1)! } : null);
+      }
+    } else {
+      this.selectedTableIds.set([...selected, tableId]);
+      this.selection.set({ tableId });
+    }
+  }
+
+  selectTables(tableIds: string[], additive = false): void {
+    const validIds = new Set(this.schema().tables.map(({ id }) => id));
+    const requested = tableIds.filter((id) => validIds.has(id));
+    const selected = additive
+      ? [...new Set([...this.selectedTableIds(), ...requested])]
+      : requested;
+    this.selectedTableIds.set(selected);
+    this.selection.set(selected.length ? { tableId: selected.at(-1)! } : null);
   }
 
   selectColumn(tableId: string, columnId: string): void {
+    this.selectedTableIds.set([tableId]);
     this.selection.set({ tableId, columnId });
   }
 
   selectRelationship(relationshipId: string): void {
+    this.selectedTableIds.set([]);
     this.selection.set({ relationshipId });
   }
 
   clearSelection(): void {
+    this.selectedTableIds.set([]);
     this.selection.set(null);
   }
 
@@ -793,6 +827,8 @@ export class DiagramStore {
   }
 
   private clearInvalidSelection(): void {
+    const tableIds = new Set(this.schema().tables.map(({ id }) => id));
+    this.selectedTableIds.update((selected) => selected.filter((id) => tableIds.has(id)));
     const selection = this.selection();
     const table = this.schema().tables.find(({ id }) => id === selection?.tableId);
     const invalid =

@@ -3,6 +3,37 @@ import { createColumn } from '../core/schema';
 import { DiagramStore } from './diagram.store';
 
 describe('DiagramStore DBML synchronization', () => {
+  it('supports additive table selection and toggling', () => {
+    const store = new DiagramStore();
+    const [users, posts] = store.schema().tables;
+
+    store.selectTable(users!.id);
+    store.selectTable(posts!.id, true);
+    expect(store.selectedTableIds()).toEqual([users!.id, posts!.id]);
+    expect(store.selection()).toEqual({ tableId: posts!.id });
+
+    store.selectTable(posts!.id, true);
+    expect(store.selectedTableIds()).toEqual([users!.id]);
+    expect(store.selection()).toEqual({ tableId: users!.id });
+
+    store.clearSelection();
+    expect(store.selectedTableIds()).toEqual([]);
+  });
+
+  it('selects tables found inside a dragged canvas area', () => {
+    const store = new DiagramStore();
+    const [users, posts] = store.schema().tables;
+
+    store.selectTables([users!.id, posts!.id]);
+    expect(store.selectedTableIds()).toEqual([users!.id, posts!.id]);
+
+    store.selectTables([users!.id], true);
+    expect(store.selectedTableIds()).toEqual([users!.id, posts!.id]);
+
+    store.selectTables([]);
+    expect(store.selection()).toBeNull();
+  });
+
   it('writes visually created areas as DBML table groups', () => {
     const store = new DiagramStore();
     const areaId = store.createArea();

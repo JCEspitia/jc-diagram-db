@@ -10,6 +10,10 @@ import {
 export type DiagramOperation =
   | { type: 'CHANGE_DETAIL_LEVEL'; from: DiagramDetailLevel; to: DiagramDetailLevel }
   | { type: 'MOVE_TABLE'; tableId: EntityId; from: TableLayout; to: TableLayout }
+  | {
+      type: 'MOVE_TABLES';
+      tables: { tableId: EntityId; from: TableLayout; to: TableLayout }[];
+    }
   | { type: 'RESIZE_TABLE'; tableId: EntityId; from: TableLayout; to: TableLayout }
   | {
       type: 'CHANGE_RELATIONSHIP_ROUTE';

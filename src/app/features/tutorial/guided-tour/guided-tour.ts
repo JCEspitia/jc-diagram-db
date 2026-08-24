@@ -77,7 +77,7 @@ export class GuidedTour {
       eyebrow: 'Canvas',
       title: 'Work directly on the diagram',
       description:
-        'Drag tables, pan the workspace, zoom, edit connections, and open table options without leaving the canvas.',
+        'Select with left click, add tables with Ctrl/Cmd or Shift, and drag the selection together. Pan with right or middle click.',
     },
     {
       selector: '[data-tour="export"]',

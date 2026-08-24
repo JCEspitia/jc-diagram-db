@@ -176,6 +176,19 @@ button {
   background: transparent;
   cursor: pointer;
 }
+.github-link {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 32px;
+  border-radius: 6px;
+  color: #9ba8b4;
+  text-decoration: none;
+}
+.github-link:hover {
+  background: #202a3e;
+  color: #f5f7fa;
+}
 .project-name {
   display: inline-flex;
   align-items: center;

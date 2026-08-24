@@ -65,7 +65,7 @@ export class TableNode {
   readonly showRelationshipHandles = input(false);
   readonly areas = input<[string, DiagramAreaLayout][]>([]);
   readonly detailLevel = input<DiagramDetailLevel>('all');
-  readonly tableSelected = output<string>();
+  readonly tableSelected = output<{ tableId: string; additive: boolean }>();
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
@@ -136,8 +136,12 @@ export class TableNode {
     );
   });
 
-  protected select(): void {
-    this.tableSelected.emit(this.table().id);
+  protected select(event: PointerEvent): void {
+    if (event.button !== 0) return;
+    this.tableSelected.emit({
+      tableId: this.table().id,
+      additive: event.ctrlKey || event.metaKey || event.shiftKey,
+    });
   }
 
   protected toggleOptions(event: PointerEvent): void {

@@ -80,6 +80,13 @@ interface RelationshipEndpoint {
   side: 'left' | 'right';
 }
 
+interface SelectionRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 const MIN_ROUTE_POINT_DISTANCE = 36;
 const ENDPOINT_LANE_DISTANCE = 44;
 
@@ -103,11 +110,13 @@ export class DiagramCanvas {
   readonly schema = input.required<DatabaseSchema>();
   readonly layout = input.required<DiagramLayout>();
   readonly selectedTableId = input<string>();
+  readonly selectedTableIds = input<string[]>([]);
   readonly selectedColumnId = input<string>();
   readonly selectedRelationshipId = input<string>();
   readonly relationshipMode = input(false);
   readonly diagramOperation = output<DiagramOperation>();
-  readonly tableSelected = output<string>();
+  readonly tableSelected = output<{ tableId: string; additive: boolean }>();
+  readonly tablesSelected = output<{ tableIds: string[]; additive: boolean }>();
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
@@ -136,12 +145,18 @@ export class DiagramCanvas {
     | {
         kind: 'table';
         pointerId: number;
-        tableId: string;
         startX: number;
         startY: number;
-        from: TableLayout;
+        tables: { tableId: string; from: TableLayout }[];
       }
     | { kind: 'pan'; pointerId: number; startX: number; startY: number; from: ViewportState }
+    | {
+        kind: 'marquee';
+        pointerId: number;
+        startX: number;
+        startY: number;
+        additive: boolean;
+      }
     | {
         kind: 'relationship';
         pointerId: number;
@@ -174,7 +189,9 @@ export class DiagramCanvas {
         from: DiagramAreaLayout;
       }
     | undefined;
-  private readonly tablePreview = signal<{ tableId: string; layout: TableLayout } | null>(null);
+  private readonly tablePreview = signal<Record<string, TableLayout>>({});
+  protected readonly panning = signal(false);
+  protected readonly selectionRect = signal<SelectionRect | null>(null);
   protected readonly areaPreview = signal<{
     areaId: string;
     area: DiagramAreaLayout;
@@ -384,14 +401,14 @@ export class DiagramCanvas {
     const areaTable = this.areaPreview()?.tables[tableId];
     if (areaTable) return areaTable;
     const preview = this.tablePreview();
-    return preview?.tableId === tableId ? preview.layout : tableLayout(this.layout(), tableId);
+    return preview[tableId] ?? tableLayout(this.layout(), tableId);
   }
 
   protected areaPosition(areaId: string, area: DiagramAreaLayout): DiagramAreaLayout {
     const preview = this.areaPreview();
     if (preview?.areaId === areaId) return preview.area;
     const tablePreview = this.tablePreview();
-    if (!tablePreview || !area.tableIds?.includes(tablePreview.tableId)) return area;
+    if (!area.tableIds?.some((tableId) => tablePreview[tableId])) return area;
     const bounds = area.tableIds.flatMap((tableId) => {
       const table = this.schema().tables.find(({ id }) => id === tableId);
       if (!table) return [];
@@ -514,23 +531,45 @@ export class DiagramCanvas {
   }
 
   protected startTableDrag({ tableId, event }: { tableId: string; event: PointerEvent }): void {
-    this.tableSelected.emit(tableId);
+    const selected = this.selectedTableIds();
+    const additive = event.ctrlKey || event.metaKey || event.shiftKey;
+    const alreadySelected = selected.includes(tableId);
+    const tableIds = additive
+      ? alreadySelected
+        ? [tableId]
+        : [...selected, tableId]
+      : alreadySelected
+        ? selected
+        : [tableId];
+    if (additive || !alreadySelected) this.tableSelected.emit({ tableId, additive });
     this.interaction = {
       kind: 'table',
       pointerId: event.pointerId,
-      tableId,
       startX: event.clientX,
       startY: event.clientY,
-      from: tableLayout(this.layout(), tableId),
+      tables: tableIds.map((id) => ({ tableId: id, from: tableLayout(this.layout(), id) })),
     };
     (event.target as Element).setPointerCapture(event.pointerId);
   }
 
   protected startPan(event: PointerEvent): void {
-    if (event.button !== 0 && event.button !== 1) return;
-    if ((event.target as Element).closest('app-table-node, app-diagram-area')) return;
+    if (event.button === 0) {
+      if ((event.target as Element).closest('app-table-node, app-diagram-area')) return;
+      event.preventDefault();
+      this.interaction = {
+        kind: 'marquee',
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        additive: event.ctrlKey || event.metaKey || event.shiftKey,
+      };
+      this.selectionRect.set(this.pointerSelectionRect(event.clientX, event.clientY, event));
+      (event.currentTarget as Element).setPointerCapture(event.pointerId);
+      return;
+    }
+    if (event.button !== 1 && event.button !== 2) return;
     event.preventDefault();
-    if (event.button === 0) this.selectionCleared.emit();
+    this.panning.set(true);
     this.interaction = {
       kind: 'pan',
       pointerId: event.pointerId,
@@ -572,14 +611,18 @@ export class DiagramCanvas {
       const deltaX = event.clientX - interaction.startX;
       const deltaY = event.clientY - interaction.startY;
       const zoom = this.layout().viewport.zoom;
-      this.tablePreview.set({
-        tableId: interaction.tableId,
-        layout: {
-          ...interaction.from,
-          x: interaction.from.x + deltaX / zoom,
-          y: interaction.from.y + deltaY / zoom,
-        },
-      });
+      this.tablePreview.set(
+        Object.fromEntries(
+          interaction.tables.map(({ tableId, from }) => [
+            tableId,
+            { ...from, x: from.x + deltaX / zoom, y: from.y + deltaY / zoom },
+          ]),
+        ),
+      );
+    } else if (interaction.kind === 'marquee') {
+      this.selectionRect.set(
+        this.pointerSelectionRect(interaction.startX, interaction.startY, event),
+      );
     } else if (interaction.kind === 'pan') {
       const deltaX = event.clientX - interaction.startX;
       const deltaY = event.clientY - interaction.startY;
@@ -668,14 +711,24 @@ export class DiagramCanvas {
     if (!interaction || interaction.pointerId !== event.pointerId) return;
     if (interaction.kind === 'table') {
       const preview = this.tablePreview();
-      if (preview)
+      const tables = interaction.tables.flatMap(({ tableId, from }) =>
+        preview[tableId] ? [{ tableId, from, to: preview[tableId]! }] : [],
+      );
+      if (tables.length === 1) {
         this.diagramOperation.emit({
           type: 'MOVE_TABLE',
-          tableId: interaction.tableId,
-          from: interaction.from,
-          to: preview.layout,
+          ...tables[0]!,
         });
-      this.tablePreview.set(null);
+      } else if (tables.length > 1) {
+        this.diagramOperation.emit({ type: 'MOVE_TABLES', tables });
+      }
+      this.tablePreview.set({});
+    } else if (interaction.kind === 'marquee') {
+      this.tablesSelected.emit({
+        tableIds: this.tablesInsideSelection(interaction, event),
+        additive: interaction.additive,
+      });
+      this.selectionRect.set(null);
     } else if (interaction.kind === 'pan') {
       const preview = this.viewportPreview();
       if (preview)
@@ -685,6 +738,7 @@ export class DiagramCanvas {
           to: preview,
         });
       this.viewportPreview.set(null);
+      this.panning.set(false);
     } else if (interaction.kind === 'relationship') {
       const target = this.relationshipTarget();
       if (target) {
@@ -745,12 +799,75 @@ export class DiagramCanvas {
 
   protected cancelPointer(event: PointerEvent): void {
     if (this.interaction?.pointerId !== event.pointerId) return;
-    this.tablePreview.set(null);
+    this.tablePreview.set({});
+    this.selectionRect.set(null);
     this.viewportPreview.set(null);
+    this.panning.set(false);
     this.routePreview.set(null);
     this.areaPreview.set(null);
     this.clearTemporaryRelationship();
     this.interaction = undefined;
+  }
+
+  private pointerSelectionRect(
+    startX: number,
+    startY: number,
+    event: Pick<PointerEvent, 'clientX' | 'clientY'>,
+  ): SelectionRect {
+    const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
+    const left = Math.min(startX, event.clientX) - bounds.left;
+    const top = Math.min(startY, event.clientY) - bounds.top;
+    return {
+      left,
+      top,
+      width: Math.abs(event.clientX - startX),
+      height: Math.abs(event.clientY - startY),
+    };
+  }
+
+  private tablesInsideSelection(
+    interaction: {
+      kind: 'marquee';
+      pointerId: number;
+      startX: number;
+      startY: number;
+      additive: boolean;
+    },
+    event: PointerEvent,
+  ): string[] {
+    if (
+      Math.abs(event.clientX - interaction.startX) < 3 &&
+      Math.abs(event.clientY - interaction.startY) < 3
+    )
+      return [];
+    const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
+    const start = screenToWorld(
+      {
+        x: Math.min(interaction.startX, event.clientX) - bounds.left,
+        y: Math.min(interaction.startY, event.clientY) - bounds.top,
+      },
+      this.layout().viewport,
+    );
+    const end = screenToWorld(
+      {
+        x: Math.max(interaction.startX, event.clientX) - bounds.left,
+        y: Math.max(interaction.startY, event.clientY) - bounds.top,
+      },
+      this.layout().viewport,
+    );
+
+    return this.schema().tables.flatMap((table) => {
+      if (!this.tableVisible(table.id)) return [];
+      const position = tableLayout(this.layout(), table.id);
+      const width = position.width ?? DEFAULT_TABLE_METRICS.width;
+      const height = this.visualTableHeight(table);
+      const intersects =
+        position.x < end.x &&
+        position.x + width > start.x &&
+        position.y < end.y &&
+        position.y + height > start.y;
+      return intersects ? [table.id] : [];
+    });
   }
 
   protected zoom(event: WheelEvent): void {
@@ -1140,7 +1257,7 @@ function keepSegmentOutsideTables(
   requestedCoordinate: number,
   schema: DatabaseSchema,
   layout: DiagramLayout,
-  preview: { tableId: string; layout: TableLayout } | null,
+  preview: Record<string, TableLayout>,
 ): number {
   const start = points[segmentIndex];
   const end = points[segmentIndex + 1];
@@ -1148,7 +1265,7 @@ function keepSegmentOutsideTables(
 
   let coordinate = requestedCoordinate;
   for (const table of schema.tables) {
-    const position = preview?.tableId === table.id ? preview.layout : tableLayout(layout, table.id);
+    const position = preview[table.id] ?? tableLayout(layout, table.id);
     const left = position.x - ENDPOINT_LANE_DISTANCE;
     const right =
       position.x + (position.width ?? DEFAULT_TABLE_METRICS.width) + ENDPOINT_LANE_DISTANCE;

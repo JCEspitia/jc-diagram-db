@@ -1,4 +1,4 @@
-<article class="table-card" (pointerdown)="select()">
+<article class="table-card" (pointerdown)="select($event)">
   <header
     [appTooltip]="tableTooltip() ? 'Table details' : null"
     [appTooltipDetails]="tableTooltip()"

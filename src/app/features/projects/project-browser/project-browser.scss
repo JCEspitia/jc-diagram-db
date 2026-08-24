@@ -177,6 +177,11 @@ article.current {
   border: 0;
   background: transparent;
   text-align: left;
+  cursor: pointer;
+}
+.project-main:focus-visible {
+  outline: 2px solid #6cb5ff;
+  outline-offset: -2px;
 }
 .project-icon {
   display: grid;

@@ -11,18 +11,74 @@
   background-color: #fbfbfc;
   background-image: radial-gradient(circle, #d9dde1 0.7px, transparent 0.8px);
   background-size: 20px 20px;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
-.viewport:active {
+.viewport.panning {
   cursor: grabbing;
 }
 .world {
   position: absolute;
   inset: 0;
   transform-origin: 0 0;
+}
+.selection-marquee {
+  position: absolute;
+  z-index: 20;
+  border: 1px solid #2583e9;
+  border-radius: 3px;
+  background: rgb(37 131 233 / 13%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 35%);
+  pointer-events: none;
+}
+.canvas-controls-guide {
+  position: absolute;
+  z-index: 15;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  max-width: calc(100% - 24px);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid #d9dde2;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 4px 14px rgb(25 35 45 / 10%);
+  color: #697078;
+  font-size: 9px;
+  pointer-events: none;
+  backdrop-filter: blur(5px);
+}
+.canvas-controls-guide span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+.canvas-controls-guide span + span {
+  border-left: 1px solid #e1e4e8;
+}
+.canvas-controls-guide .control-symbol {
+  color: #2583e9;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+.canvas-controls-guide kbd {
+  padding: 1px 4px;
+  border: 1px solid #cdd2d8;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #f4f5f7;
+  color: #49515a;
+  font: inherit;
+  font-weight: 700;
 }
 .relationships {
   position: absolute;
@@ -47,6 +103,20 @@
 :host-context(.dark-theme) .viewport {
   background-color: #111820;
   background-image: radial-gradient(circle, #303b47 0.7px, transparent 0.8px);
+}
+:host-context(.dark-theme) .canvas-controls-guide {
+  border-color: #34404c;
+  background: rgb(25 32 40 / 92%);
+  color: #aab4be;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 24%);
+}
+:host-context(.dark-theme) .canvas-controls-guide span + span {
+  border-color: #3a4652;
+}
+:host-context(.dark-theme) .canvas-controls-guide kbd {
+  border-color: #4a5865;
+  background: #222c35;
+  color: #d9e1e8;
 }
 :host-context(.dark-theme) .edge-shadow {
   stroke: #111820;

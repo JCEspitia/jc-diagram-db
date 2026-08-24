@@ -46,6 +46,16 @@
       </button>
     }
     <nav aria-label="Project actions">
+      <a
+        class="github-link"
+        href="https://github.com/JCEspitia/jc-diagram-db"
+        target="_blank"
+        rel="noopener noreferrer"
+        appTooltip="View project on GitHub"
+        aria-label="View JC Diagram DB on GitHub"
+      >
+        <svg lucideGitFork size="16"></svg>
+      </a>
       <button
         type="button"
         appTooltip="Open guided tutorial"
@@ -277,11 +287,13 @@
         [schema]="store.schema()"
         [layout]="store.layout()"
         [selectedTableId]="store.selection()?.tableId"
+        [selectedTableIds]="store.selectedTableIds()"
         [selectedColumnId]="store.selection()?.columnId"
         [selectedRelationshipId]="store.selection()?.relationshipId"
         [relationshipMode]="relationshipMode()"
         (diagramOperation)="store.applyDiagramOperation($event)"
-        (tableSelected)="store.selectTable($event)"
+        (tableSelected)="store.selectTable($event.tableId, $event.additive)"
+        (tablesSelected)="store.selectTables($event.tableIds, $event.additive)"
         (tableEditRequested)="editManagedTable($event)"
         (tableColorChanged)="store.updateTableColor($event.tableId, $event.color)"
         (tableAreaChanged)="store.assignTableToArea($event.tableId, $event.areaId)"
@@ -860,7 +872,11 @@
   </div>
   <footer class="statusbar">
     <span>{{ store.schema().tables.length }} tables</span
-    ><span>{{ store.schema().relationships.length }} relationships</span><span class="spacer"></span
+    ><span>{{ store.schema().relationships.length }} relationships</span
+    ><span class="spacer"></span>
+    @if (store.selectedTableIds().length > 1) {
+      <span>{{ store.selectedTableIds().length }} tables selected</span>
+    }
     ><span>JC Diagram DB v0.1</span>
   </footer>
   @if (tutorialOpen()) {

@@ -14,6 +14,14 @@ export function executeDiagramOperation(
         ...layout,
         tables: { ...layout.tables, [operation.tableId]: operation.to },
       };
+    case 'MOVE_TABLES':
+      return {
+        ...layout,
+        tables: {
+          ...layout.tables,
+          ...Object.fromEntries(operation.tables.map(({ tableId, to }) => [tableId, to])),
+        },
+      };
     case 'CHANGE_VIEWPORT':
       return { ...layout, viewport: operation.to };
     case 'CHANGE_RELATIONSHIP_ROUTE':

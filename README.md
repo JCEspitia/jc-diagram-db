@@ -36,6 +36,7 @@ No requiere cuenta, servidor ni instalación obligatoria.
 - Comentarios, valores por defecto, checks, claves e índices compuestos.
 - Varios niveles de detalle y algoritmos de distribución automática.
 - Historial de cambios con undo y redo.
+- Selección múltiple por clic o área y movimiento conjunto de tablas en el canvas.
 - Exportación del diagrama completo o por áreas a PNG, SVG y PDF.
 - Importación y exportación de archivos `.dbml` y proyectos `.diagramdb`.
 - Proyectos guardados automáticamente en el navegador.

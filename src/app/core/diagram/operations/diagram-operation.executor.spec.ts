@@ -19,6 +19,33 @@ describe('executeDiagramOperation', () => {
     expect(result.tables['tbl_users']).toEqual({ x: 80, y: 120 });
   });
 
+  it('moves multiple selected tables atomically', () => {
+    const result = executeDiagramOperation(
+      {
+        ...layout,
+        tables: { ...layout.tables, tbl_posts: { x: 200, y: 40 } },
+      },
+      {
+        type: 'MOVE_TABLES',
+        tables: [
+          {
+            tableId: 'tbl_users',
+            from: { x: 10, y: 20 },
+            to: { x: 60, y: 80 },
+          },
+          {
+            tableId: 'tbl_posts',
+            from: { x: 200, y: 40 },
+            to: { x: 250, y: 100 },
+          },
+        ],
+      },
+    );
+
+    expect(result.tables['tbl_users']).toEqual({ x: 60, y: 80 });
+    expect(result.tables['tbl_posts']).toEqual({ x: 250, y: 100 });
+  });
+
   it('changes viewport without altering table positions', () => {
     const result = executeDiagramOperation(layout, {
       type: 'CHANGE_VIEWPORT',

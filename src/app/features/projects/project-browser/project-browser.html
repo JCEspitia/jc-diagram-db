@@ -54,11 +54,21 @@
     <div class="project-list">
       @for (project of store.projects(); track project.id) {
         <article [class.current]="project.id === store.project().id">
-          <button class="project-main" type="button" (click)="open(project.id)">
+          <div
+            class="project-main"
+            role="button"
+            tabindex="0"
+            (click)="open(project.id)"
+            (keydown.enter)="open(project.id)"
+          >
             <span class="project-icon"><svg lucideTable2 size="19"></svg></span>
             <span class="project-details">
               @if (editingId() === project.id) {
-                <span class="rename" (click)="$event.stopPropagation()">
+                <span
+                  class="rename"
+                  (click)="$event.stopPropagation()"
+                  (keydown)="$event.stopPropagation()"
+                >
                   <input
                     aria-label="Project name"
                     [value]="editingName()"
@@ -78,7 +88,7 @@
             @if (project.id === store.project().id) {
               <em>Open</em>
             }
-          </button>
+          </div>
           <div class="project-actions">
             <button
               type="button"
