@@ -290,7 +290,13 @@ export class DiagramCanvas {
       if (!manuallyRouted) {
         route = routeAroundObstacles(source, target, route, obstacles);
       }
-      const selectedTableId = this.selectedTableId();
+      const selectedTableIds = new Set(
+        this.selectedTableIds().length
+          ? this.selectedTableIds()
+          : this.selectedTableId()
+            ? [this.selectedTableId()!]
+            : [],
+      );
       const hoveredColumn = this.hoveredColumn();
       const columnFocus =
         hoveredColumn &&
@@ -363,20 +369,20 @@ export class DiagramCanvas {
             (relationship.type === 'one-to-many' ? 'many' : 'one'),
           connected: columnFocus
             ? sourceFocused || targetFocused
-            : !selectedTableId ||
-              relationship.sourceTableId === selectedTableId ||
-              relationship.targetTableId === selectedTableId,
+            : !selectedTableIds.size ||
+              selectedTableIds.has(relationship.sourceTableId) ||
+              selectedTableIds.has(relationship.targetTableId),
           flow: columnFocus
             ? sourceFocused
               ? 'forward'
               : targetFocused
                 ? 'reverse'
                 : null
-            : !selectedTableId
+            : !selectedTableIds.size
               ? null
-              : relationship.sourceTableId === selectedTableId
+              : selectedTableIds.has(relationship.sourceTableId)
                 ? 'forward'
-                : relationship.targetTableId === selectedTableId
+                : selectedTableIds.has(relationship.targetTableId)
                   ? 'reverse'
                   : null,
         },
