@@ -24,6 +24,12 @@
   color: #e8ecef;
   box-shadow: 0 28px 80px rgb(0 0 0 / 48%);
 }
+.browser.dragging {
+  border-color: #4d9bea;
+  box-shadow:
+    0 0 0 3px rgb(77 155 234 / 20%),
+    0 28px 80px rgb(0 0 0 / 48%);
+}
 header {
   display: flex;
   justify-content: space-between;
@@ -114,6 +120,31 @@ input {
 .primary:disabled {
   opacity: 0.5;
 }
+.file-input {
+  display: none;
+}
+.import {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #46515b;
+  border-radius: 6px;
+  background: #29313a;
+}
+.import:hover {
+  background: #343e48;
+}
+.import-error {
+  max-height: 82px;
+  padding: 9px 24px;
+  overflow: auto;
+  border-bottom: 1px solid #64383d;
+  background: #3b2529;
+  color: #ffb2b8;
+  font-size: 10px;
+  white-space: pre-wrap;
+}
 .project-list {
   display: grid;
   align-content: start;
@@ -190,8 +221,16 @@ article.current {
 }
 .project-actions button,
 .rename button {
-  width: 29px;
+  min-width: 29px;
   height: 29px;
+}
+.project-actions button:has(small) {
+  display: flex;
+  gap: 4px;
+  padding: 0 6px;
+}
+.project-actions small {
+  font-size: 8px;
 }
 .project-actions .danger:hover {
   background: #4a292d;

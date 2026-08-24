@@ -30,6 +30,7 @@ import {
 } from '../core/schema';
 import {
   IndexedDbProjectRepository,
+  isDiagramProject,
   ProjectRepository,
 } from '../core/persistence/project.repository';
 
@@ -140,6 +141,68 @@ export class DiagramStore {
       await this.repository.saveProject(replacement);
     }
     await this.refreshProjects();
+  }
+
+  async importDbmlProject(source: string, name: string): Promise<void> {
+    const result = this.parser.parse(source);
+    if (!result.schema || result.errors.length) {
+      throw new Error(
+        result.errors
+          .map((error) => `${error.line ? `Line ${error.line}: ` : ''}${error.message}`)
+          .join('\n') || 'The DBML file is empty or invalid.',
+      );
+    }
+    const errors = validateSchema(result.schema);
+    if (errors.length) throw new Error(errors.map(({ message }) => message).join('\n'));
+    const now = new Date().toISOString();
+    const project: DiagramProject = {
+      format: 'diagramdb',
+      formatVersion: 1,
+      id: createUuid(),
+      name: name.trim() || 'Imported diagram',
+      schema: result.schema,
+      layout: synchronizeLayout({ tables: {}, viewport: { x: 35, y: 20, zoom: 1 } }, result.schema),
+      dbml: source,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await this.flushSave();
+    await this.repository.saveProject(project);
+    this.activateProject(project);
+    await this.refreshProjects();
+  }
+
+  async importDiagramProject(source: string): Promise<void> {
+    let candidate: unknown;
+    try {
+      candidate = JSON.parse(source);
+    } catch {
+      throw new Error('The DiagramDB file is not valid JSON.');
+    }
+    if (!isDiagramProject(candidate)) {
+      throw new Error('The file is not a compatible DiagramDB project.');
+    }
+    const errors = validateSchema(candidate.schema);
+    if (errors.length) throw new Error(errors.map(({ message }) => message).join('\n'));
+    const now = new Date().toISOString();
+    const project: DiagramProject = {
+      ...structuredClone(candidate),
+      id: createUuid(),
+      name: `${candidate.name} imported`,
+      layout: synchronizeLayout(candidate.layout, candidate.schema),
+      createdAt: now,
+      updatedAt: now,
+    };
+    await this.flushSave();
+    await this.repository.saveProject(project);
+    this.activateProject(project);
+    await this.refreshProjects();
+  }
+
+  async loadProject(projectId: string): Promise<DiagramProject | null> {
+    return projectId === this.project().id
+      ? this.project()
+      : await this.repository.loadProject(projectId);
   }
 
   constructor(repository: IndexedDbProjectRepository = new IndexedDbProjectRepository()) {

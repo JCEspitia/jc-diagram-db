@@ -1,10 +1,14 @@
 <div class="backdrop" (pointerdown)="closed.emit()">
   <section
     class="browser"
+    [class.dragging]="draggingFile()"
     role="dialog"
     aria-modal="true"
     aria-labelledby="projects-title"
     (pointerdown)="$event.stopPropagation()"
+    (dragover)="$event.preventDefault(); draggingFile.set(true)"
+    (dragleave)="draggingFile.set(false)"
+    (drop)="dropFile($event)"
   >
     <header>
       <div>
@@ -33,7 +37,20 @@
         />
       </div>
       <button class="primary" type="submit" [disabled]="busy()">Create project</button>
+      <input
+        #fileInput
+        class="file-input"
+        type="file"
+        accept=".dbml,.diagramdb,text/plain,application/json"
+        (change)="importSelection($event)"
+      />
+      <button class="import" type="button" [disabled]="busy()" (click)="fileInput.click()">
+        <svg lucideUpload size="15"></svg> Import
+      </button>
     </form>
+    @if (importError()) {
+      <div class="import-error" role="alert">{{ importError() }}</div>
+    }
     <div class="project-list">
       @for (project of store.projects(); track project.id) {
         <article [class.current]="project.id === store.project().id">
@@ -63,6 +80,22 @@
             }
           </button>
           <div class="project-actions">
+            <button
+              type="button"
+              appTooltip="Export DBML"
+              aria-label="Export DBML"
+              (click)="export(project.id, 'dbml')"
+            >
+              <svg lucideDownload size="15"></svg><small>DBML</small>
+            </button>
+            <button
+              type="button"
+              appTooltip="Export complete DiagramDB project"
+              aria-label="Export DiagramDB project"
+              (click)="export(project.id, 'diagramdb')"
+            >
+              <svg lucideDownload size="15"></svg><small>Project</small>
+            </button>
             <button
               type="button"
               appTooltip="Open project"

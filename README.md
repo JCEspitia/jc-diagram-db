@@ -58,12 +58,10 @@ visuales son representaciones independientes.
 - Compatibilidad con contextos HTTP que no exponen `crypto.randomUUID`.
 - Persistencia automática del proyecto y restauración de la última sesión mediante IndexedDB.
 - Navegador de proyectos locales con creación, apertura, renombrado, duplicado y eliminación.
+- Importación y exportación de `.dbml` y del formato completo `.diagramdb`.
 
 ## Pendiente para completar el MVP
 
-- Importación y exportación de DBML como archivo.
-- Importación y exportación del formato `.diagramdb`.
-- Restauración del proyecto y del viewport al recargar.
 - Cobertura end-to-end para las interacciones principales del canvas.
 
 ## Rendimiento y dependencias opcionales

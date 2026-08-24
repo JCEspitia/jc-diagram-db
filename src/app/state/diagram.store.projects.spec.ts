@@ -58,4 +58,34 @@ describe('DiagramStore project management', () => {
     expect(store.project().id).not.toBe(inventoryId);
     expect(store.projects().some(({ id }) => id === inventoryId)).toBe(false);
   });
+
+  it('imports valid DBML as a new project and rejects invalid DBML safely', async () => {
+    const store = new DiagramStore(new MemoryProjectRepository());
+    await Promise.resolve();
+    const originalId = store.project().id;
+
+    await expect(store.importDbmlProject('Table broken {', 'Broken')).rejects.toThrow();
+    expect(store.project().id).toBe(originalId);
+
+    await store.importDbmlProject('Table inventory {\n  id integer [pk]\n}', 'Inventory');
+    expect(store.project().name).toBe('Inventory');
+    expect(store.schema().tables[0]?.name).toBe('inventory');
+    expect(store.project().id).not.toBe(originalId);
+  });
+
+  it('imports a DiagramDB file as a copy with a new identity', async () => {
+    const repository = new MemoryProjectRepository();
+    const store = new DiagramStore(repository);
+    await Promise.resolve();
+    await store.createProject('Portable');
+    const exported = structuredClone(store.project());
+
+    await store.importDiagramProject(JSON.stringify(exported));
+
+    expect(store.project().id).not.toBe(exported.id);
+    expect(store.project().name).toBe('Portable imported');
+    expect(store.project().schema).toEqual(exported.schema);
+    expect(store.project().layout.tables).toEqual(exported.layout.tables);
+    expect(store.project().layout.viewport).toEqual(exported.layout.viewport);
+  });
 });
