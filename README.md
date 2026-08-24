@@ -18,6 +18,9 @@
   <a href="https://github.com/JCEspitia/jc-diagram-db/actions/workflows/pages.yml">
     <img src="https://github.com/JCEspitia/jc-diagram-db/actions/workflows/pages.yml/badge.svg" alt="Estado del despliegue" />
   </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-6366f1.svg" alt="Licencia MIT" />
+  </a>
 </p>
 
 JC Diagram DB es un editor visual de esquemas relacionales compatible con DBML. Puedes trabajar
@@ -97,3 +100,9 @@ Si encuentras un error o quieres proponer una mejora, abre un
 arquitectura o preparar un cambio, consulta la [guía de desarrollo](docs/development.md).
 
 El alcance técnico y el roadmap detallado están disponibles en [PROJECT.md](PROJECT.md).
+
+## Licencia
+
+JC Diagram DB es software open source publicado bajo la [licencia MIT](LICENSE). Puedes usarlo,
+modificarlo y distribuirlo, incluso en proyectos comerciales, siempre que conserves el aviso de
+copyright y la licencia.
