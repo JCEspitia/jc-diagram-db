@@ -61,7 +61,6 @@ visuales son representaciones independientes.
 - Importación y exportación de `.dbml` y del formato completo `.diagramdb`.
 - PWA instalable con caché offline del editor, los recursos y el shell de la aplicación.
 - Indicador de conexión y activación controlada de nuevas versiones disponibles.
-- Aplicación de escritorio Tauri 2 con instaladores Windows NSIS (`.exe`) y MSI.
 
 ## Pendiente para completar el MVP
 
@@ -95,7 +94,6 @@ después de ejecutar un build de producción, usando `localhost` o HTTPS.
 ```bash
 npm test -- --watch=false
 npm run build
-npm run build:desktop
 ```
 
 ## Despliegue web
@@ -112,54 +110,6 @@ https://jcespitia.github.io/jc-diagram-db/
 ```
 
 También puede iniciarse manualmente desde **Actions → Deploy web app → Run workflow**.
-
-## Aplicación de escritorio
-
-El frontend Angular también puede ejecutarse dentro de Tauri sin depender de un servidor web.
-El service worker se desactiva automáticamente en el runtime de escritorio; los proyectos se
-mantienen localmente en el almacenamiento persistente de WebView2.
-
-La guía completa, incluyendo la copia desde WSL, instalación de Rust/MSVC, solución del error
-`link.exe not found` y ubicación de los instaladores, está en
-[Generar el instalador de DiagramDB para Windows](./docs/windows-desktop-build.md).
-
-Requisitos para compilar el instalador en Windows:
-
-1. Microsoft C++ Build Tools con la carga `Desktop development with C++`.
-2. Rust instalado con `rustup` y el toolchain estable MSVC.
-3. Node.js y las dependencias del proyecto instaladas con `npm install`.
-4. La característica opcional VBSCRIPT habilitada si se genera el instalador MSI.
-
-Desarrollo de escritorio:
-
-```bash
-npm run desktop:dev
-```
-
-Generar los instaladores:
-
-```bash
-npm run desktop:build
-```
-
-GitHub también puede generar y publicar ambos instaladores automáticamente mediante
-`.github/workflows/release-desktop.yml`. Antes de crear una versión, actualiza el mismo número en
-`package.json`, `src-tauri/tauri.conf.json` y `src-tauri/Cargo.toml`, haz commit y crea la etiqueta:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-La etiqueta dispara una compilación en Windows y crea un GitHub Release con el `.exe` y el
-`.msi`. Los instaladores aún no están firmados digitalmente, por lo que SmartScreen puede mostrar
-una advertencia.
-
-Los instaladores quedan bajo `src-tauri/target/release/bundle/nsis` y
-`src-tauri/target/release/bundle/msi`. La configuración incluye el instalador offline de
-WebView2 para que el equipo destino no necesite Internet; esto incrementa el tamaño del paquete
-aproximadamente 127 MB. Para distribución corporativa conviene firmar el instalador y evitar
-advertencias de Microsoft SmartScreen.
 
 ## Estructura del core
 

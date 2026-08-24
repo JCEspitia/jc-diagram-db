@@ -4,7 +4,6 @@
 /dist
 /tmp
 /out-tsc
-/src-tauri/target
 /bazel-out
 
 # Node
