@@ -21,6 +21,7 @@ import { ProjectBrowser } from './features/projects/project-browser/project-brow
 import { DiagramStore, supportsAutoIncrement } from './state/diagram.store';
 import { TooltipDirective } from './shared/tooltip/tooltip.directive';
 import { DEFAULT_TABLE_COLOR, TABLE_COLORS } from './shared/table-colors';
+import { PwaService } from './core/pwa/pwa.service';
 import {
   LucideChevronRight,
   LucideCheck,
@@ -91,6 +92,7 @@ import {
 })
 export class App {
   protected readonly store = inject(DiagramStore);
+  protected readonly pwa = inject(PwaService);
   protected readonly tableColors = TABLE_COLORS;
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
   private readonly canvas = viewChild(DiagramCanvas);

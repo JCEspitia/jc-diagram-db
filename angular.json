@@ -65,11 +65,12 @@
           },
           "configurations": {
             "production": {
+              "serviceWorker": "ngsw-config.json",
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "925kB",
-                  "maximumError": "975kB"
+                  "maximumWarning": "935kB",
+                  "maximumError": "985kB"
                 },
                 {
                   "type": "anyComponentStyle",

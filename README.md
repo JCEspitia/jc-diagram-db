@@ -59,6 +59,8 @@ visuales son representaciones independientes.
 - Persistencia automática del proyecto y restauración de la última sesión mediante IndexedDB.
 - Navegador de proyectos locales con creación, apertura, renombrado, duplicado y eliminación.
 - Importación y exportación de `.dbml` y del formato completo `.diagramdb`.
+- PWA instalable con caché offline del editor, los recursos y el shell de la aplicación.
+- Indicador de conexión y activación controlada de nuevas versiones disponibles.
 
 ## Pendiente para completar el MVP
 
@@ -82,6 +84,10 @@ npm start
 ```
 
 La aplicación estará disponible en `http://localhost:4200/`.
+
+El service worker está deshabilitado durante `ng serve` para evitar caché obsoleta. Para probar
+la instalación y el funcionamiento offline debe servirse el contenido de `dist/diagramdb/browser`
+después de ejecutar un build de producción, usando `localhost` o HTTPS.
 
 ## Verificación
 

@@ -34,6 +34,14 @@
         }
       }
     </span>
+    @if (!pwa.online()) {
+      <span class="connection offline"><i></i>Offline</span>
+    }
+    @if (pwa.updateReady()) {
+      <button class="update-ready" type="button" (click)="pwa.applyUpdate()">
+        Update available · Reload
+      </button>
+    }
     <nav aria-label="Project actions">
       <button
         type="button"

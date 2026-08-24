@@ -226,6 +226,33 @@ button {
 .saved.failed i {
   background: #ef6b73;
 }
+.connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+.connection i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e4ae52;
+}
+.connection.offline {
+  color: #e8bc70;
+}
+.update-ready {
+  padding: 5px 9px;
+  border: 1px solid #356f9e;
+  border-radius: 5px;
+  background: #1c405c;
+  color: #bfe2fa;
+  font-size: 10px;
+  cursor: pointer;
+}
+.update-ready:hover {
+  background: #255271;
+}
 @keyframes save-pulse {
   to {
     opacity: 0.35;
