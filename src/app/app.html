@@ -36,56 +36,11 @@
       >
         <svg lucideRedo2 size="16"></svg>
       </button>
-      <div class="export-control">
-        <button
-          class="export"
-          type="button"
-          [disabled]="exporting()"
-          (click)="exportMenu.update((open) => !open)"
-        >
-          Export
-        </button>
-        @if (exportMenu()) {
-          <div class="export-menu">
-            <header>
-              <strong>Export diagram</strong>
-              <small>Choose the content and file format.</small>
-            </header>
-            <label>
-              <span>Content</span>
-              <select
-                [value]="exportAreaId() ?? ''"
-                (change)="exportAreaId.set($any($event.target).value || null)"
-              >
-                <option value="">Complete diagram</option>
-                @for (entry of areaEntries(); track entry[0]) {
-                  <option [value]="entry[0]">Area: {{ entry[1].name }}</option>
-                }
-              </select>
-            </label>
-            <div class="export-formats">
-              <button type="button" (click)="performExport('png')">
-                <svg lucideFileImage size="17"></svg
-                ><span><b>PNG</b><small>High-resolution image</small></span>
-              </button>
-              <button type="button" (click)="performExport('svg')">
-                <svg lucideBraces size="17"></svg
-                ><span><b>SVG</b><small>Editable vector</small></span>
-              </button>
-              <button type="button" (click)="performExport('pdf')">
-                <svg lucideFileText size="17"></svg
-                ><span><b>PDF report</b><small>Diagram and documentation</small></span>
-              </button>
-            </div>
-            @if (!exportAreaId() && areaEntries().length) {
-              <p>The PDF includes the complete diagram and one additional page for every area.</p>
-            }
-            @if (exportError()) {
-              <p class="export-error">{{ exportError() }}</p>
-            }
-          </div>
-        }
-      </div>
+      <app-export-menu
+        [schema]="store.schema()"
+        [layout]="store.layout()"
+        [projectName]="store.project().name"
+      />
     </nav>
   </header>
   <div

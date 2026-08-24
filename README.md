@@ -49,6 +49,30 @@ visuales son representaciones independientes.
 - Edición temporal sobre las tablas para acceder a tramos ocultos y `Reset line` visible solo en rutas desviadas.
 - Foco por columna: al pasar el cursor se resaltan sus relaciones y se anima su dirección.
 - Auto layout `Left to right`, `Pipeline`, `Snowflake` y `Compact`.
+- Sidebar de gestión para tablas, columnas, índices, enums y áreas.
+- Comentarios, valores por defecto, checks, índices compuestos y colores de tabla.
+- Áreas persistidas como `tablegroup`, con asignación explícita y ajuste automático.
+- Niveles de detalle para mostrar todas las columnas, solo llaves o solo tablas.
+- Exportación a PNG, SVG y PDF, completa o por área; el PDF incluye documentación.
+- Tooltips enriquecidos e iconos para metadatos de tablas y columnas.
+- Compatibilidad con contextos HTTP que no exponen `crypto.randomUUID`.
+
+## Pendiente para completar el MVP
+
+- Persistencia y autosave con IndexedDB.
+- Gestión de múltiples proyectos desde una pantalla de inicio.
+- Importación y exportación de DBML como archivo.
+- Importación y exportación del formato `.diagramdb`.
+- Restauración del proyecto y del viewport al recargar.
+- Cobertura end-to-end para las interacciones principales del canvas.
+
+## Rendimiento y dependencias opcionales
+
+Monaco se carga bajo demanda, pero su hoja de estilos base debe formar parte de los estilos
+iniciales para que el editor se renderice correctamente. El exportador también se carga bajo
+demanda; `jsPDF`, `canvg` y `html2canvas` solo se descargan al solicitar una exportación PDF.
+Las dependencias CommonJS transitivas de ese flujo están declaradas explícitamente en
+`angular.json`.
 
 El alcance completo y el roadmap están descritos en [PROJECT.md](./PROJECT.md).
 
