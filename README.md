@@ -56,10 +56,10 @@ visuales son representaciones independientes.
 - Exportación a PNG, SVG y PDF, completa o por área; el PDF incluye documentación.
 - Tooltips enriquecidos e iconos para metadatos de tablas y columnas.
 - Compatibilidad con contextos HTTP que no exponen `crypto.randomUUID`.
+- Persistencia automática del proyecto y restauración de la última sesión mediante IndexedDB.
 
 ## Pendiente para completar el MVP
 
-- Persistencia y autosave con IndexedDB.
 - Gestión de múltiples proyectos desde una pantalla de inicio.
 - Importación y exportación de DBML como archivo.
 - Importación y exportación del formato `.diagramdb`.

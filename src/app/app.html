@@ -4,8 +4,29 @@
       ><span class="brand-mark">D</span><span>Diagram<span>DB</span></span></a
     >
     <span class="divider"></span>
-    <span class="project-name">Ecommerce</span>
-    <span class="saved">Browser session</span>
+    <span class="project-name">{{ store.project().name }}</span>
+    <span
+      class="saved"
+      [class.saving]="store.persistenceState() === 'saving'"
+      [class.failed]="store.persistenceState() === 'error'"
+      [appTooltip]="store.persistenceError() ?? ''"
+    >
+      <i></i>
+      @switch (store.persistenceState()) {
+        @case ('loading') {
+          Loading project…
+        }
+        @case ('saving') {
+          Saving…
+        }
+        @case ('saved') {
+          Saved locally
+        }
+        @case ('error') {
+          Save failed
+        }
+      }
+    </span>
     <nav aria-label="Project actions">
       <button
         type="button"

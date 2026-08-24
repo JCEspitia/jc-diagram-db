@@ -28,6 +28,10 @@ import {
   validateSchema,
   ViewportState,
 } from '../core/schema';
+import {
+  IndexedDbProjectRepository,
+  ProjectRepository,
+} from '../core/persistence/project.repository';
 
 export const EXAMPLE_DBML = `Table users {
   id uuid [pk]
@@ -44,16 +48,21 @@ Ref: posts.user_id > users.id`;
 
 @Injectable({ providedIn: 'root' })
 export class DiagramStore {
+  private readonly repository: ProjectRepository;
   private readonly parser = new SimpleDbmlParser();
   private readonly generator = new SimpleDbmlGenerator();
   private readonly reconciler = new DefaultSchemaReconciler();
   private parseTimer?: ReturnType<typeof setTimeout>;
+  private saveTimer?: ReturnType<typeof setTimeout>;
+  private persistenceReady = false;
   private readonly undoStack = signal<DiagramProject[]>([]);
   private readonly redoStack = signal<DiagramProject[]>([]);
   readonly project = signal<DiagramProject>(createExampleProject());
   readonly selection = signal<DiagramSelection | null>(null);
   readonly dbmlErrors = signal<DbmlParseError[]>([]);
   readonly changeOrigin = signal<'editor' | 'canvas' | 'import' | 'system'>('system');
+  readonly persistenceState = signal<'loading' | 'saving' | 'saved' | 'error'>('loading');
+  readonly persistenceError = signal<string | null>(null);
   readonly schema = computed(() => this.project().schema);
   readonly layout = computed(() => this.project().layout);
   readonly dbml = computed(() => this.project().dbml);
@@ -68,6 +77,12 @@ export class DiagramStore {
     const relationshipId = this.selection()?.relationshipId;
     return this.schema().relationships.find(({ id }) => id === relationshipId) ?? null;
   });
+
+  constructor(repository: IndexedDbProjectRepository = new IndexedDbProjectRepository()) {
+    this.repository = repository;
+    const initialProject = this.project();
+    void this.restoreProject(initialProject);
+  }
 
   applyDiagramOperation(operation: DiagramOperation): void {
     this.changeOrigin.set('canvas');
@@ -110,7 +125,7 @@ export class DiagramStore {
 
   setDbml(source: string): void {
     this.changeOrigin.set('editor');
-    this.project.update((project) => ({
+    this.updateProject((project) => ({
       ...project,
       dbml: source,
       updatedAt: new Date().toISOString(),
@@ -126,7 +141,7 @@ export class DiagramStore {
         this.dbmlErrors.set(validationErrors.map(({ message }) => ({ message })));
         return;
       }
-      this.project.update((project) => ({
+      this.updateProject((project) => ({
         ...project,
         schema: reconciled,
         layout: synchronizeLayout(project.layout, reconciled),
@@ -539,7 +554,7 @@ export class DiagramStore {
       },
     });
     if (sourceSide || targetSide) {
-      this.project.update((project) => ({
+      this.updateProject((project) => ({
         ...project,
         layout: executeDiagramOperation(project.layout, {
           type: 'CHANGE_RELATIONSHIP_ROUTE',
@@ -637,7 +652,7 @@ export class DiagramStore {
     if (!previous) return;
     this.undoStack.update((stack) => stack.slice(0, -1));
     this.redoStack.update((stack) => [...stack, this.project()]);
-    this.project.set(previous);
+    this.replaceProject(previous);
     this.clearInvalidSelection();
   }
 
@@ -646,7 +661,7 @@ export class DiagramStore {
     if (!next) return;
     this.redoStack.update((stack) => stack.slice(0, -1));
     this.undoStack.update((stack) => [...stack, this.project()]);
-    this.project.set(next);
+    this.replaceProject(next);
     this.clearInvalidSelection();
   }
 
@@ -668,8 +683,65 @@ export class DiagramStore {
       this.undoStack.update((stack) => [...stack.slice(-99), this.project()]);
       this.redoStack.set([]);
     }
-    this.project.set(project);
+    this.replaceProject(project);
   }
+
+  private updateProject(update: (project: DiagramProject) => DiagramProject): void {
+    this.replaceProject(update(this.project()));
+  }
+
+  private replaceProject(project: DiagramProject): void {
+    this.project.set(project);
+    if (this.persistenceReady) this.scheduleSave(project);
+  }
+
+  private async restoreProject(initialProject: DiagramProject): Promise<void> {
+    try {
+      const saved = await this.repository.loadLastProject();
+      this.persistenceReady = true;
+      if (saved && this.project() === initialProject) {
+        this.project.set(saved);
+        this.undoStack.set([]);
+        this.redoStack.set([]);
+        this.dbmlErrors.set([]);
+        this.clearSelection();
+      } else if (saved) {
+        // The user edited the initial project before IndexedDB finished
+        // loading. Their in-memory work wins over the older saved snapshot.
+        this.scheduleSave(this.project());
+        return;
+      } else if (!saved) {
+        this.scheduleSave(this.project());
+        return;
+      }
+      this.persistenceState.set('saved');
+    } catch (error) {
+      this.persistenceReady = true;
+      this.persistenceState.set('error');
+      this.persistenceError.set(errorMessage(error));
+    }
+  }
+
+  private scheduleSave(project: DiagramProject): void {
+    clearTimeout(this.saveTimer);
+    this.persistenceState.set('saving');
+    this.persistenceError.set(null);
+    this.saveTimer = setTimeout(() => void this.save(project), 700);
+  }
+
+  private async save(project: DiagramProject): Promise<void> {
+    try {
+      await this.repository.saveProject(project);
+      if (this.project().updatedAt === project.updatedAt) this.persistenceState.set('saved');
+    } catch (error) {
+      this.persistenceState.set('error');
+      this.persistenceError.set(errorMessage(error));
+    }
+  }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'The project could not be saved.';
 }
 
 function nextName(base: string, existingNames: string[]): string {

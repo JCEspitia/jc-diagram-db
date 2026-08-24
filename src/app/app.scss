@@ -204,6 +204,21 @@ button {
   border-radius: 50%;
   background: #46c99b;
 }
+.saved.saving i {
+  background: #e4ae52;
+  animation: save-pulse 900ms ease-in-out infinite alternate;
+}
+.saved.failed {
+  color: #ff9aa2;
+}
+.saved.failed i {
+  background: #ef6b73;
+}
+@keyframes save-pulse {
+  to {
+    opacity: 0.35;
+  }
+}
 .topbar nav {
   margin-left: auto;
   display: flex;
