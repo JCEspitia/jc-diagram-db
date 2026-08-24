@@ -14,6 +14,7 @@ import {
   DefaultSchemaReconciler,
   createColumn,
   createEntityId,
+  createUuid,
   createTable,
   DatabaseSchema,
   DiagramAreaLayout,
@@ -891,7 +892,7 @@ function createExampleProject(): DiagramProject {
   return {
     format: 'diagramdb',
     formatVersion: 1,
-    id: crypto.randomUUID(),
+    id: createUuid(),
     name: 'Ecommerce',
     schema,
     layout: {

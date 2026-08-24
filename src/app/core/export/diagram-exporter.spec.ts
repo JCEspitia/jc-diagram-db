@@ -6,6 +6,7 @@ import { renderDiagramSvg } from './diagram-exporter';
 describe('diagram exporter', () => {
   const schema = new SimpleDbmlParser().parse(`Table users {
   id int [pk]
+  email varchar [not null, unique, default: 'unknown', note: 'Login address']
 }
 Table audit_log {
   id int [pk]
@@ -41,6 +42,10 @@ TableGroup core [color: #d35400] {
     expect(svg.source).toContain('users');
     expect(svg.source).toContain('audit_log');
     expect(svg.source).toContain('core');
+    expect(svg.source).toContain('unique-icon');
+    expect(svg.source).toContain('comment-icon');
+    expect(svg.source).toContain('info-icon');
+    expect(svg.source).toContain('>NN<');
   });
 
   it('limits area exports to the tables assigned to that area', () => {
