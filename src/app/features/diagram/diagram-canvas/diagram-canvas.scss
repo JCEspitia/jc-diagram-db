@@ -165,9 +165,10 @@
 .edge-shadow.dimmed {
   opacity: 0.12;
 }
-.edge.selected {
+.edge.selected,
+.edge.hovered {
   stroke: #3558ff;
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
 .edge-flow {
   fill: none;

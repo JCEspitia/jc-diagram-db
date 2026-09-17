@@ -19,9 +19,8 @@ import {
   OrthogonalRoute,
   orthogonalRoutePoints,
   Point,
-  pullOrthogonalSegment,
   roundedPolylinePath,
-  routeAroundObstacles,
+  routeWithObstacleRouter,
   screenToWorld,
   tableLayout,
   zoomAtPoint,
@@ -213,6 +212,7 @@ export class DiagramCanvas {
     segmentIndex: number;
     orientation: 'horizontal' | 'vertical';
   } | null>(null);
+  protected readonly hoveredRelationshipId = signal<string | null>(null);
   private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
   protected readonly relationshipToolboxId = signal<string | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
@@ -287,9 +287,15 @@ export class DiagramCanvas {
             bottom: position.y + this.visualTableHeight(table),
           };
         });
-      if (!manuallyRouted) {
-        route = routeAroundObstacles(source, target, route, obstacles);
-      }
+      const routedPoints = manuallyRouted
+        ? null
+        : routeWithObstacleRouter(
+            source,
+            target,
+            sourceSide,
+            targetSide,
+            obstacles,
+          );
       const selectedTableIds = new Set(
         this.selectedTableIds().length
           ? this.selectedTableIds()
@@ -325,7 +331,7 @@ export class DiagramCanvas {
         isOrthogonalPolyline(savedPoints) &&
         routeExitsOutward(savedPoints, sourceSide, targetSide)
           ? savedPoints
-          : orthogonalRoutePoints(source, target, route);
+          : routedPoints ?? orthogonalRoutePoints(source, target, route);
       const automaticSource = sourceArea
         ? collapsedAreaAnchor(sourceArea, sourceOnLeft ? 'left' : 'right')
         : this.visualAnchor(sourceLayout, sourceIndex, sourceOnLeft ? 'left' : 'right');
@@ -333,20 +339,18 @@ export class DiagramCanvas {
         ? collapsedAreaAnchor(targetArea, sourceOnLeft ? 'right' : 'left')
         : this.visualAnchor(targetLayout, targetIndex, sourceOnLeft ? 'right' : 'left');
       const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
-      const automaticRoute = routeAroundObstacles(
-        automaticSource,
-        automaticTarget,
-        {
+      const automaticPoints =
+        routeWithObstacleRouter(
+          automaticSource,
+          automaticTarget,
+          sourceOnLeft ? 'left' : 'right',
+          sourceOnLeft ? 'right' : 'left',
+          obstacles,
+        ) ??
+        orthogonalRoutePoints(automaticSource, automaticTarget, {
           ...automaticDefaults,
           routeY: automaticDefaults.routeY + ((relationshipIndex % 5) - 2) * 10,
-        },
-        obstacles,
-      );
-      const automaticPoints = orthogonalRoutePoints(
-        automaticSource,
-        automaticTarget,
-        automaticRoute,
-      );
+        });
       return [
         {
           relationship,
@@ -655,20 +659,11 @@ export class DiagramCanvas {
         this.layout().viewport,
       );
       const requestedCoordinate = interaction.orientation === 'horizontal' ? cursor.y : cursor.x;
-      const coordinate = keepSegmentOutsideTables(
-        interaction.points,
-        interaction.segmentIndex,
-        interaction.orientation,
-        requestedCoordinate,
-        this.schema(),
-        this.layout(),
-        this.tablePreview(),
-      );
       const points = moveOrthogonalSegment(
         interaction.points,
         interaction.segmentIndex,
         interaction.orientation,
-        coordinate,
+        requestedCoordinate,
       );
       this.routePreview.set({
         relationshipId: interaction.relationshipId,
@@ -1001,6 +996,7 @@ export class DiagramCanvas {
 
   protected hoverRelationshipSegment(event: PointerEvent, edge: RenderedRelationship): void {
     if (this.interaction) return;
+    this.hoveredRelationshipId.set(edge.relationship.id);
     const bounds = this.viewportElement().nativeElement.getBoundingClientRect();
     const cursor = screenToWorld(
       { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
@@ -1025,6 +1021,7 @@ export class DiagramCanvas {
   }
 
   protected clearHoveredSegment(event: PointerEvent, relationshipId: string): void {
+    if (this.hoveredRelationshipId() === relationshipId) this.hoveredRelationshipId.set(null);
     if ((event.relatedTarget as Element | null)?.classList.contains('route-handle')) return;
     if (this.hoveredSegment()?.relationshipId === relationshipId && !this.interaction) {
       this.hoveredSegment.set(null);
@@ -1037,16 +1034,15 @@ export class DiagramCanvas {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    const pulled = pullOrthogonalSegment(edge.points, hovered.segmentIndex, hovered.point);
     this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
       kind: 'segment',
       pointerId: event.pointerId,
       relationshipId: edge.relationship.id,
       from: this.layout().relationships?.[edge.relationship.id],
-      segmentIndex: pulled.segmentIndex,
+      segmentIndex: hovered.segmentIndex,
       orientation: hovered.orientation,
-      points: pulled.points,
+      points: edge.points,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
     this.hoveredSegment.set(null);
@@ -1254,65 +1250,4 @@ function routeExitsOutward(
   const targetExitsOutward =
     targetSide === 'left' ? beforeTarget.x < target.x : beforeTarget.x > target.x;
   return sourceExitsOutward && targetExitsOutward;
-}
-
-function keepSegmentOutsideTables(
-  points: Point[],
-  segmentIndex: number,
-  orientation: 'horizontal' | 'vertical',
-  requestedCoordinate: number,
-  schema: DatabaseSchema,
-  layout: DiagramLayout,
-  preview: Record<string, TableLayout>,
-): number {
-  const start = points[segmentIndex];
-  const end = points[segmentIndex + 1];
-  if (!start || !end) return requestedCoordinate;
-
-  let coordinate = requestedCoordinate;
-  for (const table of schema.tables) {
-    const position = preview[table.id] ?? tableLayout(layout, table.id);
-    const left = position.x - ENDPOINT_LANE_DISTANCE;
-    const right =
-      position.x + (position.width ?? DEFAULT_TABLE_METRICS.width) + ENDPOINT_LANE_DISTANCE;
-    const top = position.y - ENDPOINT_LANE_DISTANCE;
-    const bottom =
-      position.y +
-      DEFAULT_TABLE_METRICS.headerHeight +
-      visibleColumnCount(schema, layout, table) * DEFAULT_TABLE_METRICS.rowHeight +
-      ENDPOINT_LANE_DISTANCE;
-
-    if (orientation === 'vertical') {
-      const overlapsVertically =
-        Math.max(start.y, end.y) >= top && Math.min(start.y, end.y) <= bottom;
-      if (overlapsVertically && coordinate > left && coordinate < right) {
-        coordinate = coordinate - left <= right - coordinate ? left : right;
-      }
-    } else {
-      const overlapsHorizontally =
-        Math.max(start.x, end.x) >= left && Math.min(start.x, end.x) <= right;
-      if (overlapsHorizontally && coordinate > top && coordinate < bottom) {
-        coordinate = coordinate - top <= bottom - coordinate ? top : bottom;
-      }
-    }
-  }
-  return coordinate;
-}
-
-function visibleColumnCount(
-  schema: DatabaseSchema,
-  layout: DiagramLayout,
-  table: TableSchema,
-): number {
-  const level = layout.detailLevel ?? 'all';
-  if (level === 'names') return 0;
-  if (level === 'all') return table.columns.length;
-  return table.columns.filter(
-    ({ id, primaryKey }) =>
-      primaryKey ||
-      table.indexes.some((index) => index.primaryKey && index.columns.includes(id)) ||
-      schema.relationships.some(
-        ({ sourceColumnId, targetColumnId }) => sourceColumnId === id || targetColumnId === id,
-      ),
-  ).length;
 }

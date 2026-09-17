@@ -11,6 +11,7 @@ import {
   normalizeOrthogonalPolyline,
   pullOrthogonalSegment,
   roundedPolylinePath,
+  routeWithObstacleRouter,
   orthogonalRelationshipPath,
   screenToWorld,
   worldToScreen,
@@ -18,6 +19,25 @@ import {
 } from './diagram-geometry';
 
 describe('diagram geometry', () => {
+  it('routes an automatic connector around an intervening table', () => {
+    const points = routeWithObstacleRouter(
+      { x: 200, y: 30 },
+      { x: 500, y: 30 },
+      'right',
+      'left',
+      [{ left: 250, top: -30, right: 410, bottom: 90 }],
+    );
+
+    expect(points).toEqual([
+      { x: 200, y: 30 },
+      { x: 232, y: 30 },
+      { x: 232, y: -48 },
+      { x: 464, y: -48 },
+      { x: 464, y: 30 },
+      { x: 500, y: 30 },
+    ]);
+  });
+
   it('converts between world and screen coordinates', () => {
     const viewport = { x: 100, y: 40, zoom: 1.5 };
     const world = { x: 20, y: 30 };

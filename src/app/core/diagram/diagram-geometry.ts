@@ -1,4 +1,5 @@
 import { DatabaseSchema, DiagramLayout, TableLayout, ViewportState } from '../schema';
+import { routeEdges } from 'libavoided-js';
 
 export interface Point {
   x: number;
@@ -85,6 +86,63 @@ export interface Rectangle {
   top: number;
   right: number;
   bottom: number;
+}
+
+/**
+ * Routes a connector through the current diagram without moving its tables.
+ *
+ * libavoided-js is a TypeScript implementation of libavoid's obstacle router.
+ * Keeping this adapter here means the canvas continues to own rendering and
+ * editable waypoints, while the specialized router owns only automatic paths.
+ */
+export function routeWithObstacleRouter(
+  source: Point,
+  target: Point,
+  sourceSide: 'left' | 'right',
+  targetSide: 'left' | 'right',
+  obstacles: Rectangle[],
+): Point[] | null {
+  const result = routeEdges(
+    {
+      obstacles: obstacles.map((obstacle, index) => ({
+        id: `obstacle-${index}`,
+        x: obstacle.left,
+        y: obstacle.top,
+        width: obstacle.right - obstacle.left,
+        height: obstacle.bottom - obstacle.top,
+      })),
+      edges: [
+        {
+          id: 'relationship',
+          sourceId: 'source',
+          targetId: 'target',
+          sourcePoint: source,
+          targetPoint: target,
+          sourceDirection: sourceSide,
+          // The router constrains the final travel direction, which is the
+          // inverse of the side occupied by the target port.
+          targetDirection: targetSide === 'left' ? 'right' : 'left',
+        },
+      ],
+    },
+    {
+      obstacleMargin: 18,
+      edgeSpacing: 10,
+      bendPenalty: 56,
+      crossingPenalty: 220,
+    },
+  );
+  const section = result.edges[0]?.sections[0];
+  if (!section) return null;
+  const points = [section.startPoint, ...section.bendPoints, section.endPoint];
+  return points.every(
+    (point, index) =>
+      index === 0 ||
+      Math.abs(point.x - points[index - 1]!.x) < 0.01 ||
+      Math.abs(point.y - points[index - 1]!.y) < 0.01,
+  )
+    ? normalizeOrthogonalPolyline(points)
+    : null;
 }
 
 export function editableOrthogonalPath(
