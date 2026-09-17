@@ -1220,7 +1220,12 @@ export class DiagramCanvas {
     event.preventDefault();
     event.stopPropagation();
     if (!hovered.insertion) return;
-    const pulled = splitVerticalSegment(edge.points, hovered.segmentIndex, hovered.insertion);
+    const pulled = splitOrthogonalSegment(
+      edge.points,
+      hovered.segmentIndex,
+      hovered.orientation,
+      hovered.insertion,
+    );
     this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
       kind: 'segment',
@@ -1362,22 +1367,24 @@ function oppositeSideWhenCrossed(
 
 function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
   const candidates: RouteSegmentHandle[] = [];
-  // Only vertical segments bounded by corners can split. Ports and horizontal
-  // runs keep their own geometry and never grow detours.
+  // Only segments bounded by corners can split. Ports keep their own geometry
+  // and never grow detours.
   for (let index = 1; index < points.length - 2; index += 1) {
     const start = points[index]!;
     const end = points[index + 1]!;
+    const horizontal = Math.abs(start.y - end.y) < 0.01;
     const vertical = Math.abs(start.x - end.x) < 0.01;
     const before = points[index - 1]!;
     const after = points[index + 2]!;
     if (
-      !vertical ||
-      Math.abs(before.y - start.y) >= 0.01 ||
-      Math.abs(end.y - after.y) >= 0.01
+      (!vertical && !horizontal) ||
+      (vertical && (Math.abs(before.y - start.y) >= 0.01 || Math.abs(end.y - after.y) >= 0.01)) ||
+      (horizontal &&
+        (Math.abs(before.x - start.x) >= 0.01 || Math.abs(end.x - after.x) >= 0.01))
     ) {
       continue;
     }
-    const length = Math.abs(end.y - start.y);
+    const length = horizontal ? Math.abs(end.x - start.x) : Math.abs(end.y - start.y);
     if (length < MIN_ROUTE_POINT_DISTANCE * 4) continue;
     for (const [ratio, insertion] of [
       [0.25, 'end'],
@@ -1385,8 +1392,11 @@ function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
     ] as const) {
       candidates.push({
         segmentIndex: index,
-        point: { x: start.x, y: start.y + (end.y - start.y) * ratio },
-        orientation: 'vertical',
+        point: {
+          x: start.x + (end.x - start.x) * ratio,
+          y: start.y + (end.y - start.y) * ratio,
+        },
+        orientation: horizontal ? 'horizontal' : 'vertical',
         insertion,
       });
     }
@@ -1394,20 +1404,24 @@ function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
   return candidates;
 }
 
-function splitVerticalSegment(
+function splitOrthogonalSegment(
   points: Point[],
   segmentIndex: number,
+  orientation: 'horizontal' | 'vertical',
   insertion: 'start' | 'end',
 ): { points: Point[]; segmentIndex: number } {
   const start = points[segmentIndex]!;
   const end = points[segmentIndex + 1]!;
-  const middleY = (start.y + end.y) / 2;
+  const middle =
+    orientation === 'horizontal'
+      ? { x: (start.x + end.x) / 2, y: start.y }
+      : { x: start.x, y: (start.y + end.y) / 2 };
   if (insertion === 'start') {
     return {
       points: [
         ...points.slice(0, segmentIndex + 1),
-        { x: start.x, y: middleY },
-        { x: start.x, y: middleY },
+        middle,
+        { ...middle },
         { x: end.x, y: end.y },
         ...points.slice(segmentIndex + 2),
       ],
@@ -1418,8 +1432,8 @@ function splitVerticalSegment(
     points: [
       ...points.slice(0, segmentIndex),
       { x: start.x, y: start.y },
-      { x: start.x, y: middleY },
-      { x: end.x, y: middleY },
+      middle,
+      { ...middle },
       { x: end.x, y: end.y },
       ...points.slice(segmentIndex + 2),
     ],
