@@ -280,6 +280,7 @@
                 [attr.cx]="candidate.point.x"
                 [attr.cy]="candidate.point.y"
                 r="1.8"
+                (pointerdown)="startCandidateSegment($event, edge, candidate)"
               />
             }
             @for (handle of edge.handles; track handle.segmentIndex) {

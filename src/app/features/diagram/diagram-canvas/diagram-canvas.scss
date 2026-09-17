@@ -204,7 +204,8 @@
 .route-candidate {
   fill: #3558ff;
   opacity: 0.8;
-  pointer-events: none;
+  pointer-events: all;
+  cursor: move;
 }
 .route-reset {
   overflow: visible;

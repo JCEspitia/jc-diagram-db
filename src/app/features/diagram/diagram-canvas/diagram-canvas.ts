@@ -71,7 +71,8 @@ interface RouteSegmentHandle {
   segmentIndex: number;
   point: Point;
   orientation: 'horizontal' | 'vertical';
-  insertion?: 'start' | 'end';
+  insertion?: 'start' | 'end' | 'source-half';
+  splitRatio?: number;
 }
 
 interface RelationshipEndpoint {
@@ -213,7 +214,8 @@ export class DiagramCanvas {
     point: Point;
     segmentIndex: number;
     orientation: 'horizontal' | 'vertical';
-    insertion?: 'start' | 'end';
+    insertion?: 'start' | 'end' | 'source-half';
+    splitRatio?: number;
   } | null>(null);
   protected readonly hoveredRelationshipId = signal<string | null>(null);
   private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
@@ -1165,6 +1167,27 @@ export class DiagramCanvas {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
+    if (handle.insertion) {
+      const pulled = splitOrthogonalSegment(
+        edge.points,
+        handle.segmentIndex,
+        handle.orientation,
+        handle.insertion,
+        handle.splitRatio,
+      );
+      this.relationshipSelected.emit(edge.relationship.id);
+      this.interaction = {
+        kind: 'segment',
+        pointerId: event.pointerId,
+        relationshipId: edge.relationship.id,
+        from: this.layout().relationships?.[edge.relationship.id],
+        segmentIndex: pulled.segmentIndex,
+        orientation: handle.orientation,
+        points: pulled.points,
+      };
+      (event.target as Element).setPointerCapture(event.pointerId);
+      return;
+    }
     this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
       kind: 'segment',
@@ -1202,6 +1225,7 @@ export class DiagramCanvas {
       segmentIndex: nearest.candidate.segmentIndex,
       orientation: nearest.candidate.orientation,
       insertion: nearest.candidate.insertion,
+      splitRatio: nearest.candidate.splitRatio,
     });
   }
 
@@ -1216,15 +1240,24 @@ export class DiagramCanvas {
   protected startHoveredSegment(event: PointerEvent, edge: RenderedRelationship): void {
     const hovered = this.hoveredSegment();
     if (!hovered || hovered.relationshipId !== edge.relationship.id) return;
-    if (event.button !== 0) return;
+    this.startCandidateSegment(event, edge, hovered);
+    this.hoveredSegment.set(null);
+  }
+
+  protected startCandidateSegment(
+    event: PointerEvent,
+    edge: RenderedRelationship,
+    candidate: RouteSegmentHandle,
+  ): void {
+    if (event.button !== 0 || !candidate.insertion) return;
     event.preventDefault();
     event.stopPropagation();
-    if (!hovered.insertion) return;
     const pulled = splitOrthogonalSegment(
       edge.points,
-      hovered.segmentIndex,
-      hovered.orientation,
-      hovered.insertion,
+      candidate.segmentIndex,
+      candidate.orientation,
+      candidate.insertion,
+      candidate.splitRatio,
     );
     this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
@@ -1233,11 +1266,10 @@ export class DiagramCanvas {
       relationshipId: edge.relationship.id,
       from: this.layout().relationships?.[edge.relationship.id],
       segmentIndex: pulled.segmentIndex,
-      orientation: hovered.orientation,
+      orientation: candidate.orientation,
       points: pulled.points,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
-    this.hoveredSegment.set(null);
   }
 
   protected setHoveredColumn(column: { tableId: string; columnId: string } | null): void {
@@ -1339,6 +1371,32 @@ export class DiagramCanvas {
 
 function routeSegmentHandles(points: Point[]): RouteSegmentHandle[] {
   const handles: RouteSegmentHandle[] = [];
+  for (const index of [0, points.length - 2]) {
+    const start = points[index];
+    const end = points[index + 1];
+    const adjacent = index === 0 ? points[2] : points.at(-3);
+    if (!start || !end || !adjacent) continue;
+    const horizontal = Math.abs(start.y - end.y) < 0.01;
+    const vertical = Math.abs(start.x - end.x) < 0.01;
+    const length = horizontal ? Math.abs(end.x - start.x) : Math.abs(end.y - start.y);
+    const turnsAtCorner =
+      index === 0
+        ? horizontal
+          ? Math.abs(end.x - adjacent.x) < 0.01
+          : Math.abs(end.y - adjacent.y) < 0.01
+        : horizontal
+          ? Math.abs(adjacent.x - start.x) < 0.01
+          : Math.abs(adjacent.y - start.y) < 0.01;
+    if ((!horizontal && !vertical) || !turnsAtCorner || length < MIN_ROUTE_POINT_DISTANCE * 4) {
+      continue;
+    }
+    handles.push({
+      segmentIndex: index,
+      point: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+      orientation: horizontal ? 'horizontal' : 'vertical',
+      insertion: index === 0 ? 'start' : 'end',
+    });
+  }
   for (let index = 1; index < points.length - 2; index += 1) {
     const start = points[index]!;
     const end = points[index + 1]!;
@@ -1367,13 +1425,52 @@ function oppositeSideWhenCrossed(
 
 function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
   const candidates: RouteSegmentHandle[] = [];
-  // Only segments bounded by corners can split. Ports keep their own geometry
-  // and never grow detours.
-  for (let index = 1; index < points.length - 2; index += 1) {
+  for (let index = 0; index < points.length - 1; index += 1) {
     const start = points[index]!;
     const end = points[index + 1]!;
     const horizontal = Math.abs(start.y - end.y) < 0.01;
     const vertical = Math.abs(start.x - end.x) < 0.01;
+    const length = horizontal ? Math.abs(end.x - start.x) : Math.abs(end.y - start.y);
+    if (length < MIN_ROUTE_POINT_DISTANCE * 4) continue;
+
+    // The run next to a table has one fixed end. Its center splits the free
+    // half while preserving the table anchor and its cardinality marker.
+    if (index === 0 || index === points.length - 2) {
+      const adjacent = index === 0 ? points[2] : points.at(-3);
+      const turnsAfterStart =
+        index === 0 && adjacent
+          ? horizontal
+            ? Math.abs(end.x - adjacent.x) < 0.01
+            : Math.abs(end.y - adjacent.y) < 0.01
+          : index === points.length - 2 && adjacent
+            ? horizontal
+              ? Math.abs(adjacent.x - start.x) < 0.01
+              : Math.abs(adjacent.y - start.y) < 0.01
+            : false;
+      if (!turnsAfterStart) continue;
+      const candidatesForEndpoint =
+        index === 0
+          ? ([[0.25, 'source-half']] as const)
+          : ([
+              [0.25, 'end'],
+              [0.75, 'end'],
+            ] as const);
+      for (const [ratio, insertion] of candidatesForEndpoint) {
+        candidates.push({
+          segmentIndex: index,
+          point: {
+            x: start.x + (end.x - start.x) * ratio,
+            y: start.y + (end.y - start.y) * ratio,
+          },
+          orientation: horizontal ? 'horizontal' : 'vertical',
+          insertion,
+          splitRatio: index === 0 ? undefined : 1 - ratio,
+        });
+      }
+      continue;
+    }
+
+    // Internal segments need a corner at both ends before they can split.
     const before = points[index - 1]!;
     const after = points[index + 2]!;
     if (
@@ -1384,8 +1481,6 @@ function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
     ) {
       continue;
     }
-    const length = horizontal ? Math.abs(end.x - start.x) : Math.abs(end.y - start.y);
-    if (length < MIN_ROUTE_POINT_DISTANCE * 4) continue;
     for (const [ratio, insertion] of [
       [0.25, 'end'],
       [0.75, 'start'],
@@ -1408,14 +1503,66 @@ function splitOrthogonalSegment(
   points: Point[],
   segmentIndex: number,
   orientation: 'horizontal' | 'vertical',
-  insertion: 'start' | 'end',
+  insertion: 'start' | 'end' | 'source-half',
+  splitRatio?: number,
 ): { points: Point[]; segmentIndex: number } {
   const start = points[segmentIndex]!;
   const end = points[segmentIndex + 1]!;
+  if (insertion === 'source-half') {
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    const direction =
+      orientation === 'horizontal' ? Math.sign(end.x - start.x) : Math.sign(end.y - start.y);
+    const anchorDistance = Math.min(ENDPOINT_LANE_DISTANCE, length / 4);
+    const anchor =
+      orientation === 'horizontal'
+        ? { x: start.x + direction * anchorDistance, y: start.y }
+        : { x: start.x, y: start.y + direction * anchorDistance };
+    const middle =
+      orientation === 'horizontal'
+        ? { x: start.x + direction * (length / 2), y: start.y }
+        : { x: start.x, y: start.y + direction * (length / 2) };
+    return {
+      points: [
+        ...points.slice(0, segmentIndex + 1),
+        anchor,
+        { ...anchor },
+        { ...middle },
+        middle,
+        { x: end.x, y: end.y },
+        ...points.slice(segmentIndex + 2),
+      ],
+      segmentIndex: segmentIndex + 2,
+    };
+  }
+  const isSourceRun = segmentIndex === 0 && insertion === 'start';
+  const isTargetRun = segmentIndex === points.length - 2 && insertion === 'end';
+  const length = Math.hypot(end.x - start.x, end.y - start.y);
+  const splitDistance =
+    splitRatio !== undefined
+      ? length * splitRatio
+      : isSourceRun || isTargetRun
+        ? Math.min(ENDPOINT_LANE_DISTANCE, length / 2)
+        : length / 2;
+  const direction =
+    orientation === 'horizontal' ? Math.sign(end.x - start.x) : Math.sign(end.y - start.y);
   const middle =
     orientation === 'horizontal'
-      ? { x: (start.x + end.x) / 2, y: start.y }
-      : { x: start.x, y: (start.y + end.y) / 2 };
+      ? {
+          x: isSourceRun
+            ? start.x + direction * splitDistance
+            : isTargetRun
+              ? end.x - direction * splitDistance
+              : (start.x + end.x) / 2,
+          y: start.y,
+        }
+      : {
+          x: start.x,
+          y: isSourceRun
+            ? start.y + direction * splitDistance
+            : isTargetRun
+              ? end.y - direction * splitDistance
+              : (start.y + end.y) / 2,
+        };
   if (insertion === 'start') {
     return {
       points: [
