@@ -303,8 +303,8 @@ function distance(left: Point, right: Point): number {
 export function defaultOrthogonalRoute(source: Point, target: Point): OrthogonalRoute {
   const sourceDirection = target.x >= source.x ? 1 : -1;
   return {
-    sourceX: source.x + sourceDirection * 44,
-    targetX: target.x - sourceDirection * 44,
+    sourceX: source.x + sourceDirection * 32,
+    targetX: target.x - sourceDirection * 32,
     routeY: (source.y + target.y) / 2,
   };
 }

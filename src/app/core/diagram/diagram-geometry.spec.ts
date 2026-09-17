@@ -121,9 +121,9 @@ describe('diagram geometry', () => {
     const source = { x: 10, y: 20 };
     const target = { x: 200, y: 100 };
     const route = defaultOrthogonalRoute(source, target);
-    expect(route).toEqual({ sourceX: 54, targetX: 156, routeY: 60 });
+    expect(route).toEqual({ sourceX: 42, targetX: 168, routeY: 60 });
     expect(editableOrthogonalPath(source, target, route)).toBe(
-      'M 10 20 H 54 V 60 H 156 V 100 H 200',
+      'M 10 20 H 42 V 60 H 168 V 100 H 200',
     );
   });
 
