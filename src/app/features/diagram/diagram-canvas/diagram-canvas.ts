@@ -227,6 +227,8 @@ export class DiagramCanvas {
     { key: string; points: Point[] | null }
   >();
   private zoomFrame?: number;
+  private routePreviewFrame?: number;
+  private pendingRouteCoordinate?: number;
 
   // Keeps route geometry stable while the viewport changes. The equality check
   // means wheel events only update the world transform, not every SVG path.
@@ -878,34 +880,15 @@ export class DiagramCanvas {
         this.layout().viewport,
       );
       const requestedCoordinate = interaction.orientation === 'horizontal' ? cursor.y : cursor.x;
-      const sideChanges = this.endpointSideChanges(
-        interaction.relationshipId,
-        interaction.segmentIndex,
-        interaction.points,
-        interaction.orientation,
-        requestedCoordinate,
-      );
-      const coordinate = this.keepSegmentOutsideTables(
-        interaction.points,
-        interaction.segmentIndex,
-        interaction.orientation,
-        requestedCoordinate,
-      );
-      const points = moveOrthogonalSegment(
-        interaction.points,
-        interaction.segmentIndex,
-        interaction.orientation,
-        requestedCoordinate,
-      );
-      this.routePreview.set({
-        relationshipId: interaction.relationshipId,
-        layout: {
-          ...(this.routePreview()?.relationshipId === interaction.relationshipId
-            ? this.routePreview()!.layout
-            : interaction.from),
-          ...sideChanges,
-          waypoints: points.slice(1, -1),
-        },
+      this.pendingRouteCoordinate = requestedCoordinate;
+      if (this.routePreviewFrame !== undefined) return;
+      this.routePreviewFrame = requestAnimationFrame(() => {
+        this.routePreviewFrame = undefined;
+        const coordinate = this.pendingRouteCoordinate;
+        this.pendingRouteCoordinate = undefined;
+        if (coordinate !== undefined && this.interaction === interaction) {
+          this.updateSegmentPreview(interaction, coordinate);
+        }
       });
     } else if (interaction.kind === 'area') {
       const zoom = this.layout().viewport.zoom;
@@ -992,6 +975,7 @@ export class DiagramCanvas {
       }
       this.clearTemporaryRelationship();
     } else if (interaction.kind === 'segment') {
+      this.flushSegmentPreview(interaction);
       const preview = this.routePreview();
       if (preview) {
         const normalized = normalizeOrthogonalPolyline([
@@ -1038,6 +1022,9 @@ export class DiagramCanvas {
 
   protected cancelPointer(event: PointerEvent): void {
     if (this.interaction?.pointerId !== event.pointerId) return;
+    if (this.routePreviewFrame !== undefined) cancelAnimationFrame(this.routePreviewFrame);
+    this.routePreviewFrame = undefined;
+    this.pendingRouteCoordinate = undefined;
     this.tablePreview.set({});
     this.selectionRect.set(null);
     this.viewportPreview.set(null);
@@ -1046,6 +1033,64 @@ export class DiagramCanvas {
     this.areaPreview.set(null);
     this.clearTemporaryRelationship();
     this.interaction = undefined;
+  }
+
+  private updateSegmentPreview(
+    interaction: {
+      relationshipId: string;
+      from?: RelationshipLayout;
+      segmentIndex: number;
+      orientation: 'horizontal' | 'vertical';
+      points: Point[];
+    },
+    requestedCoordinate: number,
+  ): void {
+    const sideChanges = this.endpointSideChanges(
+      interaction.relationshipId,
+      interaction.segmentIndex,
+      interaction.points,
+      interaction.orientation,
+      requestedCoordinate,
+    );
+    const coordinate = this.keepSegmentOutsideTables(
+      interaction.points,
+      interaction.segmentIndex,
+      interaction.orientation,
+      requestedCoordinate,
+    );
+    const points = moveOrthogonalSegment(
+      interaction.points,
+      interaction.segmentIndex,
+      interaction.orientation,
+      coordinate,
+    );
+    this.routePreview.set({
+      relationshipId: interaction.relationshipId,
+      layout: {
+        ...(this.routePreview()?.relationshipId === interaction.relationshipId
+          ? this.routePreview()!.layout
+          : interaction.from),
+        ...sideChanges,
+        waypoints: points.slice(1, -1),
+      },
+    });
+  }
+
+  private flushSegmentPreview(
+    interaction: {
+      relationshipId: string;
+      from?: RelationshipLayout;
+      segmentIndex: number;
+      orientation: 'horizontal' | 'vertical';
+      points: Point[];
+    },
+  ): void {
+    if (this.routePreviewFrame === undefined) return;
+    cancelAnimationFrame(this.routePreviewFrame);
+    this.routePreviewFrame = undefined;
+    const coordinate = this.pendingRouteCoordinate;
+    this.pendingRouteCoordinate = undefined;
+    if (coordinate !== undefined) this.updateSegmentPreview(interaction, coordinate);
   }
 
   private pointerSelectionRect(
