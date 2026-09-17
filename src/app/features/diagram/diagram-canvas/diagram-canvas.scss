@@ -141,24 +141,29 @@
   stroke-width: 1.5;
   pointer-events: none;
 }
-.cardinality-symbol {
+.cardinality-marker {
+  fill: none;
+  stroke: #87909a;
+  stroke-width: 1.25;
+  stroke-linecap: round;
   pointer-events: none;
 }
-.cardinality-symbol circle {
-  fill: #ffffff;
-  stroke: #8e949b;
-  stroke-width: 1.5;
-}
-.cardinality-symbol text {
-  fill: #60666d;
-  stroke: none;
-  dominant-baseline: middle;
-  text-anchor: middle;
+.cardinality-label {
+  fill: #59636e;
+  dominant-baseline: auto;
   font:
-    700 9px/1 'Segoe UI Variable Text',
+    700 8px/1 'Segoe UI Variable Text',
     sans-serif;
+  stroke: #ffffff;
+  stroke-width: 2.5px;
+  paint-order: stroke;
+  pointer-events: none;
+  text-anchor: middle;
 }
-.cardinality-symbol.dimmed {
+.cardinality-marker.dimmed {
+  opacity: 0.12;
+}
+.cardinality-label.dimmed {
   opacity: 0.12;
 }
 .edge.dimmed,
@@ -315,12 +320,12 @@
 .relationship-toolbox button.danger:hover {
   background: #fff0f1;
 }
-:host-context(.dark-theme) .cardinality-symbol circle {
-  fill: #111820;
-  stroke: #8f9aa6;
+:host-context(.dark-theme) .cardinality-marker {
+  stroke: #aab5c0;
 }
-:host-context(.dark-theme) .cardinality-symbol text {
-  fill: #d9e0e6;
+:host-context(.dark-theme) .cardinality-label {
+  fill: #c3ccd6;
+  stroke: #111820;
 }
 :host-context(.dark-theme) .relationship-toolbox-panel {
   border-color: #46515d;

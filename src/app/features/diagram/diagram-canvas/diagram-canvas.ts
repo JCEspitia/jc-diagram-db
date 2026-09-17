@@ -247,12 +247,14 @@ export class DiagramCanvas {
       const routeLayout = this.layout().relationships?.[relationship.id];
       const sourceSide = routeLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right');
       const targetSide = routeLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left');
+      const sourcePortOffset = this.endpointPortOffset(relationship, 'source');
+      const targetPortOffset = this.endpointPortOffset(relationship, 'target');
       const source = sourceArea
         ? collapsedAreaAnchor(sourceArea, sourceSide)
-        : this.visualAnchor(sourceLayout, sourceIndex, sourceSide);
+        : this.visualAnchor(sourceLayout, sourceIndex, sourceSide, sourcePortOffset);
       const target = targetArea
         ? collapsedAreaAnchor(targetArea, targetSide)
-        : this.visualAnchor(targetLayout, targetIndex, targetSide);
+        : this.visualAnchor(targetLayout, targetIndex, targetSide, targetPortOffset);
       const routePreview = this.routePreview();
       const previewLayout =
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
@@ -335,10 +337,20 @@ export class DiagramCanvas {
           : routedPoints ?? orthogonalRoutePoints(source, target, route);
       const automaticSource = sourceArea
         ? collapsedAreaAnchor(sourceArea, sourceOnLeft ? 'left' : 'right')
-        : this.visualAnchor(sourceLayout, sourceIndex, sourceOnLeft ? 'left' : 'right');
+        : this.visualAnchor(
+            sourceLayout,
+            sourceIndex,
+            sourceOnLeft ? 'left' : 'right',
+            sourcePortOffset,
+          );
       const automaticTarget = targetArea
         ? collapsedAreaAnchor(targetArea, sourceOnLeft ? 'right' : 'left')
-        : this.visualAnchor(targetLayout, targetIndex, sourceOnLeft ? 'right' : 'left');
+        : this.visualAnchor(
+            targetLayout,
+            targetIndex,
+            sourceOnLeft ? 'right' : 'left',
+            targetPortOffset,
+          );
       const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
       const automaticPoints =
         routeWithObstacleRouter(
@@ -491,14 +503,55 @@ export class DiagramCanvas {
     return this.visibleColumns(table).findIndex(({ id }) => id === columnId);
   }
 
-  private visualAnchor(layout: TableLayout, columnIndex: number, side: 'left' | 'right'): Point {
+  private visualAnchor(
+    layout: TableLayout,
+    columnIndex: number,
+    side: 'left' | 'right',
+    portOffset = 0,
+  ): Point {
     if ((this.layout().detailLevel ?? 'all') === 'names') {
       return {
         x: layout.x + (side === 'right' ? (layout.width ?? DEFAULT_TABLE_METRICS.width) : 0),
-        y: layout.y + DEFAULT_TABLE_METRICS.headerHeight / 2,
+        y: layout.y + DEFAULT_TABLE_METRICS.headerHeight / 2 + portOffset,
       };
     }
-    return columnAnchor(layout, columnIndex, side);
+    const anchor = columnAnchor(layout, columnIndex, side);
+    return { ...anchor, y: anchor.y + portOffset };
+  }
+
+  private endpointPortOffset(
+    relationship: RelationshipSchema,
+    endpoint: 'source' | 'target',
+  ): number {
+    const tableId =
+      endpoint === 'source' ? relationship.sourceTableId : relationship.targetTableId;
+    const columnId =
+      endpoint === 'source' ? relationship.sourceColumnId : relationship.targetColumnId;
+    const siblings = this.schema()
+      .relationships.filter(
+        (candidate) =>
+          (endpoint === 'source' ? candidate.sourceTableId : candidate.targetTableId) === tableId &&
+          (endpoint === 'source' ? candidate.sourceColumnId : candidate.targetColumnId) === columnId,
+      )
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const cardinalities = (['zero', 'one', 'many'] as const).filter((cardinality) =>
+      siblings.some(
+        (candidate) => this.endpointCardinality(candidate, endpoint) === cardinality,
+      ),
+    );
+    const index = cardinalities.indexOf(this.endpointCardinality(relationship, endpoint));
+    return index < 0 ? 0 : (index - (cardinalities.length - 1) / 2) * 12;
+  }
+
+  private endpointCardinality(
+    relationship: RelationshipSchema,
+    endpoint: 'source' | 'target',
+  ): 'zero' | 'one' | 'many' {
+    return endpoint === 'source'
+      ? (relationship.sourceCardinality ??
+          (relationship.type === 'many-to-one' ? 'many' : 'one'))
+      : (relationship.targetCardinality ??
+          (relationship.type === 'one-to-many' ? 'many' : 'one'));
   }
 
   private visualTableHeight(table: TableSchema): number {
@@ -975,9 +1028,33 @@ export class DiagramCanvas {
     }
   }
 
-  protected symbolTransform(point: { x: number; y: number }, towardX: number): string {
+  protected cardinalityMarkerPath(
+    point: Point,
+    towardX: number,
+    cardinality: 'zero' | 'one' | 'many',
+  ): string {
     const direction = towardX >= point.x ? 1 : -1;
-    return `translate(${point.x + direction * 14} ${point.y})`;
+    const near = point.x + direction * 4;
+    const far = point.x + direction * 12;
+    if (cardinality === 'zero') {
+      return `M ${point.x + direction * 8} ${point.y - 3} a 3 3 0 1 0 0 6 a 3 3 0 1 0 0 -6`;
+    }
+    if (cardinality === 'one') {
+      return `M ${point.x + direction * 8} ${point.y - 5} V ${point.y + 5}`;
+    }
+    return `M ${far} ${point.y} L ${near} ${point.y - 5} M ${far} ${point.y} H ${near} M ${far} ${point.y} L ${near} ${point.y + 5}`;
+  }
+
+  protected cardinalityLabel(cardinality: 'zero' | 'one' | 'many'): string {
+    return cardinality === 'many' ? '*' : cardinality === 'one' ? '1' : '0';
+  }
+
+  protected cardinalityLabelX(point: Point, towardX: number): number {
+    return point.x + (towardX >= point.x ? 1 : -1) * 19;
+  }
+
+  protected cardinalityLabelY(point: Point): number {
+    return point.y + 3;
   }
 
   protected startSegmentDrag(

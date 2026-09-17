@@ -45,38 +45,34 @@
           [class.dimmed]="!edge.connected"
           [attr.d]="edge.path"
         />
-        <g
-          class="cardinality-symbol"
+        <path
+          class="cardinality-marker"
           [class.dimmed]="!edge.connected"
-          [attr.transform]="symbolTransform(edge.source, edge.points[1]!.x)"
-        >
-          <circle r="10" />
-          <text x="0" y="0">
-            {{
-              edge.sourceCardinality === 'many'
-                ? 'N'
-                : edge.sourceCardinality === 'zero'
-                  ? '0'
-                  : '1'
-            }}
-          </text>
-        </g>
-        <g
-          class="cardinality-symbol"
+          [attr.d]="cardinalityMarkerPath(edge.source, edge.points[1]!.x, edge.sourceCardinality)"
+        />
+        <text
+          class="cardinality-label"
           [class.dimmed]="!edge.connected"
-          [attr.transform]="symbolTransform(edge.target, edge.points[edge.points.length - 2]!.x)"
-        >
-          <circle r="10" />
-          <text x="0" y="0">
-            {{
-              edge.targetCardinality === 'many'
-                ? 'N'
-                : edge.targetCardinality === 'zero'
-                  ? '0'
-                  : '1'
-            }}
-          </text>
-        </g>
+          [attr.x]="cardinalityLabelX(edge.source, edge.points[1]!.x)"
+          [attr.y]="cardinalityLabelY(edge.source)"
+        >{{ cardinalityLabel(edge.sourceCardinality) }}</text>
+        <path
+          class="cardinality-marker"
+          [class.dimmed]="!edge.connected"
+          [attr.d]="
+            cardinalityMarkerPath(
+              edge.target,
+              edge.points[edge.points.length - 2]!.x,
+              edge.targetCardinality
+            )
+          "
+        />
+        <text
+          class="cardinality-label"
+          [class.dimmed]="!edge.connected"
+          [attr.x]="cardinalityLabelX(edge.target, edge.points[edge.points.length - 2]!.x)"
+          [attr.y]="cardinalityLabelY(edge.target)"
+        >{{ cardinalityLabel(edge.targetCardinality) }}</text>
         @if (edge.flow) {
           <path class="edge-flow" [class.reverse]="edge.flow === 'reverse'" [attr.d]="edge.path" />
         }
