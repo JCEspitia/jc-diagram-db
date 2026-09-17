@@ -380,6 +380,12 @@ export class DiagramCanvas {
         const cachedRoute = this.automaticRouteCache.get(relationship.id);
         if (cachedRoute?.key === routeCacheKey) {
           routedPoints = cachedRoute.points;
+        } else if (cachedRoute) {
+          // A table move usually changes only an endpoint. Reconnect the
+          // already-routed polyline instead of running the obstacle router once
+          // per relationship on the pointer-up frame.
+          routedPoints = reconnectOrthogonalRoute(cachedRoute.points, source, target);
+          this.automaticRouteCache.set(relationship.id, { key: routeCacheKey, points: routedPoints });
         } else {
           routedPoints = routeWithObstacleRouter(source, target, sourceSide, targetSide, obstacles);
           this.automaticRouteCache.set(relationship.id, { key: routeCacheKey, points: routedPoints });
@@ -1713,6 +1719,24 @@ function isOrthogonalPolyline(points: Point[]): boolean {
     const next = points[index + 1]!;
     return Math.abs(point.x - next.x) < 0.01 || Math.abs(point.y - next.y) < 0.01;
   });
+}
+
+function reconnectOrthogonalRoute(
+  previous: Point[] | null,
+  source: Point,
+  target: Point,
+): Point[] | null {
+  if (!previous || previous.length < 4) return null;
+  const firstLane = previous[1]!;
+  const lastLane = previous.at(-2)!;
+  const middle = previous.slice(2, -2);
+  return normalizeOrthogonalPolyline([
+    source,
+    { x: firstLane.x, y: source.y },
+    ...middle,
+    { x: lastLane.x, y: target.y },
+    target,
+  ]);
 }
 
 function samePolyline(left: Point[], right: Point[], tolerance = 0.01): boolean {
