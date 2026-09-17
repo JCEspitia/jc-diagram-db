@@ -57,6 +57,7 @@ export class DiagramStore {
   private saveTimer?: ReturnType<typeof setTimeout>;
   private saveIdleCallback?: number;
   private persistenceReady = false;
+  private hasChangesBeforeRestore = false;
   private readonly undoStack = signal<DiagramProject[]>([]);
   private readonly redoStack = signal<DiagramProject[]>([]);
   readonly project = signal<DiagramProject>(createExampleProject());
@@ -67,6 +68,7 @@ export class DiagramStore {
   readonly persistenceState = signal<'loading' | 'saving' | 'saved' | 'error'>('loading');
   readonly persistenceError = signal<string | null>(null);
   readonly projects = signal<DiagramProject[]>([]);
+  readonly projectId = computed(() => this.project().id);
   readonly schema = computed(() => this.project().schema);
   readonly layout = computed(() => this.project().layout);
   readonly dbml = computed(() => this.project().dbml);
@@ -914,15 +916,24 @@ export class DiagramStore {
   }
 
   private replaceProject(project: DiagramProject, schedulePersistence = true): void {
+    if (!this.persistenceReady && schedulePersistence) this.hasChangesBeforeRestore = true;
     this.project.set(project);
     if (schedulePersistence && this.persistenceReady) this.scheduleSave(project);
   }
 
   private async restoreProject(initialProject: DiagramProject): Promise<void> {
     try {
-      const saved = await this.repository.loadLastProject();
+      const [lastProject, projects] = await Promise.all([
+        this.repository.loadLastProject(),
+        this.repository.listProjects(),
+      ]);
+      this.projects.set(projects);
+      // The session entry can be absent after a browser cleanup even though
+      // IndexedDB still contains projects. In that case open the most recent
+      // project rather than silently replacing the workspace with a new one.
+      const saved = lastProject ?? projects[0] ?? null;
       this.persistenceReady = true;
-      if (saved && this.project() === initialProject) {
+      if (saved && !this.hasChangesBeforeRestore) {
         this.project.set(saved);
         this.undoStack.set([]);
         this.redoStack.set([]);
@@ -938,7 +949,6 @@ export class DiagramStore {
         return;
       }
       this.persistenceState.set('saved');
-      await this.refreshProjects();
     } catch (error) {
       this.persistenceReady = true;
       this.persistenceState.set('error');
@@ -959,15 +969,15 @@ export class DiagramStore {
         // IndexedDB performs a structured clone of the whole project when
         // `put` starts. Wait for a full frame of idle budget instead of
         // forcing that clone into an active editing interaction.
-        if (deadline.timeRemaining() < 16) {
-          this.saveIdleCallback = requestIdleCallback(persist);
+        if (!deadline.didTimeout && deadline.timeRemaining() < 4) {
+          this.saveIdleCallback = requestIdleCallback(persist, { timeout: 10_000 });
           return;
         }
         this.saveIdleCallback = undefined;
         void this.save(project, false);
       };
       if (typeof requestIdleCallback === 'function') {
-        this.saveIdleCallback = requestIdleCallback(persist);
+        this.saveIdleCallback = requestIdleCallback(persist, { timeout: 10_000 });
       } else {
         void this.save(project, false);
       }

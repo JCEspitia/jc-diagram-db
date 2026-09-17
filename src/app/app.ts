@@ -5,6 +5,7 @@ import {
   effect,
   HostListener,
   inject,
+  Injector,
   signal,
   viewChild,
 } from '@angular/core';
@@ -100,6 +101,7 @@ import {
 })
 export class App {
   protected readonly store = inject(DiagramStore);
+  private readonly injector = inject(Injector);
   protected readonly pwa = inject(PwaService);
   protected readonly tableColors = TABLE_COLORS;
   protected readonly defaultTableColor = DEFAULT_TABLE_COLOR;
@@ -133,8 +135,8 @@ export class App {
     this.store.selectTable(firstTable.id);
     this.expandedTableIds.set(new Set([firstTable.id]));
     effect(() => {
-      this.store.project().id;
-      afterNextRender(() => this.canvas()?.fitDiagram());
+      this.store.projectId();
+      afterNextRender(() => this.canvas()?.fitDiagram(), { injector: this.injector });
     });
   }
 
