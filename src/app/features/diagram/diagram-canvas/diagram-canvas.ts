@@ -222,7 +222,10 @@ export class DiagramCanvas {
   protected readonly relationshipToolboxId = signal<string | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
   private routingCacheSchema?: DatabaseSchema;
-  private routingCacheLayout?: DiagramLayout;
+  private routingCacheTables?: DiagramLayout['tables'];
+  private routingCacheRelationships?: DiagramLayout['relationships'];
+  private routingCacheAreas?: DiagramLayout['areas'];
+  private routingCacheDetailLevel?: DiagramLayout['detailLevel'];
   private readonly automaticRouteCache = new Map<string, Point[] | null>();
 
   protected readonly transform = computed(() => {
@@ -233,9 +236,18 @@ export class DiagramCanvas {
   protected readonly edges = computed<RenderedRelationship[]>(() => {
     const schema = this.schema();
     const layout = this.layout();
-    if (this.routingCacheSchema !== schema || this.routingCacheLayout !== layout) {
+    if (
+      this.routingCacheSchema !== schema ||
+      this.routingCacheTables !== layout.tables ||
+      this.routingCacheRelationships !== layout.relationships ||
+      this.routingCacheAreas !== layout.areas ||
+      this.routingCacheDetailLevel !== layout.detailLevel
+    ) {
       this.routingCacheSchema = schema;
-      this.routingCacheLayout = layout;
+      this.routingCacheTables = layout.tables;
+      this.routingCacheRelationships = layout.relationships;
+      this.routingCacheAreas = layout.areas;
+      this.routingCacheDetailLevel = layout.detailLevel;
       this.automaticRouteCache.clear();
     }
     const tablesById = new Map(schema.tables.map((table) => [table.id, table]));

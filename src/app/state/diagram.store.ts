@@ -218,6 +218,18 @@ export class DiagramStore {
   applyDiagramOperation(operation: DiagramOperation): void {
     this.changeOrigin.set('canvas');
     const project = this.project();
+    if (operation.type === 'CHANGE_VIEWPORT') {
+      // Viewport updates are transient. Avoid schema/layout synchronization,
+      // which is proportional to the entire diagram and unnecessary here.
+      this.replaceProject(
+        {
+          ...project,
+          layout: executeDiagramOperation(project.layout, operation),
+        },
+        false,
+      );
+      return;
+    }
     let rawLayout = executeDiagramOperation(project.layout, operation);
     if (operation.type === 'CHANGE_DETAIL_LEVEL') {
       rawLayout = fitAllAreas(project.schema, rawLayout);
@@ -249,12 +261,6 @@ export class DiagramStore {
         : {}),
       updatedAt: new Date().toISOString(),
     };
-    if (operation.type === 'CHANGE_VIEWPORT') {
-      // The viewport is session state. It should remain responsive and never
-      // trigger a full project save.
-      this.replaceProject(next, false);
-      return;
-    }
     this.commit(next, true);
   }
 
