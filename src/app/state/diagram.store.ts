@@ -242,6 +242,26 @@ export class DiagramStore {
     } else if (operation.type === 'RESIZE_AREA') {
       rawLayout = fitAreaToMembers(project.schema, rawLayout, operation.areaId);
     }
+    const requiresSchemaSynchronization =
+      operation.type === 'CHANGE_DETAIL_LEVEL' ||
+      operation.type === 'ADD_AREA' ||
+      operation.type === 'UPDATE_AREA' ||
+      operation.type === 'MOVE_AREA' ||
+      operation.type === 'DELETE_AREA';
+    if (!requiresSchemaSynchronization) {
+      // Moving a table or editing a relationship route changes only the layout
+      // object already produced above. Rebuilding every table, area and route
+      // here made a single drag proportional to the entire project.
+      this.commit(
+        {
+          ...project,
+          layout: rawLayout,
+          updatedAt: new Date().toISOString(),
+        },
+        true,
+      );
+      return;
+    }
     const schema = synchroniseTableGroups(
       project.schema,
       rawLayout,
