@@ -170,10 +170,13 @@
   stroke: #3558ff;
   stroke-width: 2.5;
 }
+.edge.flowing {
+  stroke: #aebcf2;
+}
 .edge-flow {
   fill: none;
-  stroke: #3558ff;
-  stroke-width: 2;
+  stroke: #2448ef;
+  stroke-width: 2.4;
   stroke-dasharray: 2 10;
   stroke-linecap: round;
   pointer-events: none;

@@ -41,6 +41,7 @@
           class="edge"
           [class.selected]="selectedRelationshipId() === edge.relationship.id"
           [class.hovered]="hoveredRelationshipId() === edge.relationship.id"
+          [class.flowing]="edge.flow"
           [class.dimmed]="!edge.connected"
           [attr.d]="edge.path"
         />

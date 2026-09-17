@@ -352,6 +352,28 @@ export class DiagramCanvas {
           ...automaticDefaults,
           routeY: automaticDefaults.routeY + ((relationshipIndex % 5) - 2) * 10,
         });
+      const sourceCardinality =
+        relationship.sourceCardinality ??
+        (relationship.type === 'many-to-one' ? 'many' : 'one');
+      const targetCardinality =
+        relationship.targetCardinality ??
+        (relationship.type === 'one-to-many' ? 'many' : 'one');
+      const cardinalityFlow =
+        targetCardinality === 'many' && sourceCardinality !== 'many'
+          ? 'forward'
+          : sourceCardinality === 'many' && targetCardinality !== 'many'
+            ? 'reverse'
+            : null;
+      const relationshipFocused =
+        this.selectedRelationshipId() === relationship.id ||
+        this.hoveredRelationshipId() === relationship.id ||
+        this.relationshipToolboxId() === relationship.id ||
+        this.routePreview()?.relationshipId === relationship.id ||
+        this.hoveredSegment()?.relationshipId === relationship.id ||
+        (columnFocus
+          ? sourceFocused || targetFocused
+          : selectedTableIds.has(relationship.sourceTableId) ||
+            selectedTableIds.has(relationship.targetTableId));
       return [
         {
           relationship,
@@ -366,30 +388,14 @@ export class DiagramCanvas {
           canReset: manuallyRouted && !samePolyline(points, automaticPoints),
           sourceSide,
           targetSide,
-          sourceCardinality:
-            relationship.sourceCardinality ??
-            (relationship.type === 'many-to-one' ? 'many' : 'one'),
-          targetCardinality:
-            relationship.targetCardinality ??
-            (relationship.type === 'one-to-many' ? 'many' : 'one'),
+          sourceCardinality,
+          targetCardinality,
           connected: columnFocus
             ? sourceFocused || targetFocused
             : !selectedTableIds.size ||
               selectedTableIds.has(relationship.sourceTableId) ||
               selectedTableIds.has(relationship.targetTableId),
-          flow: columnFocus
-            ? sourceFocused
-              ? 'forward'
-              : targetFocused
-                ? 'reverse'
-                : null
-            : !selectedTableIds.size
-              ? null
-              : selectedTableIds.has(relationship.sourceTableId)
-                ? 'forward'
-                : selectedTableIds.has(relationship.targetTableId)
-                  ? 'reverse'
-                  : null,
+          flow: relationshipFocused ? cardinalityFlow : null,
         },
       ];
     }),
