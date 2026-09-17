@@ -19,6 +19,7 @@ import {
   OrthogonalRoute,
   orthogonalRoutePoints,
   Point,
+  pullOrthogonalSegment,
   roundedPolylinePath,
   routeWithObstacleRouter,
   screenToWorld,
@@ -1034,15 +1035,16 @@ export class DiagramCanvas {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
+    const pulled = pullOrthogonalSegment(edge.points, hovered.segmentIndex, hovered.point);
     this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
       kind: 'segment',
       pointerId: event.pointerId,
       relationshipId: edge.relationship.id,
       from: this.layout().relationships?.[edge.relationship.id],
-      segmentIndex: hovered.segmentIndex,
+      segmentIndex: pulled.segmentIndex,
       orientation: hovered.orientation,
-      points: edge.points,
+      points: pulled.points,
     };
     (event.target as Element).setPointerCapture(event.pointerId);
     this.hoveredSegment.set(null);
@@ -1178,12 +1180,20 @@ function routePullCandidates(points: Point[], preferredSpacing = 56): RouteSegme
       const distanceAlongSegment =
         count === 1 ? length / 2 : MIN_ROUTE_POINT_DISTANCE + (usableLength * step) / (count - 1);
       const ratio = distanceAlongSegment / length;
+      const point = {
+        x: start.x + (end.x - start.x) * ratio,
+        y: start.y + (end.y - start.y) * ratio,
+      };
+      // The exact middle is already the segment's main drag handle. Every
+      // other marker is an insertion point that creates a new orthogonal lane.
+      if (
+        Math.hypot(point.x - (start.x + end.x) / 2, point.y - (start.y + end.y) / 2) < 12
+      ) {
+        continue;
+      }
       candidates.push({
         segmentIndex: index,
-        point: {
-          x: start.x + (end.x - start.x) * ratio,
-          y: start.y + (end.y - start.y) * ratio,
-        },
+        point,
         orientation: horizontal ? 'horizontal' : 'vertical',
       });
     }
