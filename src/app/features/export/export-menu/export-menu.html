@@ -23,20 +23,33 @@
         }
       </select>
     </label>
-    <div class="export-formats">
-      <button type="button" (click)="export('png')">
-        <svg lucideFileImage size="17"></svg>
-        <span><b>PNG</b><small>High-resolution image</small></span>
-      </button>
-      <button type="button" (click)="export('svg')">
-        <svg lucideBraces size="17"></svg>
-        <span><b>SVG</b><small>Editable vector</small></span>
-      </button>
-      <button type="button" (click)="export('pdf')">
-        <svg lucideFileText size="17"></svg>
-        <span><b>PDF report</b><small>Diagram and documentation</small></span>
-      </button>
-    </div>
+    @if (choosingPngResolution()) {
+      <div class="png-resolution">
+        <b>Choose PNG resolution</b>
+        <small>Higher resolution creates a larger file.</small>
+        <div>
+          <button type="button" (click)="choosePngResolution(1)">1×<small>Compact</small></button>
+          <button type="button" (click)="choosePngResolution(2)">2×<small>High resolution</small></button>
+          <button type="button" (click)="choosePngResolution(3)">3×<small>Print quality</small></button>
+        </div>
+        <button type="button" class="back" (click)="choosingPngResolution.set(false)">Back</button>
+      </div>
+    } @else {
+      <div class="export-formats">
+        <button type="button" (click)="choosingPngResolution.set(true)">
+          <svg lucideFileImage size="17"></svg>
+          <span><b>PNG</b><small>Choose resolution</small></span>
+        </button>
+        <button type="button" (click)="export('svg')">
+          <svg lucideBraces size="17"></svg>
+          <span><b>SVG</b><small>Editable vector</small></span>
+        </button>
+        <button type="button" (click)="export('pdf')">
+          <svg lucideFileText size="17"></svg>
+          <span><b>PDF report</b><small>Diagram and documentation</small></span>
+        </button>
+      </div>
+    }
     @if (!areaId() && areaEntries().length) {
       <p>The PDF includes the complete diagram and one additional page for every area.</p>
     }

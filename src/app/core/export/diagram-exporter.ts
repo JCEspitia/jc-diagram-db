@@ -8,6 +8,7 @@ import {
 } from '../schema';
 import { DEFAULT_TABLE_COLOR } from '../../shared/table-colors';
 import { saveBlob } from '../import-export/save-file';
+import { roundedPolylinePath } from '../diagram/diagram-geometry';
 
 export type DiagramExportFormat = 'svg' | 'png' | 'pdf';
 
@@ -24,6 +25,10 @@ interface RenderedSvg {
   height: number;
 }
 
+export interface DiagramExportOptions {
+  pngScale?: number;
+}
+
 const TABLE_WIDTH = 220;
 const HEADER_HEIGHT = 34;
 const ROW_HEIGHT = 30;
@@ -32,6 +37,7 @@ const PADDING = 48;
 export async function exportDiagram(
   model: ExportModel,
   format: DiagramExportFormat,
+  options: DiagramExportOptions = {},
 ): Promise<void> {
   const filename = safeFilename(
     `${model.projectName}${model.areaId ? `-${areaName(model, model.areaId)}` : ''}`,
@@ -42,7 +48,7 @@ export async function exportDiagram(
       `${filename}.svg`,
     );
   } else if (format === 'png') {
-    await saveBlob(await svgToPng(renderDiagramSvg(model)), `${filename}.png`);
+    await saveBlob(await svgToPng(renderDiagramSvg(model), options.pngScale ?? 2), `${filename}.png`);
   } else {
     await exportPdf(model, filename);
   }
@@ -124,23 +130,35 @@ export function renderDiagramSvg(model: ExportModel): RenderedSvg {
       const targetSide = routeLayout?.targetSide ?? (sourceRight ? 'left' : 'right');
       const sx = source.x + (sourceSide === 'right' ? source.width : 0);
       const tx = target.x + (targetSide === 'right' ? target.width : 0);
-      const sy = source.y + HEADER_HEIGHT + sourceIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-      const ty = target.y + HEADER_HEIGHT + targetIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
+      const sourceOffset = endpointPortOffset(model.schema, relationship, 'source');
+      const targetOffset = endpointPortOffset(model.schema, relationship, 'target');
+      const sy = source.y + HEADER_HEIGHT + sourceIndex * ROW_HEIGHT + ROW_HEIGHT / 2 + sourceOffset;
+      const ty = target.y + HEADER_HEIGHT + targetIndex * ROW_HEIGHT + ROW_HEIGHT / 2 + targetOffset;
       const sourceLane =
         routeLayout?.sourceX ?? routeLayout?.routeX ?? sx + (sourceSide === 'right' ? 36 : -36);
       const targetLane =
         routeLayout?.targetX ?? routeLayout?.routeX ?? tx + (targetSide === 'right' ? 36 : -36);
       const routeY = routeLayout?.routeY ?? (sy + ty) / 2;
-      const path = routeLayout?.waypoints?.length
-        ? polylinePath([{ x: sx, y: sy }, ...routeLayout.waypoints, { x: tx, y: ty }])
-        : `M ${sx} ${sy} H ${sourceLane} V ${routeY} H ${targetLane} V ${ty} H ${tx}`;
+      const automaticPoints = [
+        { x: sx, y: sy },
+        { x: sourceLane, y: sy },
+        { x: sourceLane, y: routeY },
+        { x: targetLane, y: routeY },
+        { x: targetLane, y: ty },
+        { x: tx, y: ty },
+      ];
+      const manualPoints = routeLayout?.waypoints?.length
+        ? [{ x: sx, y: sy }, ...routeLayout.waypoints, { x: tx, y: ty }]
+        : null;
+      const points = manualPoints && isOrthogonalPolyline(manualPoints) ? manualPoints : automaticPoints;
+      const path = roundedPolylinePath(points);
       const sourceCardinality =
         relationship.sourceCardinality ?? (relationship.type === 'many-to-one' ? 'many' : 'one');
       const targetCardinality =
         relationship.targetCardinality ?? (relationship.type === 'one-to-many' ? 'many' : 'one');
-      return `<path d="${path}" fill="none" stroke="#8190a0" stroke-width="1.5" stroke-linejoin="round"/>
-        ${cardinalityMarkup(sx + (sourceSide === 'right' ? 12 : -12), sy, sourceCardinality)}
-        ${cardinalityMarkup(tx + (targetSide === 'right' ? 12 : -12), ty, targetCardinality)}`;
+      return `<path d="${path}" fill="none" stroke="#a8adb4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${cardinalityMarkup(sx, sy, sourceLane, sourceCardinality)}
+        ${cardinalityMarkup(tx, ty, targetLane, targetCardinality)}`;
     })
     .join('');
 
@@ -185,7 +203,7 @@ export function renderDiagramSvg(model: ExportModel): RenderedSvg {
     height,
     source: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
       <defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".16"/></filter></defs>
-      <style>text{font-family:Inter,Arial,sans-serif}.table-title,.area-title{fill:#fff;font-size:12px;font-weight:700}.column-name{fill:#2e3943;font-size:11px}.column-type{fill:#7a8792;font-size:9px}.export-icon{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.pk-icon{color:#d89b22}.fk-icon{color:#718294}.comment-icon{color:#8493a3}.unique-icon{color:#8a6bd1}.info-icon{color:#3e91c9}.row-badge rect{fill:#edf0f3;stroke:#d7dce1}.row-badge text{fill:#66727d;font-size:7px;font-weight:700}.cardinality circle{fill:#fff;stroke:#8190a0}.cardinality text{fill:#657583;font-size:7px;font-weight:700}.header-table-icon,.header-info{fill:none;stroke:#fff;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.9}</style>
+      <style>text{font-family:Inter,Arial,sans-serif}.table-title,.area-title{fill:#fff;font-size:12px;font-weight:700}.column-name{fill:#2e3943;font-size:11px}.column-type{fill:#7a8792;font-size:9px}.export-icon{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.pk-icon{color:#d89b22}.fk-icon{color:#718294}.comment-icon{color:#8493a3}.unique-icon{color:#8a6bd1}.info-icon{color:#3e91c9}.row-badge rect{fill:#edf0f3;stroke:#d7dce1}.row-badge text{fill:#66727d;font-size:7px;font-weight:700}.cardinality{fill:none;stroke:#87909a;stroke-width:1.25;stroke-linecap:round}.cardinality-label{fill:#59636e;font-size:8px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:2.5}.header-table-icon,.header-info{fill:none;stroke:#fff;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.9}</style>
       <rect width="100%" height="100%" fill="#f8fafb"/>
       <g transform="${translate}">${areaMarkup}${relationshipMarkup}${tableMarkup}</g>
     </svg>`,
@@ -361,13 +379,58 @@ function columnVisualIndicators(
   return { icons, badges, iconCount: markers.length, badgeCount: badgeValues.length };
 }
 
-function cardinalityMarkup(x: number, y: number, cardinality: 'zero' | 'one' | 'many'): string {
-  const label = cardinality === 'many' ? 'N' : cardinality === 'zero' ? '0' : '1';
-  return `<g class="cardinality"><circle cx="${x}" cy="${y}" r="7"/><text x="${x}" y="${y + 2.5}" text-anchor="middle">${label}</text></g>`;
+function cardinalityMarkup(
+  x: number,
+  y: number,
+  towardX: number,
+  cardinality: 'zero' | 'one' | 'many',
+): string {
+  const direction = towardX >= x ? 1 : -1;
+  const near = x + direction * 4;
+  const far = x + direction * 12;
+  const symbol =
+    cardinality === 'zero'
+      ? `M ${x + direction * 8} ${y - 3} a 3 3 0 1 0 0 6 a 3 3 0 1 0 0 -6`
+      : cardinality === 'one'
+        ? `M ${x + direction * 8} ${y - 5} V ${y + 5}`
+        : `M ${far} ${y} L ${near} ${y - 5} M ${far} ${y} H ${near} M ${far} ${y} L ${near} ${y + 5}`;
+  const label = cardinality === 'many' ? '*' : cardinality === 'zero' ? '0' : '1';
+  return `<path class="cardinality" d="${symbol}"/><text class="cardinality-label" x="${x + direction * 19}" y="${y + 3}" text-anchor="middle">${label}</text>`;
 }
 
-function polylinePath(points: { x: number; y: number }[]): string {
-  return points.map(({ x, y }, index) => `${index ? 'L' : 'M'} ${x} ${y}`).join(' ');
+function endpointPortOffset(
+  schema: DatabaseSchema,
+  relationship: DatabaseSchema['relationships'][number],
+  endpoint: 'source' | 'target',
+): number {
+  const tableId = endpoint === 'source' ? relationship.sourceTableId : relationship.targetTableId;
+  const columnId = endpoint === 'source' ? relationship.sourceColumnId : relationship.targetColumnId;
+  const cardinality = endpointCardinality(relationship, endpoint);
+  const cardinalities = (['zero', 'one', 'many'] as const).filter((candidate) =>
+    schema.relationships.some(
+      (item) =>
+        (endpoint === 'source' ? item.sourceTableId : item.targetTableId) === tableId &&
+        (endpoint === 'source' ? item.sourceColumnId : item.targetColumnId) === columnId &&
+        endpointCardinality(item, endpoint) === candidate,
+    ),
+  );
+  return (cardinalities.indexOf(cardinality) - (cardinalities.length - 1) / 2) * 12;
+}
+
+function endpointCardinality(
+  relationship: DatabaseSchema['relationships'][number],
+  endpoint: 'source' | 'target',
+): 'zero' | 'one' | 'many' {
+  return endpoint === 'source'
+    ? (relationship.sourceCardinality ?? (relationship.type === 'many-to-one' ? 'many' : 'one'))
+    : (relationship.targetCardinality ?? (relationship.type === 'one-to-many' ? 'many' : 'one'));
+}
+
+function isOrthogonalPolyline(points: { x: number; y: number }[]): boolean {
+  return points.slice(0, -1).every((point, index) => {
+    const next = points[index + 1]!;
+    return Math.abs(point.x - next.x) < 0.01 || Math.abs(point.y - next.y) < 0.01;
+  });
 }
 
 function visibleColumns(model: ExportModel, table: TableSchema): ColumnSchema[] {

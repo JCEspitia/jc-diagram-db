@@ -17,6 +17,7 @@ export class ExportMenu {
 
   protected readonly open = signal(false);
   protected readonly areaId = signal<string | null>(null);
+  protected readonly choosingPngResolution = signal(false);
   protected readonly exporting = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -24,7 +25,7 @@ export class ExportMenu {
     return Object.entries(this.layout().areas ?? {});
   }
 
-  protected async export(format: DiagramExportFormat): Promise<void> {
+  protected async export(format: DiagramExportFormat, pngScale?: number): Promise<void> {
     if (this.exporting()) return;
     this.exporting.set(true);
     this.error.set(null);
@@ -38,6 +39,7 @@ export class ExportMenu {
           ...(this.areaId() ? { areaId: this.areaId()! } : {}),
         },
         format,
+        ...(pngScale ? [{ pngScale }] : []),
       );
       this.open.set(false);
     } catch (error) {
@@ -45,6 +47,11 @@ export class ExportMenu {
     } finally {
       this.exporting.set(false);
     }
+  }
+
+  protected choosePngResolution(scale: number): void {
+    this.choosingPngResolution.set(false);
+    void this.export('png', scale);
   }
 
   @HostListener('document:pointerdown', ['$event'])

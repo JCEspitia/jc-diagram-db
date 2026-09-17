@@ -132,6 +132,61 @@ select {
   font-size: 8px;
 }
 
+.png-resolution {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 9px;
+  border: 1px solid #3b4651;
+  border-radius: 6px;
+  background: #181e24;
+}
+
+.png-resolution > b {
+  font-size: 10px;
+}
+
+.png-resolution > small {
+  color: #89959f;
+  font-size: 8px;
+}
+
+.png-resolution > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.png-resolution button {
+  display: grid;
+  gap: 2px;
+  min-height: 43px;
+  border: 1px solid #46515b;
+  border-radius: 5px;
+  background: #252d35;
+  color: #edf0f2;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.png-resolution button:hover {
+  border-color: #7094d8;
+  background: #303b47;
+}
+
+.png-resolution button small {
+  color: #9ba7b2;
+  font-size: 7px;
+}
+
+.png-resolution .back {
+  min-height: 26px;
+  background: transparent;
+  color: #aeb7bf;
+  font-size: 9px;
+}
+
 p {
   margin: 8px 3px 1px;
   line-height: 1.45;
