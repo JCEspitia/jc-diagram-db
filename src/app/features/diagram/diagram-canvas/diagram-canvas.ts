@@ -222,11 +222,10 @@ export class DiagramCanvas {
   protected readonly relationshipToolboxId = signal<string | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
   private routingCacheSchema?: DatabaseSchema;
-  private routingCacheTables?: DiagramLayout['tables'];
-  private routingCacheRelationships?: DiagramLayout['relationships'];
-  private routingCacheAreas?: DiagramLayout['areas'];
-  private routingCacheDetailLevel?: DiagramLayout['detailLevel'];
-  private readonly automaticRouteCache = new Map<string, Point[] | null>();
+  private readonly automaticRouteCache = new Map<
+    string,
+    { key: string; points: Point[] | null }
+  >();
   private zoomFrame?: number;
 
   // Keeps route geometry stable while the viewport changes. The equality check
@@ -247,21 +246,44 @@ export class DiagramCanvas {
   protected readonly edges = computed<RenderedRelationship[]>(() => {
     const schema = this.schema();
     const layout = this.routingLayout();
-    if (
-      this.routingCacheSchema !== schema ||
-      this.routingCacheTables !== layout.tables ||
-      this.routingCacheRelationships !== layout.relationships ||
-      this.routingCacheAreas !== layout.areas ||
-      this.routingCacheDetailLevel !== layout.detailLevel
-    ) {
+    if (this.routingCacheSchema !== schema) {
       this.routingCacheSchema = schema;
-      this.routingCacheTables = layout.tables;
-      this.routingCacheRelationships = layout.relationships;
-      this.routingCacheAreas = layout.areas;
-      this.routingCacheDetailLevel = layout.detailLevel;
       this.automaticRouteCache.clear();
     }
     const tablesById = new Map(schema.tables.map((table) => [table.id, table]));
+    const collapsedAreasByTable = new Map(
+      schema.tables.map((table) => [table.id, this.collapsedAreaForTable(table.id)]),
+    );
+    const visualColumnIndexes = new Map(
+      schema.tables.map((table) => [
+        table.id,
+        new Map(this.visibleColumns(table).map((column, index) => [column.id, index])),
+      ]),
+    );
+    const endpointGroups = new Map<string, Set<'zero' | 'one' | 'many'>>();
+    for (const relationship of schema.relationships) {
+      for (const endpoint of ['source', 'target'] as const) {
+        const tableId = endpoint === 'source' ? relationship.sourceTableId : relationship.targetTableId;
+        const columnId = endpoint === 'source' ? relationship.sourceColumnId : relationship.targetColumnId;
+        const key = `${tableId}:${columnId}`;
+        const cardinalities = endpointGroups.get(key) ?? new Set<'zero' | 'one' | 'many'>();
+        cardinalities.add(this.endpointCardinality(relationship, endpoint));
+        endpointGroups.set(key, cardinalities);
+      }
+    }
+    const endpointOffsets = new Map<string, { source: number; target: number }>();
+    for (const relationship of schema.relationships) {
+      const offsetFor = (endpoint: 'source' | 'target') => {
+        const tableId = endpoint === 'source' ? relationship.sourceTableId : relationship.targetTableId;
+        const columnId = endpoint === 'source' ? relationship.sourceColumnId : relationship.targetColumnId;
+        const cardinalities = ['zero', 'one', 'many'].filter((cardinality) =>
+          endpointGroups.get(`${tableId}:${columnId}`)?.has(cardinality as 'zero' | 'one' | 'many'),
+        );
+        const index = cardinalities.indexOf(this.endpointCardinality(relationship, endpoint));
+        return index < 0 ? 0 : (index - (cardinalities.length - 1) / 2) * 12;
+      };
+      endpointOffsets.set(relationship.id, { source: offsetFor('source'), target: offsetFor('target') });
+    }
     const selectedRelationshipId = this.selectedRelationshipId();
     const selectedTableIds = new Set(
       this.selectedTableIds().length
@@ -280,7 +302,7 @@ export class DiagramCanvas {
         )
       : false;
     const routeObstacles = schema.tables.flatMap((table) => {
-      if (this.collapsedAreaForTable(table.id)) return [];
+      if (collapsedAreasByTable.get(table.id)) return [];
       const position = this.tablePosition(table.id);
       return [
         {
@@ -297,14 +319,18 @@ export class DiagramCanvas {
       const sourceTable = tablesById.get(relationship.sourceTableId);
       const targetTable = tablesById.get(relationship.targetTableId);
       const sourceIndex = sourceTable
-        ? this.visualColumnIndex(sourceTable, relationship.sourceColumnId)
+        ? (layout.detailLevel ?? 'all') === 'names'
+          ? 0
+          : visualColumnIndexes.get(sourceTable.id)?.get(relationship.sourceColumnId) ?? -1
         : -1;
       const targetIndex = targetTable
-        ? this.visualColumnIndex(targetTable, relationship.targetColumnId)
+        ? (layout.detailLevel ?? 'all') === 'names'
+          ? 0
+          : visualColumnIndexes.get(targetTable.id)?.get(relationship.targetColumnId) ?? -1
         : -1;
       if (!sourceTable || !targetTable || sourceIndex < 0 || targetIndex < 0) return [];
-      const sourceArea = this.collapsedAreaForTable(sourceTable.id);
-      const targetArea = this.collapsedAreaForTable(targetTable.id);
+      const sourceArea = collapsedAreasByTable.get(sourceTable.id);
+      const targetArea = collapsedAreasByTable.get(targetTable.id);
       if (sourceArea && sourceArea === targetArea) return [];
       const sourceLayout = sourceArea
         ? { x: sourceArea.x, y: sourceArea.y, width: 180 }
@@ -319,8 +345,8 @@ export class DiagramCanvas {
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
       const sourceSide = previewLayout?.sourceSide ?? (sourceOnLeft ? 'left' : 'right');
       const targetSide = previewLayout?.targetSide ?? (sourceOnLeft ? 'right' : 'left');
-      const sourcePortOffset = this.endpointPortOffset(relationship, 'source');
-      const targetPortOffset = this.endpointPortOffset(relationship, 'target');
+      const sourcePortOffset = endpointOffsets.get(relationship.id)!.source;
+      const targetPortOffset = endpointOffsets.get(relationship.id)!.target;
       const source = sourceArea
         ? collapsedAreaAnchor(sourceArea, sourceSide)
         : this.visualAnchor(sourceLayout, sourceIndex, sourceSide, sourcePortOffset);
@@ -351,11 +377,12 @@ export class DiagramCanvas {
       const routeCacheKey = `${relationship.id}:${source.x},${source.y}:${target.x},${target.y}:${sourceSide}:${targetSide}`;
       let routedPoints: Point[] | null = null;
       if (!manuallyRouted) {
-        if (this.automaticRouteCache.has(routeCacheKey)) {
-          routedPoints = this.automaticRouteCache.get(routeCacheKey)!;
+        const cachedRoute = this.automaticRouteCache.get(relationship.id);
+        if (cachedRoute?.key === routeCacheKey) {
+          routedPoints = cachedRoute.points;
         } else {
           routedPoints = routeWithObstacleRouter(source, target, sourceSide, targetSide, obstacles);
-          this.automaticRouteCache.set(routeCacheKey, routedPoints);
+          this.automaticRouteCache.set(relationship.id, { key: routeCacheKey, points: routedPoints });
         }
       }
       const sourceFocused =
