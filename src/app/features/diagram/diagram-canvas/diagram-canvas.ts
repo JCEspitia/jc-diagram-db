@@ -227,6 +227,17 @@ export class DiagramCanvas {
   private routingCacheAreas?: DiagramLayout['areas'];
   private routingCacheDetailLevel?: DiagramLayout['detailLevel'];
   private readonly automaticRouteCache = new Map<string, Point[] | null>();
+  private zoomFrame?: number;
+
+  // Keeps route geometry stable while the viewport changes. The equality check
+  // means wheel events only update the world transform, not every SVG path.
+  private readonly routingLayout = computed(() => this.layout(), {
+    equal: (previous, next) =>
+      previous.tables === next.tables &&
+      previous.relationships === next.relationships &&
+      previous.areas === next.areas &&
+      previous.detailLevel === next.detailLevel,
+  });
 
   protected readonly transform = computed(() => {
     const viewport = this.viewportPreview() ?? this.layout().viewport;
@@ -235,7 +246,7 @@ export class DiagramCanvas {
 
   protected readonly edges = computed<RenderedRelationship[]>(() => {
     const schema = this.schema();
-    const layout = this.layout();
+    const layout = this.routingLayout();
     if (
       this.routingCacheSchema !== schema ||
       this.routingCacheTables !== layout.tables ||
@@ -461,7 +472,7 @@ export class DiagramCanvas {
     const areaTable = this.areaPreview()?.tables[tableId];
     if (areaTable) return areaTable;
     const preview = this.tablePreview();
-    return preview[tableId] ?? tableLayout(this.layout(), tableId);
+    return preview[tableId] ?? tableLayout(this.routingLayout(), tableId);
   }
 
   protected areaPosition(areaId: string, area: DiagramAreaLayout): DiagramAreaLayout {
@@ -497,7 +508,7 @@ export class DiagramCanvas {
   }
 
   protected areaEntries(): [string, DiagramAreaLayout][] {
-    return Object.entries(this.layout().areas ?? {});
+    return Object.entries(this.routingLayout().areas ?? {});
   }
 
   protected areaTableNames(area: DiagramAreaLayout): string[] {
@@ -512,7 +523,7 @@ export class DiagramCanvas {
   }
 
   private visibleColumns(table: TableSchema): ColumnSchema[] {
-    const level = this.layout().detailLevel ?? 'all';
+    const level = this.routingLayout().detailLevel ?? 'all';
     if (level === 'names') return [];
     if (level === 'all') return table.columns;
     const relationshipColumnIds = new Set(
@@ -530,7 +541,7 @@ export class DiagramCanvas {
   }
 
   private visualColumnIndex(table: TableSchema, columnId: string): number {
-    if ((this.layout().detailLevel ?? 'all') === 'names') return 0;
+    if ((this.routingLayout().detailLevel ?? 'all') === 'names') return 0;
     return this.visibleColumns(table).findIndex(({ id }) => id === columnId);
   }
 
@@ -540,7 +551,7 @@ export class DiagramCanvas {
     side: 'left' | 'right',
     portOffset = 0,
   ): Point {
-    if ((this.layout().detailLevel ?? 'all') === 'names') {
+    if ((this.routingLayout().detailLevel ?? 'all') === 'names') {
       return {
         x: layout.x + (side === 'right' ? (layout.width ?? DEFAULT_TABLE_METRICS.width) : 0),
         y: layout.y + DEFAULT_TABLE_METRICS.headerHeight / 2 + portOffset,
@@ -672,7 +683,7 @@ export class DiagramCanvas {
   }
 
   private collapsedAreaForTable(tableId: string): DiagramAreaLayout | undefined {
-    return Object.values(this.layout().areas ?? {}).find(
+    return Object.values(this.routingLayout().areas ?? {}).find(
       (area) => area.collapsed && area.tableIds?.includes(tableId),
     );
   }
@@ -1064,14 +1075,27 @@ export class DiagramCanvas {
     event.preventDefault();
     const element = event.currentTarget as HTMLElement;
     const bounds = element.getBoundingClientRect();
-    const viewport = this.layout().viewport;
+    const viewport = this.viewportPreview() ?? this.layout().viewport;
     const factor = Math.exp(-event.deltaY * 0.0015);
     const to = zoomAtPoint(
       viewport,
       { x: event.clientX - bounds.left, y: event.clientY - bounds.top },
       viewport.zoom * factor,
     );
-    this.diagramOperation.emit({ type: 'CHANGE_VIEWPORT', from: viewport, to });
+    this.viewportPreview.set(to);
+    if (this.zoomFrame !== undefined) return;
+    this.zoomFrame = requestAnimationFrame(() => {
+      this.zoomFrame = undefined;
+      const next = this.viewportPreview();
+      this.viewportPreview.set(null);
+      if (next) {
+        this.diagramOperation.emit({
+          type: 'CHANGE_VIEWPORT',
+          from: this.layout().viewport,
+          to: next,
+        });
+      }
+    });
   }
 
   protected selectRelationship(event: PointerEvent, relationshipId: string): void {
