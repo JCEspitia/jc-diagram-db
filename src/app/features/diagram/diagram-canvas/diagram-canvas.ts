@@ -222,7 +222,6 @@ export class DiagramCanvas {
   private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
   protected readonly relationshipToolboxId = signal<string | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
-  private routingCacheSchema?: DatabaseSchema;
   private readonly automaticRouteCache = new Map<
     string,
     { key: string; points: Point[] | null }
@@ -247,10 +246,6 @@ export class DiagramCanvas {
   protected readonly edges = computed<RenderedRelationship[]>(() => {
     const schema = this.schema();
     const layout = this.routingLayout();
-    if (this.routingCacheSchema !== schema) {
-      this.routingCacheSchema = schema;
-      this.automaticRouteCache.clear();
-    }
     const tablesById = new Map(schema.tables.map((table) => [table.id, table]));
     const collapsedAreasByTable = new Map(
       schema.tables.map((table) => [table.id, this.collapsedAreaForTable(table.id)]),

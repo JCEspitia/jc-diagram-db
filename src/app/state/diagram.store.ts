@@ -55,6 +55,7 @@ export class DiagramStore {
   private readonly reconciler = new DefaultSchemaReconciler();
   private parseTimer?: ReturnType<typeof setTimeout>;
   private saveTimer?: ReturnType<typeof setTimeout>;
+  private saveIdleCallback?: number;
   private persistenceReady = false;
   private readonly undoStack = signal<DiagramProject[]>([]);
   private readonly redoStack = signal<DiagramProject[]>([]);
@@ -947,15 +948,36 @@ export class DiagramStore {
 
   private scheduleSave(project: DiagramProject): void {
     clearTimeout(this.saveTimer);
+    if (this.saveIdleCallback !== undefined) {
+      cancelIdleCallback(this.saveIdleCallback);
+      this.saveIdleCallback = undefined;
+    }
     this.persistenceState.set('saving');
     this.persistenceError.set(null);
-    this.saveTimer = setTimeout(() => void this.save(project), 700);
+    this.saveTimer = setTimeout(() => {
+      const persist = (deadline: IdleDeadline) => {
+        // IndexedDB performs a structured clone of the whole project when
+        // `put` starts. Wait for a full frame of idle budget instead of
+        // forcing that clone into an active editing interaction.
+        if (deadline.timeRemaining() < 16) {
+          this.saveIdleCallback = requestIdleCallback(persist);
+          return;
+        }
+        this.saveIdleCallback = undefined;
+        void this.save(project, false);
+      };
+      if (typeof requestIdleCallback === 'function') {
+        this.saveIdleCallback = requestIdleCallback(persist);
+      } else {
+        void this.save(project, false);
+      }
+    }, 1_500);
   }
 
-  private async save(project: DiagramProject): Promise<void> {
+  private async save(project: DiagramProject, refreshProjects = true): Promise<void> {
     try {
       await this.repository.saveProject(project);
-      await this.refreshProjects();
+      if (refreshProjects) await this.refreshProjects();
       if (this.project().updatedAt === project.updatedAt) this.persistenceState.set('saved');
     } catch (error) {
       this.persistenceState.set('error');
@@ -965,12 +987,14 @@ export class DiagramStore {
 
   private async flushSave(): Promise<void> {
     clearTimeout(this.saveTimer);
+    if (this.saveIdleCallback !== undefined) cancelIdleCallback(this.saveIdleCallback);
     if (this.persistenceReady) await this.save(this.project());
   }
 
   private activateProject(project: DiagramProject): void {
     clearTimeout(this.parseTimer);
     clearTimeout(this.saveTimer);
+    if (this.saveIdleCallback !== undefined) cancelIdleCallback(this.saveIdleCallback);
     this.project.set(project);
     this.undoStack.set([]);
     this.redoStack.set([]);
