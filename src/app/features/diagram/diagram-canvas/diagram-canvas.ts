@@ -71,7 +71,7 @@ interface RouteSegmentHandle {
   segmentIndex: number;
   point: Point;
   orientation: 'horizontal' | 'vertical';
-  insertion?: 'start' | 'end' | 'source-half';
+  insertion?: 'start' | 'end' | 'source-half' | 'source-corner-half';
   splitRatio?: number;
 }
 
@@ -214,7 +214,7 @@ export class DiagramCanvas {
     point: Point;
     segmentIndex: number;
     orientation: 'horizontal' | 'vertical';
-    insertion?: 'start' | 'end' | 'source-half';
+    insertion?: 'start' | 'end' | 'source-half' | 'source-corner-half';
     splitRatio?: number;
   } | null>(null);
   protected readonly hoveredRelationshipId = signal<string | null>(null);
@@ -1431,7 +1431,7 @@ function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
     const horizontal = Math.abs(start.y - end.y) < 0.01;
     const vertical = Math.abs(start.x - end.x) < 0.01;
     const length = horizontal ? Math.abs(end.x - start.x) : Math.abs(end.y - start.y);
-    if (length < MIN_ROUTE_POINT_DISTANCE * 4) continue;
+    if (length < MIN_ROUTE_POINT_DISTANCE * 2) continue;
 
     // The run next to a table has one fixed end. Its center splits the free
     // half while preserving the table anchor and its cardinality marker.
@@ -1450,7 +1450,10 @@ function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
       if (!turnsAfterStart) continue;
       const candidatesForEndpoint =
         index === 0
-          ? ([[0.25, 'source-half']] as const)
+          ? ([
+              [0.25, 'source-half'],
+              [0.75, 'source-corner-half'],
+            ] as const)
           : ([
               [0.25, 'end'],
               [0.75, 'end'],
@@ -1503,7 +1506,7 @@ function splitOrthogonalSegment(
   points: Point[],
   segmentIndex: number,
   orientation: 'horizontal' | 'vertical',
-  insertion: 'start' | 'end' | 'source-half',
+  insertion: 'start' | 'end' | 'source-half' | 'source-corner-half',
   splitRatio?: number,
 ): { points: Point[]; segmentIndex: number } {
   const start = points[segmentIndex]!;
@@ -1532,6 +1535,31 @@ function splitOrthogonalSegment(
         ...points.slice(segmentIndex + 2),
       ],
       segmentIndex: segmentIndex + 2,
+    };
+  }
+  if (insertion === 'source-corner-half') {
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    const direction =
+      orientation === 'horizontal' ? Math.sign(end.x - start.x) : Math.sign(end.y - start.y);
+    const anchorDistance = Math.min(ENDPOINT_LANE_DISTANCE, length / 4);
+    const anchor =
+      orientation === 'horizontal'
+        ? { x: start.x + direction * anchorDistance, y: start.y }
+        : { x: start.x, y: start.y + direction * anchorDistance };
+    const middle =
+      orientation === 'horizontal'
+        ? { x: start.x + direction * (length / 2), y: start.y }
+        : { x: start.x, y: start.y + direction * (length / 2) };
+    return {
+      points: [
+        ...points.slice(0, segmentIndex + 1),
+        anchor,
+        middle,
+        { ...middle },
+        { x: end.x, y: end.y },
+        ...points.slice(segmentIndex + 2),
+      ],
+      segmentIndex: segmentIndex + 3,
     };
   }
   const isSourceRun = segmentIndex === 0 && insertion === 'start';
