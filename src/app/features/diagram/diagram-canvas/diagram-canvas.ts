@@ -19,7 +19,6 @@ import {
   OrthogonalRoute,
   orthogonalRoutePoints,
   Point,
-  pullOrthogonalSegment,
   roundedPolylinePath,
   routeWithObstacleRouter,
   screenToWorld,
@@ -72,6 +71,7 @@ interface RouteSegmentHandle {
   segmentIndex: number;
   point: Point;
   orientation: 'horizontal' | 'vertical';
+  insertion?: 'start' | 'end';
 }
 
 interface RelationshipEndpoint {
@@ -213,6 +213,7 @@ export class DiagramCanvas {
     point: Point;
     segmentIndex: number;
     orientation: 'horizontal' | 'vertical';
+    insertion?: 'start' | 'end';
   } | null>(null);
   protected readonly hoveredRelationshipId = signal<string | null>(null);
   private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
@@ -1200,6 +1201,7 @@ export class DiagramCanvas {
       point: nearest.candidate.point,
       segmentIndex: nearest.candidate.segmentIndex,
       orientation: nearest.candidate.orientation,
+      insertion: nearest.candidate.insertion,
     });
   }
 
@@ -1217,7 +1219,8 @@ export class DiagramCanvas {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    const pulled = pullOrthogonalSegment(edge.points, hovered.segmentIndex, hovered.point);
+    if (!hovered.insertion) return;
+    const pulled = splitVerticalSegment(edge.points, hovered.segmentIndex, hovered.insertion);
     this.relationshipSelected.emit(edge.relationship.id);
     this.interaction = {
       kind: 'segment',
@@ -1357,41 +1360,71 @@ function oppositeSideWhenCrossed(
   return side;
 }
 
-function routePullCandidates(points: Point[], preferredSpacing = 56): RouteSegmentHandle[] {
+function routePullCandidates(points: Point[]): RouteSegmentHandle[] {
   const candidates: RouteSegmentHandle[] = [];
+  // Only vertical segments bounded by corners can split. Ports and horizontal
+  // runs keep their own geometry and never grow detours.
   for (let index = 1; index < points.length - 2; index += 1) {
     const start = points[index]!;
     const end = points[index + 1]!;
-    const horizontal = Math.abs(start.y - end.y) < 0.01;
     const vertical = Math.abs(start.x - end.x) < 0.01;
-    if (!horizontal && !vertical) continue;
-    const length = Math.hypot(end.x - start.x, end.y - start.y);
-    const usableLength = length - MIN_ROUTE_POINT_DISTANCE * 2;
-    if (usableLength < 0) continue;
-    const count = Math.max(1, Math.floor(usableLength / preferredSpacing) + 1);
-    for (let step = 0; step < count; step += 1) {
-      const distanceAlongSegment =
-        count === 1 ? length / 2 : MIN_ROUTE_POINT_DISTANCE + (usableLength * step) / (count - 1);
-      const ratio = distanceAlongSegment / length;
-      const point = {
-        x: start.x + (end.x - start.x) * ratio,
-        y: start.y + (end.y - start.y) * ratio,
-      };
-      // The exact middle is already the segment's main drag handle. Every
-      // other marker is an insertion point that creates a new orthogonal lane.
-      if (
-        Math.hypot(point.x - (start.x + end.x) / 2, point.y - (start.y + end.y) / 2) < 12
-      ) {
-        continue;
-      }
+    const before = points[index - 1]!;
+    const after = points[index + 2]!;
+    if (
+      !vertical ||
+      Math.abs(before.y - start.y) >= 0.01 ||
+      Math.abs(end.y - after.y) >= 0.01
+    ) {
+      continue;
+    }
+    const length = Math.abs(end.y - start.y);
+    if (length < MIN_ROUTE_POINT_DISTANCE * 4) continue;
+    for (const [ratio, insertion] of [
+      [0.25, 'end'],
+      [0.75, 'start'],
+    ] as const) {
       candidates.push({
         segmentIndex: index,
-        point,
-        orientation: horizontal ? 'horizontal' : 'vertical',
+        point: { x: start.x, y: start.y + (end.y - start.y) * ratio },
+        orientation: 'vertical',
+        insertion,
       });
     }
   }
   return candidates;
+}
+
+function splitVerticalSegment(
+  points: Point[],
+  segmentIndex: number,
+  insertion: 'start' | 'end',
+): { points: Point[]; segmentIndex: number } {
+  const start = points[segmentIndex]!;
+  const end = points[segmentIndex + 1]!;
+  const middleY = (start.y + end.y) / 2;
+  if (insertion === 'start') {
+    return {
+      points: [
+        ...points.slice(0, segmentIndex + 1),
+        { x: start.x, y: middleY },
+        { x: start.x, y: middleY },
+        { x: end.x, y: end.y },
+        ...points.slice(segmentIndex + 2),
+      ],
+      segmentIndex: segmentIndex + 2,
+    };
+  }
+  return {
+    points: [
+      ...points.slice(0, segmentIndex),
+      { x: start.x, y: start.y },
+      { x: start.x, y: middleY },
+      { x: end.x, y: middleY },
+      { x: end.x, y: end.y },
+      ...points.slice(segmentIndex + 2),
+    ],
+    segmentIndex,
+  };
 }
 
 function routeActionPoint(points: Point[]): Point {
