@@ -221,16 +221,58 @@ export class DiagramCanvas {
   private readonly hoveredColumn = signal<{ tableId: string; columnId: string } | null>(null);
   protected readonly relationshipToolboxId = signal<string | null>(null);
   private readonly viewportElement = viewChild.required<ElementRef<HTMLElement>>('viewport');
+  private routingCacheSchema?: DatabaseSchema;
+  private routingCacheLayout?: DiagramLayout;
+  private readonly automaticRouteCache = new Map<string, Point[] | null>();
 
   protected readonly transform = computed(() => {
     const viewport = this.viewportPreview() ?? this.layout().viewport;
     return `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`;
   });
 
-  protected readonly edges = computed<RenderedRelationship[]>(() =>
-    this.schema().relationships.flatMap((relationship, relationshipIndex) => {
-      const sourceTable = this.schema().tables.find(({ id }) => id === relationship.sourceTableId);
-      const targetTable = this.schema().tables.find(({ id }) => id === relationship.targetTableId);
+  protected readonly edges = computed<RenderedRelationship[]>(() => {
+    const schema = this.schema();
+    const layout = this.layout();
+    if (this.routingCacheSchema !== schema || this.routingCacheLayout !== layout) {
+      this.routingCacheSchema = schema;
+      this.routingCacheLayout = layout;
+      this.automaticRouteCache.clear();
+    }
+    const tablesById = new Map(schema.tables.map((table) => [table.id, table]));
+    const selectedRelationshipId = this.selectedRelationshipId();
+    const selectedTableIds = new Set(
+      this.selectedTableIds().length
+        ? this.selectedTableIds()
+        : this.selectedTableId()
+          ? [this.selectedTableId()!]
+          : [],
+    );
+    const hoveredColumn = this.hoveredColumn();
+    const focusedColumnKey = hoveredColumn ? `${hoveredColumn.tableId}:${hoveredColumn.columnId}` : null;
+    const hasFocusedColumn = focusedColumnKey
+      ? schema.relationships.some(
+          (relationship) =>
+            `${relationship.sourceTableId}:${relationship.sourceColumnId}` === focusedColumnKey ||
+            `${relationship.targetTableId}:${relationship.targetColumnId}` === focusedColumnKey,
+        )
+      : false;
+    const routeObstacles = schema.tables.flatMap((table) => {
+      if (this.collapsedAreaForTable(table.id)) return [];
+      const position = this.tablePosition(table.id);
+      return [
+        {
+          id: table.id,
+          left: position.x,
+          top: position.y,
+          right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
+          bottom: position.y + this.visualTableHeight(table),
+        },
+      ];
+    });
+
+    return schema.relationships.flatMap((relationship, relationshipIndex) => {
+      const sourceTable = tablesById.get(relationship.sourceTableId);
+      const targetTable = tablesById.get(relationship.targetTableId);
       const sourceIndex = sourceTable
         ? this.visualColumnIndex(sourceTable, relationship.sourceColumnId)
         : -1;
@@ -248,7 +290,7 @@ export class DiagramCanvas {
         ? { x: targetArea.x, y: targetArea.y, width: 180 }
         : this.tablePosition(targetTable.id);
       const sourceOnLeft = sourceLayout.x > targetLayout.x;
-      const routeLayout = this.layout().relationships?.[relationship.id];
+      const routeLayout = layout.relationships?.[relationship.id];
       const routePreview = this.routePreview();
       const previewLayout =
         routePreview?.relationshipId === relationship.id ? routePreview.layout : routeLayout;
@@ -280,56 +322,25 @@ export class DiagramCanvas {
         previewLayout?.routeX !== undefined ||
         previewLayout?.waypoints?.length,
       );
-      const obstacles = this.schema()
-        .tables.filter(
-          ({ id }) =>
-            id !== sourceTable.id && id !== targetTable.id && !this.collapsedAreaForTable(id),
-        )
-        .map((table) => {
-          const position = this.tablePosition(table.id);
-          return {
-            left: position.x,
-            top: position.y,
-            right: position.x + (position.width ?? DEFAULT_TABLE_METRICS.width),
-            bottom: position.y + this.visualTableHeight(table),
-          };
-        });
-      const routedPoints = manuallyRouted
-        ? null
-        : routeWithObstacleRouter(
-            source,
-            target,
-            sourceSide,
-            targetSide,
-            obstacles,
-          );
-      const selectedTableIds = new Set(
-        this.selectedTableIds().length
-          ? this.selectedTableIds()
-          : this.selectedTableId()
-            ? [this.selectedTableId()!]
-            : [],
-      );
-      const hoveredColumn = this.hoveredColumn();
-      const columnFocus =
-        hoveredColumn &&
-        this.schema().relationships.some(
-          (candidate) =>
-            (candidate.sourceTableId === hoveredColumn.tableId &&
-              candidate.sourceColumnId === hoveredColumn.columnId) ||
-            (candidate.targetTableId === hoveredColumn.tableId &&
-              candidate.targetColumnId === hoveredColumn.columnId),
-        )
-          ? hoveredColumn
-          : null;
-      const sourceFocused = columnFocus
-        ? relationship.sourceTableId === columnFocus.tableId &&
-          relationship.sourceColumnId === columnFocus.columnId
-        : false;
-      const targetFocused = columnFocus
-        ? relationship.targetTableId === columnFocus.tableId &&
-          relationship.targetColumnId === columnFocus.columnId
-        : false;
+      const obstacles = routeObstacles
+        .filter(({ id }) => id !== sourceTable.id && id !== targetTable.id)
+        .map(({ id: _id, ...bounds }) => bounds);
+      const routeCacheKey = `${relationship.id}:${source.x},${source.y}:${target.x},${target.y}:${sourceSide}:${targetSide}`;
+      let routedPoints: Point[] | null = null;
+      if (!manuallyRouted) {
+        if (this.automaticRouteCache.has(routeCacheKey)) {
+          routedPoints = this.automaticRouteCache.get(routeCacheKey)!;
+        } else {
+          routedPoints = routeWithObstacleRouter(source, target, sourceSide, targetSide, obstacles);
+          this.automaticRouteCache.set(routeCacheKey, routedPoints);
+        }
+      }
+      const sourceFocused =
+        hasFocusedColumn &&
+        `${relationship.sourceTableId}:${relationship.sourceColumnId}` === focusedColumnKey;
+      const targetFocused =
+        hasFocusedColumn &&
+        `${relationship.targetTableId}:${relationship.targetColumnId}` === focusedColumnKey;
       const savedPoints = previewLayout?.waypoints?.length
         ? [source, ...previewLayout.waypoints, target]
         : null;
@@ -339,35 +350,39 @@ export class DiagramCanvas {
         routeExitsOutward(savedPoints, sourceSide, targetSide)
           ? savedPoints
           : routedPoints ?? orthogonalRoutePoints(source, target, route);
-      const automaticSource = sourceArea
-        ? collapsedAreaAnchor(sourceArea, sourceOnLeft ? 'left' : 'right')
-        : this.visualAnchor(
-            sourceLayout,
-            sourceIndex,
+      const isSelected = selectedRelationshipId === relationship.id;
+      let automaticPoints = points;
+      if (isSelected && manuallyRouted) {
+        const automaticSource = sourceArea
+          ? collapsedAreaAnchor(sourceArea, sourceOnLeft ? 'left' : 'right')
+          : this.visualAnchor(
+              sourceLayout,
+              sourceIndex,
+              sourceOnLeft ? 'left' : 'right',
+              sourcePortOffset,
+            );
+        const automaticTarget = targetArea
+          ? collapsedAreaAnchor(targetArea, sourceOnLeft ? 'right' : 'left')
+          : this.visualAnchor(
+              targetLayout,
+              targetIndex,
+              sourceOnLeft ? 'right' : 'left',
+              targetPortOffset,
+            );
+        const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
+        automaticPoints =
+          routeWithObstacleRouter(
+            automaticSource,
+            automaticTarget,
             sourceOnLeft ? 'left' : 'right',
-            sourcePortOffset,
-          );
-      const automaticTarget = targetArea
-        ? collapsedAreaAnchor(targetArea, sourceOnLeft ? 'right' : 'left')
-        : this.visualAnchor(
-            targetLayout,
-            targetIndex,
             sourceOnLeft ? 'right' : 'left',
-            targetPortOffset,
-          );
-      const automaticDefaults = defaultOrthogonalRoute(automaticSource, automaticTarget);
-      const automaticPoints =
-        routeWithObstacleRouter(
-          automaticSource,
-          automaticTarget,
-          sourceOnLeft ? 'left' : 'right',
-          sourceOnLeft ? 'right' : 'left',
-          obstacles,
-        ) ??
-        orthogonalRoutePoints(automaticSource, automaticTarget, {
-          ...automaticDefaults,
-          routeY: automaticDefaults.routeY + ((relationshipIndex % 5) - 2) * 10,
-        });
+            obstacles,
+          ) ??
+          orthogonalRoutePoints(automaticSource, automaticTarget, {
+            ...automaticDefaults,
+            routeY: automaticDefaults.routeY + ((relationshipIndex % 5) - 2) * 10,
+          });
+      }
       const sourceCardinality =
         relationship.sourceCardinality ??
         (relationship.type === 'many-to-one' ? 'many' : 'one');
@@ -381,12 +396,12 @@ export class DiagramCanvas {
             ? 'reverse'
             : null;
       const relationshipFocused =
-        this.selectedRelationshipId() === relationship.id ||
+        isSelected ||
         this.hoveredRelationshipId() === relationship.id ||
         this.relationshipToolboxId() === relationship.id ||
         this.routePreview()?.relationshipId === relationship.id ||
         this.hoveredSegment()?.relationshipId === relationship.id ||
-        (columnFocus
+        (hasFocusedColumn
           ? sourceFocused || targetFocused
           : selectedTableIds.has(relationship.sourceTableId) ||
             selectedTableIds.has(relationship.targetTableId));
@@ -398,15 +413,15 @@ export class DiagramCanvas {
           target,
           route,
           points,
-          handles: routeSegmentHandles(points),
-          pullCandidates: routePullCandidates(points),
-          resetPoint: routeActionPoint(points),
-          canReset: manuallyRouted && !samePolyline(points, automaticPoints),
+          handles: isSelected ? routeSegmentHandles(points) : [],
+          pullCandidates: isSelected ? routePullCandidates(points) : [],
+          resetPoint: isSelected ? routeActionPoint(points) : points[0]!,
+          canReset: isSelected && manuallyRouted && !samePolyline(points, automaticPoints),
           sourceSide,
           targetSide,
           sourceCardinality,
           targetCardinality,
-          connected: columnFocus
+          connected: hasFocusedColumn
             ? sourceFocused || targetFocused
             : !selectedTableIds.size ||
               selectedTableIds.has(relationship.sourceTableId) ||
@@ -414,8 +429,8 @@ export class DiagramCanvas {
           flow: relationshipFocused ? cardinalityFlow : null,
         },
       ];
-    }),
-  );
+    });
+  });
 
   protected readonly temporaryPath = computed(() => {
     const temporary = this.temporaryRelationship();
