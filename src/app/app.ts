@@ -1,6 +1,8 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  effect,
   HostListener,
   inject,
   signal,
@@ -107,6 +109,7 @@ export class App {
   protected readonly projectBrowserOpen = signal(false);
   protected readonly tutorialOpen = signal(shouldShowGuidedTour());
   protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums' | 'areas'>('dbml');
+
   protected readonly tableFilter = signal('');
   protected readonly expandedTableIds = signal<Set<string>>(new Set());
   protected readonly expandedEnumId = signal<string | null>(null);
@@ -129,6 +132,10 @@ export class App {
     const firstTable = this.store.schema().tables[0]!;
     this.store.selectTable(firstTable.id);
     this.expandedTableIds.set(new Set([firstTable.id]));
+    effect(() => {
+      this.store.project().id;
+      afterNextRender(() => this.canvas()?.fitDiagram());
+    });
   }
 
   protected filteredTables() {

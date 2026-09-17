@@ -249,7 +249,13 @@ export class DiagramStore {
         : {}),
       updatedAt: new Date().toISOString(),
     };
-    this.commit(next, operation.type !== 'CHANGE_VIEWPORT');
+    if (operation.type === 'CHANGE_VIEWPORT') {
+      // The viewport is session state. It should remain responsive and never
+      // trigger a full project save.
+      this.replaceProject(next, false);
+      return;
+    }
+    this.commit(next, true);
   }
 
   setDetailLevel(level: DiagramDetailLevel): void {
@@ -856,9 +862,9 @@ export class DiagramStore {
     this.replaceProject(update(this.project()));
   }
 
-  private replaceProject(project: DiagramProject): void {
+  private replaceProject(project: DiagramProject, schedulePersistence = true): void {
     this.project.set(project);
-    if (this.persistenceReady) this.scheduleSave(project);
+    if (schedulePersistence && this.persistenceReady) this.scheduleSave(project);
   }
 
   private async restoreProject(initialProject: DiagramProject): Promise<void> {
