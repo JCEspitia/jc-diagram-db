@@ -27,6 +27,7 @@ import {
   LucideKeyRound,
   LucideLink2,
   LucideMessageSquareText,
+  LucideRotateCcw,
   LucideTable2,
 } from '@lucide/angular';
 
@@ -41,6 +42,7 @@ import {
     LucideKeyRound,
     LucideLink2,
     LucideMessageSquareText,
+    LucideRotateCcw,
     LucideTable2,
     TooltipDirective,
   ],
@@ -69,6 +71,7 @@ export class TableNode {
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
+  readonly connectionsRerouteRequested = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
   readonly columnHovered = output<{ tableId: string; columnId: string } | null>();
   readonly relationshipStarted = output<{
@@ -168,6 +171,13 @@ export class TableNode {
     event.stopPropagation();
     this.optionsOpen.set(false);
     this.tableAreaChanged.emit({ tableId: this.table().id, areaId });
+  }
+
+  protected rerouteConnections(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.optionsOpen.set(false);
+    this.connectionsRerouteRequested.emit(this.table().id);
   }
 
   protected columnTooltip(column: ColumnSchema): TooltipDetails | undefined {

@@ -302,6 +302,7 @@
         (tableEditRequested)="editManagedTable($event)"
         (tableColorChanged)="store.updateTableColor($event.tableId, $event.color)"
         (tableAreaChanged)="store.assignTableToArea($event.tableId, $event.areaId)"
+        (tableConnectionsRerouteRequested)="store.rerouteTableConnections($event)"
         (areaEditRequested)="editManagedArea($event)"
         (areaCollapsedChanged)="store.toggleAreaCollapsed($event)"
         (columnSelected)="store.selectColumn($event.tableId, $event.columnId)"

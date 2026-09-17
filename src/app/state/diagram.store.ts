@@ -754,6 +754,30 @@ export class DiagramStore {
     });
   }
 
+  rerouteTableConnections(tableId: string): void {
+    const project = this.project();
+    const relationships = { ...(project.layout.relationships ?? {}) };
+    for (const relationship of project.schema.relationships) {
+      if (relationship.sourceTableId !== tableId && relationship.targetTableId !== tableId) continue;
+      const current = relationships[relationship.id];
+      if (!current) continue;
+      const { sourceSide, targetSide } = current;
+      if (sourceSide || targetSide) {
+        relationships[relationship.id] = { sourceSide, targetSide };
+      } else {
+        delete relationships[relationship.id];
+      }
+    }
+    this.commit(
+      {
+        ...project,
+        layout: { ...project.layout, relationships },
+        updatedAt: new Date().toISOString(),
+      },
+      true,
+    );
+  }
+
   deleteRelationship(relationshipId: string): void {
     this.applySchemaOperation({ type: 'DELETE_RELATIONSHIP', relationshipId });
   }

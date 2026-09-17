@@ -33,6 +33,10 @@
             <svg lucideTable2 size="14"></svg>
             Edit in Tables
           </button>
+          <button type="button" (pointerdown)="rerouteConnections($event)">
+            <svg lucideRotateCcw size="14"></svg>
+            Reroute connections
+          </button>
           @if (areas().length) {
             <span>Move to area</span>
             <div class="area-options-list">

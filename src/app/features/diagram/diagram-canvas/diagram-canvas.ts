@@ -122,6 +122,7 @@ export class DiagramCanvas {
   readonly tableEditRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
+  readonly tableConnectionsRerouteRequested = output<string>();
   readonly areaEditRequested = output<string>();
   readonly areaCollapsedChanged = output<string>();
   readonly columnSelected = output<{ tableId: string; columnId: string }>();
@@ -553,6 +554,15 @@ export class DiagramCanvas {
 
   protected tableVisible(tableId: string): boolean {
     return !this.collapsedAreaForTable(tableId);
+  }
+
+  protected rerouteTableConnections(tableId: string): void {
+    for (const relationship of this.schema().relationships) {
+      if (relationship.sourceTableId === tableId || relationship.targetTableId === tableId) {
+        this.automaticRouteCache.delete(relationship.id);
+      }
+    }
+    this.tableConnectionsRerouteRequested.emit(tableId);
   }
 
   private visibleColumns(table: TableSchema): ColumnSchema[] {
