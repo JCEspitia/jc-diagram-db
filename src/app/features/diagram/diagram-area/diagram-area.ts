@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DiagramAreaLayout } from '../../../core/schema';
 import { TooltipDetails, TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
-import { LucideChevronRight, LucideSettings } from '@lucide/angular';
+import { LucideChevronRight, LucideGripVertical, LucideSettings } from '@lucide/angular';
 
 @Component({
   selector: 'app-diagram-area',
-  imports: [LucideChevronRight, LucideSettings, TooltipDirective],
+  imports: [LucideChevronRight, LucideGripVertical, LucideSettings, TooltipDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './diagram-area.html',
   styleUrl: './diagram-area.scss',

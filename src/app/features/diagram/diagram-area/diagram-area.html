@@ -11,8 +11,16 @@
     [appTooltip]="tooltipDetails() ? 'Area details' : null"
     [appTooltipDetails]="tooltipDetails()"
     appTooltipPosition="side"
-    (pointerdown)="startMove($event)"
   >
+    <button
+      type="button"
+      class="drag-handle"
+      appTooltip="Drag area"
+      aria-label="Drag area"
+      (pointerdown)="startMove($event)"
+    >
+      <svg lucideGripVertical size="13"></svg>
+    </button>
     <button
       type="button"
       class="collapse-action"

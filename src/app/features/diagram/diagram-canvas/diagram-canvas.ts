@@ -313,7 +313,7 @@ export class DiagramCanvas {
       ];
     });
 
-    return schema.relationships.flatMap((relationship, relationshipIndex) => {
+    const renderedEdges = schema.relationships.flatMap((relationship, relationshipIndex) => {
       const sourceTable = tablesById.get(relationship.sourceTableId);
       const targetTable = tablesById.get(relationship.targetTableId);
       const sourceIndex = sourceTable
@@ -443,7 +443,7 @@ export class DiagramCanvas {
       const targetCardinality =
         relationship.targetCardinality ??
         (relationship.type === 'one-to-many' ? 'many' : 'one');
-      const cardinalityFlow =
+      const cardinalityFlow: RenderedRelationship['flow'] =
         targetCardinality === 'many' && sourceCardinality !== 'many'
           ? 'forward'
           : sourceCardinality === 'many' && targetCardinality !== 'many'
@@ -484,6 +484,16 @@ export class DiagramCanvas {
         },
       ];
     });
+
+    // SVG paints later siblings above previous ones. Keep the active route last
+    // so its stroke, markers, flow and editing controls remain visible where
+    // routes overlap.
+    return selectedRelationshipId
+      ? [
+          ...renderedEdges.filter(({ relationship }) => relationship.id !== selectedRelationshipId),
+          ...renderedEdges.filter(({ relationship }) => relationship.id === selectedRelationshipId),
+        ]
+      : renderedEdges;
   });
 
   protected readonly temporaryPath = computed(() => {

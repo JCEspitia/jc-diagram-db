@@ -7,7 +7,9 @@
   border: 1.5px solid var(--area-color);
   border-radius: 7px;
   background: color-mix(in srgb, var(--area-color) 7%, transparent);
-  z-index: 0;
+  // Routes stay behind the area chrome, keeping the title readable while
+  // table cards (z-index: 2) remain above the area itself.
+  z-index: 1;
   pointer-events: none;
 }
 header {
@@ -19,8 +21,7 @@ header {
   border-bottom: 1px solid color-mix(in srgb, var(--area-color) 35%, transparent);
   color: color-mix(in srgb, var(--area-color) 75%, #26313b);
   font-size: 11px;
-  cursor: move;
-  pointer-events: auto;
+  pointer-events: none;
   touch-action: none;
 }
 header span {
@@ -65,6 +66,21 @@ header button {
   background: transparent;
   color: currentColor;
   cursor: pointer;
+  pointer-events: auto;
+}
+header .drag-handle,
+header .collapse-action {
+  margin-left: 0;
+}
+header .drag-handle {
+  color: color-mix(in srgb, var(--area-color) 82%, #26313b);
+  cursor: move;
+}
+header button:last-child {
+  margin-left: auto;
+}
+.area.collapsed header .drag-handle {
+  color: #ffffff;
 }
 header button:hover {
   background: color-mix(in srgb, var(--area-color) 16%, transparent);
