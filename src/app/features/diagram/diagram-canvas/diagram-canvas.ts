@@ -120,6 +120,7 @@ export class DiagramCanvas {
   readonly tableSelected = output<{ tableId: string; additive: boolean }>();
   readonly tablesSelected = output<{ tableIds: string[]; additive: boolean }>();
   readonly tableEditRequested = output<string>();
+  readonly tableRelationshipsRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
   readonly tableConnectionsRerouteRequested = output<string>();

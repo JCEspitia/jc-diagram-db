@@ -333,6 +333,7 @@
           [detailLevel]="layout().detailLevel ?? 'all'"
           (tableSelected)="tableSelected.emit($event)"
           (tableEditRequested)="tableEditRequested.emit($event)"
+          (relationshipsRequested)="tableRelationshipsRequested.emit($event)"
           (tableColorChanged)="tableColorChanged.emit($event)"
           (tableAreaChanged)="tableAreaChanged.emit($event)"
           (connectionsRerouteRequested)="rerouteTableConnections($event)"

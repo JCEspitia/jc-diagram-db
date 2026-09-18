@@ -53,6 +53,7 @@ import {
     '[style.left.px]': 'layout().x',
     '[style.top.px]': 'layout().y',
     '[class.selected]': 'selected()',
+    '[class.options-open]': 'optionsOpen()',
     '[class.show-relationship-handles]': 'showRelationshipHandles()',
   },
 })
@@ -69,6 +70,7 @@ export class TableNode {
   readonly detailLevel = input<DiagramDetailLevel>('all');
   readonly tableSelected = output<{ tableId: string; additive: boolean }>();
   readonly tableEditRequested = output<string>();
+  readonly relationshipsRequested = output<string>();
   readonly tableColorChanged = output<{ tableId: string; color: string }>();
   readonly tableAreaChanged = output<{ tableId: string; areaId: string | null }>();
   readonly connectionsRerouteRequested = output<string>();
@@ -158,6 +160,13 @@ export class TableNode {
     event.stopPropagation();
     this.optionsOpen.set(false);
     this.tableEditRequested.emit(this.table().id);
+  }
+
+  protected browseRelationships(event: PointerEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.optionsOpen.set(false);
+    this.relationshipsRequested.emit(this.table().id);
   }
 
   protected changeColor(event: PointerEvent, color: string): void {

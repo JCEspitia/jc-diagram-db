@@ -112,6 +112,7 @@ export class App {
   protected readonly projectBrowserOpen = signal(false);
   protected readonly tutorialOpen = signal(shouldShowGuidedTour());
   protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums' | 'areas'>('dbml');
+  protected readonly relationshipSidebarOpen = signal(false);
   protected readonly relationshipNavigator = computed(() => {
     const schema = this.store.schema();
     const selection = this.store.selection();
@@ -280,6 +281,18 @@ export class App {
   protected focusRelationshipTable(tableId: string): void {
     this.store.selectTable(tableId);
     requestAnimationFrame(() => this.canvas()?.focusTable(tableId));
+  }
+
+  protected browseTableRelationships(tableId: string): void {
+    this.store.selectTable(tableId);
+    this.activeSidebar.set('inspector');
+    this.dbmlCollapsed.set(false);
+    this.relationshipSidebarOpen.set(true);
+    this.tableMenuId.set(null);
+  }
+
+  protected closeRelationshipSidebar(): void {
+    this.relationshipSidebarOpen.set(false);
   }
 
   protected selectNavigatorRelationship(relationshipId: string, relatedTableId: string): void {

@@ -714,6 +714,39 @@ main {
   grid-column: 4;
   grid-row: 1;
 }
+.relationship-sidebar {
+  grid-column: 5;
+  grid-row: 1;
+  min-width: 0;
+  overflow: auto;
+  border-left: 1px solid #343a42;
+  background: #1e232a;
+  display: none;
+}
+.relationship-sidebar.open {
+  display: block;
+}
+.relationship-sidebar .panel-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-color: #343a42;
+  background: #1e232a;
+}
+.relationship-sidebar .panel-heading > small {
+  overflow: hidden;
+  margin-right: auto;
+  color: #aeb8c1;
+  font: 600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.relationship-sidebar .relationship-navigator {
+  min-height: calc(100% - 42px);
+}
+.workspace.relationship-sidebar-open {
+  grid-template-columns: 48px var(--dbml-width, 360px) 4px minmax(320px, 1fr) minmax(280px, 340px);
+}
 .inspector,
 .workspace.show-inspector .dbml-panel {
   display: none;
@@ -731,6 +764,12 @@ main {
 }
 .workspace.dbml-collapsed main {
   grid-column: 2;
+}
+.workspace.dbml-collapsed.relationship-sidebar-open {
+  grid-template-columns: 48px minmax(320px, 1fr) minmax(280px, 340px);
+}
+.workspace.dbml-collapsed.relationship-sidebar-open .relationship-sidebar {
+  grid-column: 3;
 }
 .sidebar-rail {
   grid-column: 1;
@@ -867,6 +906,9 @@ main {
   .workspace.show-inspector .inspector {
     display: block;
   }
+  .workspace.relationship-sidebar-open {
+    grid-template-columns: 48px 300px 4px minmax(280px, 1fr) 280px;
+  }
 }
 @media (max-width: 650px) {
   .workspace,
@@ -875,7 +917,8 @@ main {
   }
   .dbml-panel,
   .inspector,
-  .dbml-resizer {
+  .dbml-resizer,
+  .relationship-sidebar {
     display: none !important;
   }
   main,
@@ -1060,6 +1103,7 @@ main {
 .relationship-navigator {
   display: grid;
   gap: 12px;
+  align-content: start;
   padding: 12px 10px !important;
   border-bottom: 1px solid #343a42;
   background: #1a2027;

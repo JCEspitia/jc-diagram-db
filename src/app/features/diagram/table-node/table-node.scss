@@ -11,6 +11,9 @@
     0 0 0 2px rgb(22 135 217 / 15%),
     0 4px 14px rgb(20 45 70 / 16%);
 }
+:host.options-open {
+  z-index: 12;
+}
 
 .table-card {
   overflow: visible;
@@ -64,7 +67,7 @@ header button {
 }
 .table-options-menu {
   position: absolute;
-  z-index: 10;
+  z-index: 1;
   top: 27px;
   right: -4px;
   width: 184px;
