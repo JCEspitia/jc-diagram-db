@@ -251,81 +251,218 @@ function addDocumentationPages(pdf: JsPDF, model: ExportModel): void {
       table.columns.some((column) => normalizeType(column.type) === item.name.toLowerCase()),
     ),
   );
-  let y = 18;
+  const margin = 14;
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - margin * 2;
+  const columns = [44, 38, 50, 42, contentWidth - 174] as const;
+  let y = 25;
   const newPage = (title = 'Schema documentation') => {
-    pdf.addPage('a4', 'portrait');
+    pdf.addPage('a4', 'landscape');
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(16);
     pdf.setTextColor(35, 45, 55);
-    pdf.text(title, 14, 16);
+    pdf.text(title, margin, 16);
     y = 25;
   };
   const ensure = (height: number) => {
-    if (y + height > pdf.internal.pageSize.getHeight() - 14) newPage();
-  };
-  const text = (
-    value: string,
-    indent = 14,
-    size = 9,
-    color: [number, number, number] = [72, 82, 92],
-  ) => {
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(size);
-    pdf.setTextColor(...color);
-    const lines = pdf.splitTextToSize(
-      value,
-      pdf.internal.pageSize.getWidth() - indent - 14,
-    ) as string[];
-    ensure(lines.length * 4.2 + 2);
-    pdf.text(lines, indent, y);
-    y += lines.length * 4.2 + 2;
+    if (y + height > pageHeight - margin) newPage();
   };
   newPage(model.areaId ? `${areaName(model, model.areaId)} documentation` : 'Schema documentation');
-  text(
-    `${tables.length} tables · ${model.schema.relationships.length} relationships · ${enums.length} referenced enums`,
+  pdf.setFillColor(244, 247, 250);
+  pdf.roundedRect(margin, y - 5, contentWidth, 10, 2, 2, 'F');
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(78, 91, 104);
+  pdf.text(
+    `${tables.length} tables  ·  ${model.schema.relationships.length} relationships  ·  ${enums.length} referenced enums`,
+    margin + 4,
+    y + 1,
   );
+  y += 13;
   for (const enumSchema of enums) {
-    ensure(16);
+    const enumName = pdf.splitTextToSize(enumSchema.name, contentWidth - 31) as string[];
+    const enumValues = pdf.splitTextToSize(enumSchema.values.join('  ·  '), contentWidth - 12) as string[];
+    const enumHeight = enumName.length * 4 + enumValues.length * 3.8 + 13;
+    ensure(enumHeight + 3);
+    pdf.setFillColor(248, 246, 253);
+    pdf.roundedRect(margin, y - 2, contentWidth, enumHeight, 3, 3, 'F');
+    pdf.setFillColor(110, 85, 170);
+    pdf.roundedRect(margin + 4, y + 1, 19, 6, 1.5, 1.5, 'F');
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.setTextColor(92, 72, 160);
-    pdf.text(`Enum ${enumSchema.name}`, 14, y);
-    y += 6;
-    text(enumSchema.values.join('  ·  '), 18);
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('ENUM', margin + 13.5, y + 5.1, { align: 'center' });
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(85, 63, 145);
+    pdf.text(enumName, margin + 27, y + 5.2);
+    const dividerY = y + enumName.length * 4 + 7;
+    pdf.setDrawColor(218, 210, 237);
+    pdf.line(margin + 4, dividerY, pageWidth - margin - 4, dividerY);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(96, 85, 120);
+    pdf.setFontSize(7.5);
+    pdf.text(enumValues, margin + 6, dividerY + 4.2);
+    y += enumHeight + 3;
   }
   for (const table of tables) {
-    ensure(24);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(30, 105, 165);
-    pdf.text(`Table ${table.schema ? `${table.schema}.` : ''}${table.name}`, 14, y);
-    y += 6;
-    if (table.note) text(`Comment: ${table.note}`, 18);
+    const color = hexColor(table.color ?? DEFAULT_TABLE_COLOR);
+    const title = `${table.schema ? `${table.schema}.` : ''}${table.name}`;
+    const drawTableHeader = (continued = false) => {
+      ensure(10);
+      pdf.setFillColor(...color);
+      pdf.roundedRect(margin, y, contentWidth, 8, 2, 2, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(title, margin + 4, y + 5.4);
+      if (continued) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.text('continued', pageWidth - margin - 4, y + 5.2, { align: 'right' });
+      }
+      y += 8;
+    };
+    const drawColumnHeaders = () => {
+      ensure(7);
+      pdf.setFillColor(239, 243, 246);
+      pdf.rect(margin, y, contentWidth, 6, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      pdf.setTextColor(79, 92, 104);
+      let x = margin + 2;
+      for (const [index, label] of ['FIELD', 'TYPE', 'CONSTRAINTS', 'DEFAULT', 'DESCRIPTION'].entries()) {
+        pdf.text(label, x, y + 4);
+        x += columns[index]!;
+      }
+      y += 6;
+    };
+    // Do not leave a table title at the foot of a page. Tables may span pages,
+    // but their header and first row always stay together.
+    ensure(table.note ? 30 : 25);
+    drawTableHeader();
+    if (table.note) {
+      const note = pdf.splitTextToSize(table.note, contentWidth - 31) as string[];
+      const noteHeight = note.length * 3.6 + 6;
+      if (y + noteHeight > pageHeight - margin) {
+        newPage();
+        drawTableHeader(true);
+      }
+      pdf.setFillColor(246, 249, 251);
+      pdf.rect(margin, y, contentWidth, noteHeight, 'F');
+      pdf.setFillColor(...color);
+      pdf.rect(margin, y, 2, noteHeight, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      pdf.setTextColor(...color);
+      pdf.text('DESCRIPTION', margin + 5, y + 4);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(103, 114, 124);
+      pdf.text(note, margin + 27, y + 4, { maxWidth: contentWidth - 31 });
+      y += noteHeight;
+    }
+    drawColumnHeaders();
     for (const column of table.columns) {
       const flags = columnFlags(model.schema, table, column);
-      text(
-        `${column.name}  ${column.type}${flags.length ? `  [${flags.join(', ')}]` : ''}`,
-        18,
-        9,
-        [45, 55, 65],
-      );
-      if (column.note) text(`Comment: ${column.note}`, 24, 8, [100, 108, 116]);
-      if (column.defaultValue !== undefined)
-        text(`Default: ${column.defaultValue}`, 24, 8, [100, 108, 116]);
+      const cells = [
+        column.name,
+        column.type,
+        flags.join(' · '),
+        column.defaultValue === undefined ? '—' : String(column.defaultValue),
+        column.note ?? '—',
+      ].map((value, index) => pdf.splitTextToSize(value, columns[index]! - 4) as string[]);
+      const height = Math.max(...cells.map((lines) => lines.length)) * 3.6 + 5;
+      if (y + height > pageHeight - margin) {
+        newPage();
+        drawTableHeader(true);
+        drawColumnHeaders();
+      }
+      const rowColor: [number, number, number] =
+        table.columns.indexOf(column) % 2 ? [250, 252, 253] : [255, 255, 255];
+      pdf.setFillColor(...rowColor);
+      pdf.rect(margin, y, contentWidth, height, 'F');
+      pdf.setDrawColor(226, 231, 235);
+      pdf.rect(margin, y, contentWidth, height, 'S');
+      let x = margin;
+      cells.forEach((lines, index) => {
+        pdf.setFont('helvetica', index === 0 ? 'bold' : 'normal');
+        pdf.setFontSize(index === 0 ? 8 : 7.5);
+        const cellColor: [number, number, number] = index === 2 ? color : [55, 67, 78];
+        pdf.setTextColor(...cellColor);
+        pdf.text(lines, x + 2, y + 3.5);
+        if (index > 0) pdf.line(x, y, x, y + height);
+        x += columns[index]!;
+      });
+      y += height;
     }
-    for (const check of table.checks ?? []) text(`Check: ${check.expression}`, 18, 8);
+    const details: { label: string; value: string }[] = [
+      ...(table.checks ?? []).map((check) => ({ label: 'CHECK', value: check.expression })),
+    ];
     for (const index of table.indexes) {
       const names = index.columns.map(
         (id) => table.columns.find((column) => column.id === id)?.name ?? id,
       );
-      text(
-        `Index${index.name ? ` ${index.name}` : ''}: (${names.join(', ')})${index.primaryKey ? ' primary' : ''}${index.unique ? ' unique' : ''}`,
-        18,
-        8,
+      details.push(
+        {
+          label: 'INDEX',
+          value: `${index.name ? `${index.name}: ` : ''}(${names.join(', ')})${index.primaryKey ? ' · primary' : ''}${index.unique ? ' · unique' : ''}`,
+        },
       );
     }
-    y += 3;
+    if (details.length) {
+      const drawDetailsHeader = () => {
+        ensure(7);
+        pdf.setFillColor(244, 247, 249);
+        pdf.rect(margin, y, contentWidth, 6, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(7);
+        pdf.setTextColor(...color);
+        pdf.text('TABLE DETAILS', margin + 3, y + 4);
+        y += 6;
+      };
+      if (y + 14 > pageHeight - margin) {
+        newPage();
+        drawTableHeader(true);
+      }
+      drawDetailsHeader();
+      for (const detail of details) {
+        const lines = pdf.splitTextToSize(detail.value, contentWidth - 31) as string[];
+        const detailHeight = Math.max(7, lines.length * 3.7 + 4);
+        if (y + detailHeight > pageHeight - margin) {
+          newPage();
+          drawTableHeader(true);
+          drawDetailsHeader();
+        }
+        pdf.setFillColor(251, 252, 253);
+        pdf.rect(margin, y, contentWidth, detailHeight, 'F');
+        pdf.setDrawColor(226, 231, 235);
+        pdf.rect(margin, y, contentWidth, detailHeight, 'S');
+        pdf.setFillColor(...color);
+        pdf.roundedRect(margin + 3, y + 2, 20, 4.5, 1, 1, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(5.8);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(detail.label, margin + 13, y + 5.2, { align: 'center' });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(78, 90, 101);
+        pdf.text(lines, margin + 27, y + 4.2);
+        y += detailHeight;
+      }
+    }
+    y += 5;
   }
+}
+
+function hexColor(value: string): [number, number, number] {
+  const normalized = value.replace('#', '');
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return [81, 117, 178];
+  return [
+    Number.parseInt(normalized.slice(0, 2), 16),
+    Number.parseInt(normalized.slice(2, 4), 16),
+    Number.parseInt(normalized.slice(4, 6), 16),
+  ];
 }
 
 function columnVisualIndicators(
