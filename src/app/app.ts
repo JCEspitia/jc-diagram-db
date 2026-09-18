@@ -192,7 +192,15 @@ export class App {
   protected filteredTables() {
     const filter = this.tableFilter().trim().toLocaleLowerCase();
     return filter
-      ? this.store.schema().tables.filter(({ name }) => name.toLocaleLowerCase().includes(filter))
+      ? this.store.schema().tables.filter(
+          ({ name, columns }) =>
+            name.toLocaleLowerCase().includes(filter) ||
+            columns.some(
+              ({ name: columnName, type }) =>
+                columnName.toLocaleLowerCase().includes(filter) ||
+                type.toLocaleLowerCase().includes(filter),
+            ),
+        )
       : this.store.schema().tables;
   }
 

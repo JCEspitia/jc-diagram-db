@@ -76,6 +76,11 @@ header .drag-handle {
   color: color-mix(in srgb, var(--area-color) 82%, #26313b);
   cursor: move;
 }
+header .drag-handle i {
+  font-size: 15px;
+  font-style: normal;
+  line-height: 1;
+}
 header button:last-child {
   margin-left: auto;
 }
