@@ -2,6 +2,7 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   HostListener,
   inject,
@@ -111,6 +112,54 @@ export class App {
   protected readonly projectBrowserOpen = signal(false);
   protected readonly tutorialOpen = signal(shouldShowGuidedTour());
   protected readonly activeSidebar = signal<'dbml' | 'inspector' | 'enums' | 'areas'>('dbml');
+  protected readonly relationshipNavigator = computed(() => {
+    const schema = this.store.schema();
+    const selection = this.store.selection();
+    const selectedRelationship = selection?.relationshipId
+      ? schema.relationships.find(({ id }) => id === selection.relationshipId)
+      : undefined;
+    const tableId = selection?.tableId ?? selectedRelationship?.sourceTableId;
+    const table = schema.tables.find(({ id }) => id === tableId);
+    if (!table) return null;
+
+    const entryFor = (relationship: RelationshipSchema, direction: 'outgoing' | 'incoming') => {
+      const isSource = direction === 'outgoing';
+      const ownColumnId = isSource ? relationship.sourceColumnId : relationship.targetColumnId;
+      const relatedTableId = isSource ? relationship.targetTableId : relationship.sourceTableId;
+      const relatedColumnId = isSource ? relationship.targetColumnId : relationship.sourceColumnId;
+      const relatedTable = schema.tables.find(({ id }) => id === relatedTableId);
+      const ownColumn = table.columns.find(({ id }) => id === ownColumnId);
+      const relatedColumn = relatedTable?.columns.find(({ id }) => id === relatedColumnId);
+      return {
+        relationship,
+        direction,
+        ownColumnName: ownColumn?.name ?? 'Unknown field',
+        relatedTableId,
+        relatedTableName: relatedTable?.name ?? 'Unknown table',
+        relatedColumnName: relatedColumn?.name ?? 'unknown',
+        ownCardinality: this.cardinalityFor(relationship, isSource ? 'source' : 'target'),
+        relatedCardinality: this.cardinalityFor(relationship, isSource ? 'target' : 'source'),
+      };
+    };
+
+    const matchesSelectedColumn = (relationship: RelationshipSchema, direction: 'outgoing' | 'incoming') => {
+      if (!selection?.columnId) return true;
+      return (direction === 'outgoing' ? relationship.sourceColumnId : relationship.targetColumnId) === selection.columnId;
+    };
+
+    return {
+      tableName: table.name,
+      columnName: selection?.columnId
+        ? table.columns.find(({ id }) => id === selection.columnId)?.name
+        : undefined,
+      outgoing: schema.relationships
+        .filter((relationship) => relationship.sourceTableId === table.id && matchesSelectedColumn(relationship, 'outgoing'))
+        .map((relationship) => entryFor(relationship, 'outgoing')),
+      incoming: schema.relationships
+        .filter((relationship) => relationship.targetTableId === table.id && matchesSelectedColumn(relationship, 'incoming'))
+        .map((relationship) => entryFor(relationship, 'incoming')),
+    };
+  });
 
   protected readonly tableFilter = signal('');
   protected readonly expandedTableIds = signal<Set<string>>(new Set());
@@ -218,6 +267,29 @@ export class App {
     this.store.selectTable(tableId);
     this.tableMenuId.set(null);
     requestAnimationFrame(() => this.canvas()?.focusTable(tableId));
+  }
+
+  protected focusRelationshipTable(tableId: string): void {
+    this.store.selectTable(tableId);
+    requestAnimationFrame(() => this.canvas()?.focusTable(tableId));
+  }
+
+  protected selectNavigatorRelationship(relationshipId: string, relatedTableId: string): void {
+    this.store.selectRelationship(relationshipId);
+    requestAnimationFrame(() => this.canvas()?.focusTable(relatedTableId));
+  }
+
+  protected cardinalityFor(
+    relationship: RelationshipSchema,
+    side: 'source' | 'target',
+  ): '0' | '1' | '*' {
+    const cardinality = side === 'source' ? relationship.sourceCardinality : relationship.targetCardinality;
+    if (cardinality === 'zero') return '0';
+    if (cardinality === 'one') return '1';
+    if (cardinality === 'many') return '*';
+    if (relationship.type === 'one-to-one') return '1';
+    if (relationship.type === 'one-to-many') return side === 'source' ? '1' : '*';
+    return side === 'source' ? '*' : '1';
   }
 
   protected navigateFromDbml(tableId: string): void {

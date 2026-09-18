@@ -373,6 +373,92 @@
           <svg lucidePlus size="15"></svg> Table
         </button>
       </div>
+      @if (relationshipNavigator(); as navigator) {
+        <section class="relationship-navigator tables-only" aria-label="Relationship navigator">
+          <div class="relationship-navigator-heading">
+            <div>
+              <span>RELATIONSHIPS</span>
+              <strong>{{ navigator.tableName }}</strong>
+              @if (navigator.columnName) {
+                <small>Field: {{ navigator.columnName }}</small>
+              }
+            </div>
+            <span class="relationship-count">{{ navigator.incoming.length + navigator.outgoing.length }}</span>
+          </div>
+          @if (navigator.incoming.length || navigator.outgoing.length) {
+            @if (navigator.outgoing.length) {
+              <div class="relationship-group">
+                <span class="relationship-group-title">Outgoing</span>
+                @for (entry of navigator.outgoing; track entry.relationship.id) {
+                  <article
+                    class="relationship-navigator-entry"
+                    [class.selected]="store.selection()?.relationshipId === entry.relationship.id"
+                  >
+                    <div class="relationship-route-label">
+                      <span>{{ entry.ownColumnName }}</span>
+                      <b>{{ entry.ownCardinality }} → {{ entry.relatedCardinality }}</b>
+                      <span>{{ entry.relatedTableName }}.{{ entry.relatedColumnName }}</span>
+                    </div>
+                    <div class="relationship-navigator-actions">
+                      <button
+                        type="button"
+                        appTooltip="Focus related table"
+                        (click)="focusRelationshipTable(entry.relatedTableId)"
+                      >
+                        <svg lucideLocateFixed size="14"></svg> View table
+                      </button>
+                      <button
+                        type="button"
+                        appTooltip="Select relationship on canvas"
+                        (click)="selectNavigatorRelationship(entry.relationship.id, entry.relatedTableId)"
+                      >
+                        <svg lucideLink2 size="14"></svg> Select
+                      </button>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+            @if (navigator.incoming.length) {
+              <div class="relationship-group">
+                <span class="relationship-group-title">Incoming</span>
+                @for (entry of navigator.incoming; track entry.relationship.id) {
+                  <article
+                    class="relationship-navigator-entry"
+                    [class.selected]="store.selection()?.relationshipId === entry.relationship.id"
+                  >
+                    <div class="relationship-route-label">
+                      <span>{{ entry.relatedTableName }}.{{ entry.relatedColumnName }}</span>
+                      <b>{{ entry.relatedCardinality }} → {{ entry.ownCardinality }}</b>
+                      <span>{{ entry.ownColumnName }}</span>
+                    </div>
+                    <div class="relationship-navigator-actions">
+                      <button
+                        type="button"
+                        appTooltip="Focus related table"
+                        (click)="focusRelationshipTable(entry.relatedTableId)"
+                      >
+                        <svg lucideLocateFixed size="14"></svg> View table
+                      </button>
+                      <button
+                        type="button"
+                        appTooltip="Select relationship on canvas"
+                        (click)="selectNavigatorRelationship(entry.relationship.id, entry.relatedTableId)"
+                      >
+                        <svg lucideLink2 size="14"></svg> Select
+                      </button>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          } @else {
+            <p class="relationship-empty">
+              {{ navigator.columnName ? 'This field has no relationships.' : 'This table has no relationships.' }}
+            </p>
+          }
+        </section>
+      }
       <datalist id="common-column-types">
         <option value="uuid"></option>
         <option value="integer"></option>
